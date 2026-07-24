@@ -32,6 +32,12 @@
 | 3 | 教材の長さ | 長くなるのは可。禁止は「つまらない/つながり不明/セキュリティガチガチ」 → 11に退屈・迷子防止原則4〜7を追加、15の骨子に反映 |
 | 4 | edu-creator改修着手 | 実装は**全面停止中**（局長指示: 作業一切禁止・計画作り込みに専念）。改修内容の説明は済み、着手は局長のGOが出てから |
 
+## 敵対レビュー状態
+
+- Codex Round 1（2026-07-24）: CRITICAL 3 / MAJOR 23 / MINOR 6 → 全32件を処置し文書へ反映済み
+  （処置台帳: `material/reviews/codex-round1.md`。反駁0件・修正22件・Phase 1文書へ移記10件）
+- Codex Round 2: 実行待ち（反映後の全文書を同条件で再レビュー）
+
 ## 関連リポジトリの作業状態
 
 - task-app/edu-creator: `GENERICIZATION_PLAN.md` を `docs/edu-creator-generalization-plan` ブランチにコミット済み（局長の未コミット作業には未接触）
