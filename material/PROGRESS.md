@@ -48,7 +48,9 @@
   （処置台帳: `material/reviews/codex-round6.md`。収束: 32→20→16→9→5→3件）
 - Codex Round 7（2026-07-24）: CRITICAL 0 / MAJOR 1 / MINOR 2 → 全3件を処置し文書へ反映済み
   （処置台帳: `material/reviews/codex-round7.md`。残りは表記整合のみまで収束）
-- Codex Round 8: 実行待ち（CONSENSUS-READY: YES まで往復継続）
+- Codex Round 8（2026-07-24）: CRITICAL 0 / MAJOR 3 / MINOR 0 → 全3件を処置し文書へ反映済み
+  （処置台帳: `material/reviews/codex-round8.md`。ゲート迂回系の抜け道3件を封止）
+- Codex Round 9: 実行待ち（CONSENSUS-READY: YES まで往復継続）
 
 ## 関連リポジトリの作業状態
 
