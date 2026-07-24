@@ -52,7 +52,9 @@
   （処置台帳: `material/reviews/codex-round8.md`。ゲート迂回系の抜け道3件を封止）
 - Codex Round 9（2026-07-24）: CRITICAL 0 / MAJOR 3 / MINOR 0 → 全3件を処置し文書へ反映済み
   （処置台帳: `material/reviews/codex-round9.md`）
-- Codex Round 10: 実行待ち（CONSENSUS-READY: YES まで往復継続）
+- Codex Round 10（2026-07-24）: CRITICAL 0 / MAJOR 1 / MINOR 1 → 全2件を処置し文書へ反映済み
+  （処置台帳: `material/reviews/codex-round10.md`）
+- Codex Round 11: 実行待ち（CONSENSUS-READY: YES まで往復継続）
 
 ## 関連リポジトリの作業状態
 
