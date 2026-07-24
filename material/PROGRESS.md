@@ -40,7 +40,9 @@
   （処置台帳: `material/reviews/codex-round2.md`。R1の32件中25件は解消済みと認定された）
 - Codex Round 3（2026-07-24）: CRITICAL 2 / MAJOR 8 / MINOR 6 → 全16件を処置し文書へ反映済み
   （処置台帳: `material/reviews/codex-round3.md`。収束: 32→20→16件）
-- Codex Round 4: 実行待ち（CONSENSUS-READY: YES まで往復継続）
+- Codex Round 4（2026-07-24）: CRITICAL 1 / MAJOR 7 / MINOR 1 → 全9件を処置し文書へ反映済み
+  （処置台帳: `material/reviews/codex-round4.md`。収束: 32→20→16→9件）
+- Codex Round 5: 実行待ち（CONSENSUS-READY: YES まで往復継続）
 
 ## 関連リポジトリの作業状態
 
