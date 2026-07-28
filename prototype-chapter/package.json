@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "gate:style": "tools/g3-style.sh",
+    "gate:quote": "tools/g5-quote.sh",
+    "gate": "npm run gate:style && npm run gate:quote",
+    "snapshot": "tools/make-snapshot.sh",
+    "g6": "tools/g6-run.sh"
   },
   "keywords": [],
   "author": "",
