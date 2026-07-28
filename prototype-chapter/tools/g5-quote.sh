@@ -82,9 +82,24 @@ NO_DIRECTIVE=()
 EXEMPTED=()
 for f in "${TARGETS[@]}"; do
   grep -q '^\[embedmd\]' "$f" && continue
-  # ``` で囲まれた中を落としてから免除の宣言を探す
+  # 囲みの中を落としてから免除の宣言を探す。
+  # ★ Markdown の囲みは ``` だけではない。~~~ も使えるし、行頭に空白3つまでなら
+  #   字下げしても囲みとして成立する。行頭の ``` だけを見ていた実装では、
+  #   ~~~ の中や字下げした ``` の中に書いた宣言が免除として通った
+  #   （2026-07-28 に両方とも再現させた）。
+  #   閉じ記号は開き記号と同じ文字で、同じ長さ以上でなければならない。
   if awk '
-      /^```/ { infence = !infence; next }
+      {
+        line = $0
+        sub(/^ {0,3}/, "", line)
+        if (match(line, /^(`{3,}|~{3,})/)) {
+          marker = substr(line, 1, RLENGTH)
+          char = substr(marker, 1, 1)
+          if (!infence) { infence = 1; fchar = char; flen = RLENGTH; next }
+          if (char == fchar && RLENGTH >= flen) { infence = 0; next }
+          next
+        }
+      }
       !infence && /<!-- *g5:no-listings +[^ ->]/ { found = 1 }
       END { exit !found }
     ' "$f"; then
