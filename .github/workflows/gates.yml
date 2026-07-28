@@ -1,0 +1,77 @@
+name: gates
+
+# 教材の機械ゲート（10_教材制作フロー.md §4）のうち、**今できる分だけ**を CI で常設する。
+#   G3 のうち文体チェック … textlint + preset-ja-technical-writing + prh辞書
+#   G5 引用ゲート        … embedmd。教材に貼ったコードが listings/ の実ファイルとズレていないか
+#
+# ★ このジョブが緑でも「G3 と G5 を通過した」とは言えない。
+#   G3 は5検査のうち1つしか実装していない（下のステップ名に明記）。
+#   G5 も引用範囲の過不足は見ていない（道具検証の記録 §9 / §14）。
+#   必須チェックに指定するときは、この差を承知のうえで指定すること。
+#
+# ★ embedmd -d の終了コードは 1 ではなく 2 である（実測。道具検証の記録 §3）。
+#   スクリプト側で「非ゼロなら FAIL」として扱っているので、ここでは素直に呼ぶだけでよい。
+#
+# ★★ 経緯（2026-07-28）: 非公開だった間、GitHub が
+#   「支払いに問題があるためジョブを開始できない」と返して1度も走らなかった。
+#   枠を増やす選択は取らなかった（`no-paid-infra-without-value`）。
+#   **公開へ切り替えた後は走っている。同日に3回とも成功を観測した。**
+#   よって現在このワークフローは有効であり、ローカル実行への退避は要らない。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # embedmd は Go 製。この前提が抜けると G5 が永久に赤いままになる。
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          # このリポジトリに Go の依存ファイルは無く、embedmd を1本入れるだけ。
+          # 依存の取得結果を保存する仕組みを有効にしておく意味が無いので切る。
+          cache: false
+
+      - name: embedmd を入れる
+        # 版を固定する。@latest だとリポジトリを1行も変えていないのに、
+        # 向こうが新しい版を出した日から G5 の結果が変わりうる。
+        # v1.0.0 は「差分ありのとき終了コード 2」を実測した版そのもの
+        # （道具検証の記録 §3）。上げるときは同じ実測をやり直してから上げる。
+        run: go install github.com/campoy/embedmd@v1.0.0
+
+      - name: 捨て試作の依存を入れる
+        working-directory: prototype-chapter
+        # npm ci だけを使う。npm install へ逃がすと、依存の固定ファイルが本文とズレていても
+        # 実行環境の中だけで辻褄を合わせて通ってしまい、ズレたまま気づけなくなる。
+        run: npm ci
+
+      # ★ これは G3 の全部ではない。10 §4 の G3 は5つの検査からなる。
+      #   実装済み: 文体チェック（textlint）
+      #   未実装:   構造チェック / 開始状態混入検査 / 方針同期チェック / 開発ログの存在確認
+      #   この4つは Phase 2 のゲート実装で作る。それまで、このジョブが緑でも
+      #   「G3 を通過した」とは言えない。名前を「G3」にすると通過したと読めるので付けない。
+      - name: G3のうち文体チェックのみ（残り4検査は未実装）
+        working-directory: prototype-chapter
+        run: npm run gate:style
+
+      - name: G5 引用ゲート
+        working-directory: prototype-chapter
+        env:
+          EMBEDMD: ${{ github.workspace }}/go/bin/embedmd
+        run: |
+          # setup-go は GOPATH を $HOME/go に置く。両方を見て解決する。
+          if [ ! -x "$EMBEDMD" ]; then EMBEDMD="$(go env GOPATH)/bin/embedmd"; fi
+          export EMBEDMD
+          npm run gate:quote

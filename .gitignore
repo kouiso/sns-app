@@ -8,7 +8,10 @@ android/
 *.log
 
 # 捨て試作（教材の成果物ではない）
-prototype-chapter/node_modules/
+# 末尾のスラッシュを付けると「ディレクトリのみ」の指定になり、同名のシンボリックリンクが
+# すり抜ける。実際に検証用リンクをコミットしてしまったので、スラッシュ無しにしてある。
+prototype-chapter/node_modules
+node_modules
 
 # 捨て試作の生成物（章末スナップショット）は成果物ではない
 prototype-chapter/snapshots/
