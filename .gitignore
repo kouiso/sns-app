@@ -6,3 +6,12 @@ build/
 ios/
 android/
 *.log
+
+# 捨て試作（教材の成果物ではない）
+prototype-chapter/node_modules/
+
+# 捨て試作の生成物（章末スナップショット）は成果物ではない
+prototype-chapter/snapshots/
+
+# AIエージェントの作業ツリー（リポジトリの成果物ではない）
+/.claude/worktrees/

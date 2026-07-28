@@ -1,0 +1,61 @@
+version: 1
+# sns-app 教材の禁止表現辞書（G3 文体ゲート・自作分はこのファイルのみ）
+# 12_文体・AI臭さ排除方針.md が正本。ここはその機械強制版。
+
+rules:
+  # ---- 1. 関西弁の混入（教材本文は標準語。会話文の「先生」も標準語） ----
+  - expected: ていない
+    pattern: /とらん|てへん|とんない/
+    prh: 教材本文は標準語。関西弁は会話ログ用であり教材には出さない
+  - expected: ですね
+    pattern: /やね(?![ぇー])/
+    prh: 教材本文は標準語
+  - expected: ください
+    pattern: /してや(?=[。、])/
+    prh: 教材本文は標準語
+
+  # ---- 2. 誇大表現（02 §2 で「誇大に言わない」と決めた方針の機械強制） ----
+  - expected: $1
+    pattern: /たった一行で(.+)/
+    prh: 誇大表現。実際の手数を書く
+  - expected: 簡単に
+    pattern: /誰でも簡単に|一瞬で|あっという間に/
+    prh: 誇大表現。読者の詰まりを否定する言い方を避ける
+  - expected: そのまま動く
+    pattern: /一行も直さずに動く|完全に同じコードで動く/
+    prh: 過剰な約束。ネイティブ前提の箇所は手当てが要る（02 §2）
+
+  # ---- 3. AI 構文（12 の「AI臭さ」の代表パターン） ----
+  - expected: $1
+    pattern: /それでは、(.+?)(?:して)?いきましょう/
+    prh: AI構文。定型の前置きを削る
+  - expected: $1
+    pattern: /まとめると、(.+)/
+    prh: AI構文。まとめ節を反射的に置かない
+  - expected: $1
+    pattern: /いかがでしたでしょうか。?(.*)/
+    prh: AI構文。読者に感想を求める締めを使わない
+  - expected: $1
+    pattern: /本記事では、(.+)/
+    prh: 「本記事」は教材の呼称として使わない（章・パートを使う）
+  - expected: 重要
+    pattern: /非常に重要|極めて重要/
+    prh: 強調の水増し
+
+  # ---- 4. 不採用スタック名の混入（13 §5 の方針同期チェックの機械強制） ----
+  #      2026-07-26 の構成振り直しで不採用になった技術が本文に出たら FAIL
+  - expected: Expo
+    pattern: /Capacitor/
+    prh: 不採用スタック。第1弾の教材本文には登場させない（02 §2）
+  - expected: Supabase
+    pattern: /NestJS|BullMQ|MinIO/
+    prh: 不採用スタック。第3弾の教材の題材（09）
+  - expected: Supabase Auth
+    pattern: /bcrypt/
+    prh: パスワードのハッシュ化は Supabase の責務（01 §3）
+  - expected: Expo Router
+    pattern: /TanStack Router/
+    prh: 不採用スタック。第2弾の教材の題材（09）
+  - expected: Expo Go
+    pattern: /Xcode|Android Studio/
+    prh: 学習者に開発ツールのセットアップを要求しない（01 §4）

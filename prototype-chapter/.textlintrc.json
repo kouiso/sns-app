@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "preset-ja-technical-writing": {
+      "sentence-length": { "max": 100 },
+      "max-comma": { "max": 3 },
+      "ja-no-mixed-period": { "periodMark": "。" },
+      "no-exclamation-question-mark": false,
+      "ja-no-weak-phrase": true,
+      "no-doubled-joshi": { "min_interval": 1 }
+    },
+    "prh": {
+      "rulePaths": ["./prh/sns-app.yml"]
+    }
+  }
+}
