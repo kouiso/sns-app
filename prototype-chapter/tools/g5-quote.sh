@@ -54,6 +54,26 @@ fi
 #   （g6-run.sh でも同じ罠を踏んでいる。道具検証の記録 §11）
 echo "G5 引用ゲート: ${#TARGETS[@]} 件を照合する（embedmd: ${EMBEDMD}）"
 cd "$ROOT"
+
+# ★ 引用指示が1本も無い章は、embedmd にとって「照合するものが無い」＝ 0 で終わる。
+#   つまり**指示を全部消すとこのゲートは素通りする**（2026-07-28 に再現させた）。
+#   コードを載せているのに指示を書き忘れた章が、緑のまま通ってしまう。
+#   そこで「1本も無い章」は落とす。本当に code を引かない章
+#   （読み物だけの章）は、本文へ次の1行を書いて明示的に免除する。
+#     <!-- g5:no-listings この章は listings/ から引用しない -->
+NO_DIRECTIVE=()
+for f in "${TARGETS[@]}"; do
+  grep -q '^\[embedmd\]' "$f" && continue
+  grep -q '<!-- *g5:no-listings' "$f" && continue
+  NO_DIRECTIVE+=("$f")
+done
+
+if [[ ${#NO_DIRECTIVE[@]} -gt 0 ]]; then
+  echo "G5 FAIL: 引用指示が1本も無い章がある: ${NO_DIRECTIVE[*]}" >&2
+  echo "  コードを載せるなら [embedmd]: 指示を書く。" >&2
+  echo "  引用しない章なら本文へ <!-- g5:no-listings 理由 --> を書いて免除する" >&2
+  exit 2
+fi
 # ★ 「ズレを見つけた」と「照合そのものが失敗した」を区別する。
 #   embedmd v1.0.0 は**どちらの場合も終了コード 2 を返す**（2026-07-28 に実測）。
 #   終了コードでは分けられないので、出力の形で分ける。
