@@ -89,6 +89,20 @@ cd "$ROOT"
 #   そこで「1本も無い章」は落とす。本当にコードを引かない章（読み物だけの章）は、
 #   `prototype-chapter/g5-exempt.txt`（免除簿）へ章のファイル名を書いて免除する。
 #   免除した章は必ず名前を出す。黙って外さない。
+# 免除簿は先に1回だけ解決する。EXEMPT_LIST を指定されたのに読めない場合は、
+# 「免除が無い」と扱うと章が「指示なし」に落ちて 2（ズレ側）で返る。
+# 読めないのは材料の問題なので 1 で止める。
+LIST=""
+if [[ -n "${EXEMPT_LIST:-}" ]]; then
+  if [[ ! -r "$EXEMPT_LIST" ]]; then
+    echo "G5 ERROR: 指定された免除簿が読めない: $EXEMPT_LIST" >&2
+    exit 1
+  fi
+  LIST="$EXEMPT_LIST"
+elif [[ -f "$ROOT/g5-exempt.txt" ]]; then
+  LIST="$ROOT/g5-exempt.txt"
+fi
+
 NO_DIRECTIVE=()
 EXEMPTED=()
 for f in "${TARGETS[@]}"; do
@@ -105,11 +119,26 @@ for f in "${TARGETS[@]}"; do
   #   ものなので、本文のどこかに現れた文字列で免除が決まる限り、Markdown の書式を
   #   どれだけ正確に解析しても、例として書いた文字列と本物の宣言を区別し切れない。
   #   そこで**判定の材料を本文の外へ出した**。章のファイルを何も読まずに免除が決まる。
-  if [[ -n "${EXEMPT_LIST:-}" ]] || [[ -f "$ROOT/g5-exempt.txt" ]]; then
-    LIST="${EXEMPT_LIST:-$ROOT/g5-exempt.txt}"
-    if grep -v '^#' "$LIST" | grep -v '^[[:space:]]*$' | grep -qxF "$(basename "$f")"; then
+  if [[ -n "$LIST" ]]; then
+    # 1行 = 「章のファイル名 <TAB> 理由」。理由が空の行は免除として認めない。
+    # 名前だけで外せると、理由を誰も書かないまま章がゲートから消える。
+    if awk -F'\t' -v want="$(basename "$f")" '
+        /^[[:space:]]*#/ { next }
+        /^[[:space:]]*$/ { next }
+        $1 == want {
+          reason = $2
+          gsub(/^[[:space:]]+|[[:space:]]+$/, "", reason)
+          if (reason != "") { ok = 1 }
+          else { bad = 1 }
+        }
+        END { if (bad && !ok) exit 2; exit !ok }
+      ' "$LIST"; then
       EXEMPTED+=("$f")
       continue
+    elif [[ $? -eq 2 ]]; then
+      echo "G5 ERROR: 免除簿に理由の無い行がある: $(basename "$f")" >&2
+      echo "  1行に「章のファイル名 <TAB> 理由」を書くこと" >&2
+      exit 1
     fi
   fi
   NO_DIRECTIVE+=("$f")
