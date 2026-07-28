@@ -49,6 +49,20 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
   exit 1
 fi
 
+# ★ 引数で渡されたファイルが読めるかを、判定に入る前に確かめる。
+#   ここを飛ばすと、存在しないファイルが後段の「引用指示が無い章」に落ちて
+#   終了コード 2（＝引用のズレ）で報告される。ズレは1件も無いのに、である
+#   （2026-07-28 に再現させた）。読めないのは材料の問題なので 1 で返す。
+UNREADABLE=()
+for f in "${TARGETS[@]}"; do
+  [[ -r "$f" ]] || UNREADABLE+=("$f")
+done
+if [[ ${#UNREADABLE[@]} -gt 0 ]]; then
+  echo "G5 ERROR: 読めない章がある: ${UNREADABLE[*]}" >&2
+  echo "  ズレの有無は判定していない。パスを確かめる" >&2
+  exit 1
+fi
+
 # ★ 変数を全角文字の直前に置くときは必ず ${} で囲む。
 #   $EMBEDMD） と書くと bash が全角の一部を変数名に取り込んで「未割り当て」で落ちる
 #   （g6-run.sh でも同じ罠を踏んでいる。道具検証の記録 §11）
@@ -61,17 +75,35 @@ cd "$ROOT"
 #   そこで「1本も無い章」は落とす。本当に code を引かない章
 #   （読み物だけの章）は、本文へ次の1行を書いて明示的に免除する。
 #     <!-- g5:no-listings この章は listings/ から引用しない -->
+#   免除は「本文の地の文に置かれた1行」だけを認める。コード例の中に同じ文字列が
+#   出てきても免除にしない（教材はコードを載せるものなので、例として書いた文字列で
+#   ゲートが外れると気づけない）。免除した章は必ず名前を出す。黙って外さない。
 NO_DIRECTIVE=()
+EXEMPTED=()
 for f in "${TARGETS[@]}"; do
   grep -q '^\[embedmd\]' "$f" && continue
-  grep -q '<!-- *g5:no-listings' "$f" && continue
+  # ``` で囲まれた中を落としてから免除の宣言を探す
+  if awk '
+      /^```/ { infence = !infence; next }
+      !infence && /<!-- *g5:no-listings +[^ ->]/ { found = 1 }
+      END { exit !found }
+    ' "$f"; then
+    EXEMPTED+=("$f")
+    continue
+  fi
   NO_DIRECTIVE+=("$f")
 done
+
+if [[ ${#EXEMPTED[@]} -gt 0 ]]; then
+  echo "G5 注意: 引用の照合を免除した章がある: ${EXEMPTED[*]}"
+  echo "  この章のコードは誰も照合していない。免除の理由を人が読んで妥当か判断すること"
+fi
 
 if [[ ${#NO_DIRECTIVE[@]} -gt 0 ]]; then
   echo "G5 FAIL: 引用指示が1本も無い章がある: ${NO_DIRECTIVE[*]}" >&2
   echo "  コードを載せるなら [embedmd]: 指示を書く。" >&2
   echo "  引用しない章なら本文へ <!-- g5:no-listings 理由 --> を書いて免除する" >&2
+  echo "  （理由は必須。コード例の中に書いても免除にならない）" >&2
   exit 2
 fi
 # ★ 「ズレを見つけた」と「照合そのものが失敗した」を区別する。
