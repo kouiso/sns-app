@@ -10,6 +10,10 @@
 # ★ embedmd -d の終了コードは 1 ではなく 2 である（実測。道具検証の記録 §3）。
 #   判定を「exit 1 なら FAIL」と書くとズレを見逃すため、非ゼロを FAIL として扱う。
 #
+# ★ この実装は素の `embedmd -d` で比較しており、**整形の違いだけで FAIL になる**。
+#   A8 の3（整形後の文字列で比較する）と食い違っている。捨て試作では整形の揺れが
+#   起きなかったため表面化していないだけ。本番の実装前に決める（16 B30）。
+#
 # ★ このゲートが緑でも、引用範囲が足りているかは分からない（実測。道具検証の記録 §9）。
 #   import を範囲から外していた章でも最後まで exit 0 を返し続けた。
 #   G5 の緑を「コードが正しい」ことの証拠に使わない。
@@ -27,7 +31,7 @@ if [[ -z "$EMBEDMD" ]]; then
   elif [[ -x "${GOPATH:-$HOME/go}/bin/embedmd" ]]; then
     EMBEDMD="${GOPATH:-$HOME/go}/bin/embedmd"
   else
-    echo "FAIL: embedmd が見つからない。go install github.com/campoy/embedmd@latest で入れるか、" >&2
+    echo "FAIL: embedmd が見つからない。go install github.com/campoy/embedmd@v1.0.0 で入れるか、" >&2
     echo "      EMBEDMD=/path/to/embedmd を環境変数で渡すこと" >&2
     exit 1
   fi
@@ -53,15 +57,25 @@ fi
 #   ここを飛ばすと、存在しないファイルが後段の「引用指示が無い章」に落ちて
 #   終了コード 2（＝引用のズレ）で報告される。ズレは1件も無いのに、である
 #   （2026-07-28 に再現させた）。読めないのは材料の問題なので 1 で返す。
+# ★ 後段で `cd "$ROOT"` する。相対パスのまま cd すると、リポジトリ直下から
+#   `prototype-chapter/chapter.md` と渡された時に `prototype-chapter/prototype-chapter/...`
+#   を探しにいく。読めるかの検査は通るのに、そのあと「指示が無い章」に落ちて
+#   終了コード 2 を返していた（2026-07-28 に再現）。ここで絶対パスへ直す。
 UNREADABLE=()
+ABS=()
 for f in "${TARGETS[@]}"; do
-  [[ -r "$f" ]] || UNREADABLE+=("$f")
+  if [[ -r "$f" ]]; then
+    if [[ "$f" = /* ]]; then ABS+=("$f"); else ABS+=("$PWD/$f"); fi
+  else
+    UNREADABLE+=("$f")
+  fi
 done
 if [[ ${#UNREADABLE[@]} -gt 0 ]]; then
   echo "G5 ERROR: 読めない章がある: ${UNREADABLE[*]}" >&2
   echo "  ズレの有無は判定していない。パスを確かめる" >&2
   exit 1
 fi
+TARGETS=("${ABS[@]}")
 
 # ★ 変数を全角文字の直前に置くときは必ず ${} で囲む。
 #   $EMBEDMD） と書くと bash が全角の一部を変数名に取り込んで「未割り当て」で落ちる
@@ -72,39 +86,31 @@ cd "$ROOT"
 # ★ 引用指示が1本も無い章は、embedmd にとって「照合するものが無い」＝ 0 で終わる。
 #   つまり**指示を全部消すとこのゲートは素通りする**（2026-07-28 に再現させた）。
 #   コードを載せているのに指示を書き忘れた章が、緑のまま通ってしまう。
-#   そこで「1本も無い章」は落とす。本当に code を引かない章
-#   （読み物だけの章）は、本文へ次の1行を書いて明示的に免除する。
-#     <!-- g5:no-listings この章は listings/ から引用しない -->
-#   免除は「本文の地の文に置かれた1行」だけを認める。コード例の中に同じ文字列が
-#   出てきても免除にしない（教材はコードを載せるものなので、例として書いた文字列で
-#   ゲートが外れると気づけない）。免除した章は必ず名前を出す。黙って外さない。
+#   そこで「1本も無い章」は落とす。本当にコードを引かない章（読み物だけの章）は、
+#   `prototype-chapter/g5-exempt.txt`（免除簿）へ章のファイル名を書いて免除する。
+#   免除した章は必ず名前を出す。黙って外さない。
 NO_DIRECTIVE=()
 EXEMPTED=()
 for f in "${TARGETS[@]}"; do
-  grep -q '^\[embedmd\]' "$f" && continue
-  # 囲みの中を落としてから免除の宣言を探す。
-  # ★ Markdown の囲みは ``` だけではない。~~~ も使えるし、行頭に空白3つまでなら
-  #   字下げしても囲みとして成立する。行頭の ``` だけを見ていた実装では、
-  #   ~~~ の中や字下げした ``` の中に書いた宣言が免除として通った
-  #   （2026-07-28 に両方とも再現させた）。
-  #   閉じ記号は開き記号と同じ文字で、同じ長さ以上でなければならない。
-  if awk '
-      {
-        line = $0
-        sub(/^ {0,3}/, "", line)
-        if (match(line, /^(`{3,}|~{3,})/)) {
-          marker = substr(line, 1, RLENGTH)
-          char = substr(marker, 1, 1)
-          if (!infence) { infence = 1; fchar = char; flen = RLENGTH; next }
-          if (char == fchar && RLENGTH >= flen) { infence = 0; next }
-          next
-        }
-      }
-      !infence && /<!-- *g5:no-listings +[^ ->]/ { found = 1 }
-      END { exit !found }
-    ' "$f"; then
-    EXEMPTED+=("$f")
-    continue
+  # ★ 書式を丸ごと見る。`[embedmd]` とだけ書いた壊れた行を指示として数えると、
+  #   embedmd 側は指示ゼロとみなして 0 で終わり、このゲートが PASS を出す。
+  #   「指示が1本も無い章を落とす」ために足した検査が、逆に偽の緑を作っていた
+  #   （2026-07-28 に再現）。正しい書式は `[embedmd]:# (パス ...)` である。
+  grep -qE '^\[embedmd\]:# *\(' "$f" && continue
+  # 免除は**章の本文では宣言しない**。別ファイル（免除簿）に章の名前を書く。
+  #
+  # ★ 以前は本文へ <!-- g5:no-listings 理由 --> と書く形にしていた。これは3回続けて
+  #   迂回された（コード例の中／`~~~` の囲み／字下げした囲み／閉じ記号の判定漏れ）。
+  #   原因は「本文の中に免除の合図を置いた」ことそのものである。教材はコードを載せる
+  #   ものなので、本文のどこかに現れた文字列で免除が決まる限り、Markdown の書式を
+  #   どれだけ正確に解析しても、例として書いた文字列と本物の宣言を区別し切れない。
+  #   そこで**判定の材料を本文の外へ出した**。章のファイルを何も読まずに免除が決まる。
+  if [[ -n "${EXEMPT_LIST:-}" ]] || [[ -f "$ROOT/g5-exempt.txt" ]]; then
+    LIST="${EXEMPT_LIST:-$ROOT/g5-exempt.txt}"
+    if grep -v '^#' "$LIST" | grep -v '^[[:space:]]*$' | grep -qxF "$(basename "$f")"; then
+      EXEMPTED+=("$f")
+      continue
+    fi
   fi
   NO_DIRECTIVE+=("$f")
 done
@@ -116,9 +122,8 @@ fi
 
 if [[ ${#NO_DIRECTIVE[@]} -gt 0 ]]; then
   echo "G5 FAIL: 引用指示が1本も無い章がある: ${NO_DIRECTIVE[*]}" >&2
-  echo "  コードを載せるなら [embedmd]: 指示を書く。" >&2
-  echo "  引用しない章なら本文へ <!-- g5:no-listings 理由 --> を書いて免除する" >&2
-  echo "  （理由は必須。コード例の中に書いても免除にならない）" >&2
+  echo "  コードを載せるなら [embedmd]:# (パス ...) の形で指示を書く。" >&2
+  echo "  引用しない章なら prototype-chapter/g5-exempt.txt へ章のファイル名と理由を書く" >&2
   exit 2
 fi
 # ★ 「ズレを見つけた」と「照合そのものが失敗した」を区別する。
@@ -143,6 +148,13 @@ for f in "${TARGETS[@]}"; do
 
   [[ -n "$OUT" ]] && printf '%s\n' "$OUT"
   [[ $ST -eq 0 ]] && continue
+
+  # 出力が1文字も無いのに非ゼロで終わったのは、差分ではなく道具側の異常
+  # （強制終了・クラッシュ）。ズレと呼ぶと教材を直しにいくことになる。
+  if [[ -z "$OUT" ]]; then
+    BROKEN+=("$f")
+    continue
+  fi
 
   # 差分として説明できない行が1本でもあれば、照合が成立していない
   if grep -qv '^[ @+-]' <<<"$(grep -v '^$' <<<"$OUT")"; then
