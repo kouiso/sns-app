@@ -37,13 +37,18 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
+          # このリポジトリに Go の依存ファイルは無く、embedmd を1本入れるだけ。
+          # 依存の取得結果を保存する仕組みを有効にしておく意味が無いので切る。
+          cache: false
 
       - name: embedmd を入れる
         run: go install github.com/campoy/embedmd@latest
 
       - name: 捨て試作の依存を入れる
         working-directory: prototype-chapter
-        run: npm ci || npm install
+        # npm ci だけを使う。npm install へ逃がすと、依存の固定ファイルが本文とズレていても
+        # 実行環境の中だけで辻褄を合わせて通ってしまい、ズレたまま気づけなくなる。
+        run: npm ci
 
       - name: G3 文体ゲート
         working-directory: prototype-chapter
