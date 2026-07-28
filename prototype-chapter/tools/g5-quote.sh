@@ -54,10 +54,28 @@ fi
 #   （g6-run.sh でも同じ罠を踏んでいる。道具検証の記録 §11）
 echo "G5 引用ゲート: ${#TARGETS[@]} 件を照合する（embedmd: ${EMBEDMD}）"
 cd "$ROOT"
-if "$EMBEDMD" -d "${TARGETS[@]}"; then
+# ★ 「ズレを見つけた」と「照合そのものが失敗した」を区別する。
+#   embedmd v1.0.0 は**どちらの場合も終了コード 2 を返す**（2026-07-28 に実測）。
+#   ズレ:   出力が差分の形（`@@ -1,7 +1,7 @@` で始まる行を含む）
+#   失敗:   出力が `ファイル名:行番号: メッセージ` の形（読めない・貼る先が無い等）
+#   終了コードだけで分けようとすると必ず失敗するので、出力の形で分ける。
+#   ここを一緒くたに「ズレ」と呼ぶと、道具が壊れているだけの時に
+#   教材を直しにいくことになり、直す場所を間違える。
+set +e
+OUTPUT="$("$EMBEDMD" -d "${TARGETS[@]}" 2>&1)"
+STATUS=$?
+set -e
+
+[[ -n "$OUTPUT" ]] && printf '%s\n' "$OUTPUT"
+
+if [[ $STATUS -eq 0 ]]; then
   echo "G5 PASS（ただし引用範囲の過不足は見ていない）"
-else
+elif grep -q '^@@' <<<"$OUTPUT"; then
   echo "G5 FAIL: 教材のコードと listings/ の実ファイルがズレている" >&2
   echo "  直すには embedmd -w で教材側を実ファイルに合わせる" >&2
   exit 2
+else
+  echo "G5 ERROR: 照合そのものが失敗した（embedmd の終了コード ${STATUS}）" >&2
+  echo "  ズレの有無は判定できていない。上の出力を読んで原因を直す" >&2
+  exit 1
 fi

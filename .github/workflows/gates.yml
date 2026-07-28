@@ -42,7 +42,11 @@ jobs:
           cache: false
 
       - name: embedmd を入れる
-        run: go install github.com/campoy/embedmd@latest
+        # 版を固定する。@latest だとリポジトリを1行も変えていないのに、
+        # 向こうが新しい版を出した日から G5 の結果が変わりうる。
+        # v1.0.0 は「差分ありのとき終了コード 2」を実測した版そのもの
+        # （道具検証の記録 §3）。上げるときは同じ実測をやり直してから上げる。
+        run: go install github.com/campoy/embedmd@v1.0.0
 
       - name: 捨て試作の依存を入れる
         working-directory: prototype-chapter
