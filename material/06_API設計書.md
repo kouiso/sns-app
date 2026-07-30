@@ -23,11 +23,26 @@
 
 1. **データアクセス一覧**（画面ごとに、どのテーブルへどの操作をするか。
    users / posts / follows / notifications / bookmarks / hashtags）
+   - **Round 12 追加**: 全 insert 操作で `gen_random_uuid()` / `now()` の DB default に頼むか、
+     クライアント側で生成するかの契約を明記
 2. **RLS ポリシー定義**（05 §5 の方針を、実際の SQL として書き下す。本書の中心）
+   - **Round 12 追加**: `notifications` の `read_at` 列のみ UPDATE 可、他列は revoke する方針。
+     `posts` の DELETE 全面拒否・`deleted_at` 更新のみ許可する方針。各ポリシーが Supabase クライアント SDK
+     から呼ばれるときの `auth.uid()` 渡し方
 3. **DB トリガー関数の仕様**（`auth.users` → `users` の行作成、通知行の作成）
+   - **Round 12 追加**: `handle_new_user()` 関数で `security definer set search_path = ''` を使い、
+     `raw_user_meta_data` から `username` / `display_name` / `updated_at` を明示的に挿入する契約。
+     username 競合時の挙動を含む
 4. **Realtime の購読契約**（どのテーブルの何を購読し、何を画面に反映するか）
+   - **Round 12 追加**: 購読対象テーブルを `supabase_realtime` publication に追加する SQL、
+     購読開始前の初回 fetch、再接続後の再 fetch、重複排除の実装
 5. **Storage のパス設計とポリシー**（誰がどこにアップロードでき、誰が読めるか）
+   - **Round 12 追加**: bucket レベルの `allowed_mime_types` / `file_size_limit` 制限、
+     `storage.objects` の RLS ポリシー。クライアント側検証はサーバー側制約の補助に過ぎないことを明記
 6. エラーハンドリングの共通方針（Supabase が返すエラーをどう画面に出すか）
+7. **API キーの取り扱い契約**（Round 12 追加）
+   - publishable key のみを `supabaseClient` 初期化に使い、secret / `service_role` キーを
+     クライアントに埋め込まないための環境変数・CI・ビルドフロー設計
 
 ## 参照元
 
