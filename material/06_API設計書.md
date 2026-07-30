@@ -104,10 +104,76 @@ CREATE POLICY "notifications_update_read_at" ON notifications FOR UPDATE TO auth
   WITH CHECK (recipient_id = auth.uid());
 ```
 
-### 2.4 他テーブル（TODO: 03/05承認後に全部）
+### 2.4 post_media
 
-`post_media`, `likes`, `follows`, `hashtags`, `post_hashtags`, `bookmarks` の
-RLS ポリシーは 03/05 承認後に追加する。
+```sql
+CREATE POLICY "post_media_select_all" ON post_media FOR SELECT USING (true);
+CREATE POLICY "post_media_insert_own" ON post_media FOR INSERT TO authenticated
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM posts WHERE posts.id = post_media.post_id AND posts.author_id = auth.uid()
+  ));
+CREATE POLICY "post_media_update_own" ON post_media FOR UPDATE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM posts WHERE posts.id = post_media.post_id AND posts.author_id = auth.uid()
+  ));
+CREATE POLICY "post_media_delete_own" ON post_media FOR DELETE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM posts WHERE posts.id = post_media.post_id AND posts.author_id = auth.uid()
+  ));
+```
+
+### 2.5 likes
+
+```sql
+CREATE POLICY "likes_select_all" ON likes FOR SELECT USING (true);
+CREATE POLICY "likes_insert_own" ON likes FOR INSERT TO authenticated
+  WITH CHECK (user_id = auth.uid());
+CREATE POLICY "likes_delete_own" ON likes FOR DELETE TO authenticated
+  USING (user_id = auth.uid());
+```
+
+### 2.6 follows
+
+```sql
+CREATE POLICY "follows_select_all" ON follows FOR SELECT USING (true);
+CREATE POLICY "follows_insert_own" ON follows FOR INSERT TO authenticated
+  WITH CHECK (follower_id = auth.uid());
+CREATE POLICY "follows_delete_own" ON follows FOR DELETE TO authenticated
+  USING (follower_id = auth.uid());
+```
+
+### 2.7 hashtags
+
+```sql
+CREATE POLICY "hashtags_select_all" ON hashtags FOR SELECT USING (true);
+CREATE POLICY "hashtags_insert_auth" ON hashtags FOR INSERT TO authenticated
+  WITH CHECK (true);
+```
+
+### 2.8 post_hashtags
+
+```sql
+CREATE POLICY "post_hashtags_select_all" ON post_hashtags FOR SELECT USING (true);
+CREATE POLICY "post_hashtags_insert_own" ON post_hashtags FOR INSERT TO authenticated
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM posts WHERE posts.id = post_hashtags.post_id AND posts.author_id = auth.uid()
+  ));
+CREATE POLICY "post_hashtags_delete_own" ON post_hashtags FOR DELETE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM posts WHERE posts.id = post_hashtags.post_id AND posts.author_id = auth.uid()
+  ));
+```
+
+### 2.9 bookmarks
+
+```sql
+CREATE POLICY "bookmarks_select_own" ON bookmarks FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
+CREATE POLICY "bookmarks_insert_own" ON bookmarks FOR INSERT TO authenticated
+  WITH CHECK (user_id = auth.uid());
+CREATE POLICY "bookmarks_delete_own" ON bookmarks FOR DELETE TO authenticated
+  USING (user_id = auth.uid());
+```
 
 ## 3. DB トリガー関数の仕様
 
@@ -145,6 +211,97 @@ CREATE TRIGGER on_auth_user_created
 `likes`, `follows`, `posts`（リプライ/リポスト）の変更を検知して
 `notifications` 行を作るトリガー。詳細は 05 §3 未解決課題 1 と連動。
 
+#### likes → like 通知
+
+```sql
+CREATE OR REPLACE FUNCTION public.handle_like_notification()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  post_author uuid;
+BEGIN
+  SELECT author_id INTO post_author FROM public.posts WHERE id = new.post_id;
+  IF post_author IS NOT NULL AND post_author <> new.user_id THEN
+    INSERT INTO public.notifications (recipient_id, actor_id, type, post_id)
+    VALUES (post_author, new.user_id, 'like', new.post_id);
+  END IF;
+  RETURN new;
+END;
+$$;
+
+CREATE TRIGGER on_like_created
+  AFTER INSERT ON public.likes
+  FOR EACH ROW EXECUTE FUNCTION public.handle_like_notification();
+```
+
+#### posts → reply / repost 通知
+
+```sql
+CREATE OR REPLACE FUNCTION public.handle_post_notification()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  reply_author uuid;
+  repost_author uuid;
+BEGIN
+  IF new.reply_to_post_id IS NOT NULL THEN
+    SELECT author_id INTO reply_author FROM public.posts WHERE id = new.reply_to_post_id;
+    IF reply_author IS NOT NULL AND reply_author <> new.author_id THEN
+      INSERT INTO public.notifications (recipient_id, actor_id, type, post_id)
+      VALUES (reply_author, new.author_id, 'reply', new.id);
+    END IF;
+  END IF;
+
+  IF new.repost_of_post_id IS NOT NULL THEN
+    SELECT author_id INTO repost_author FROM public.posts WHERE id = new.repost_of_post_id;
+    IF repost_author IS NOT NULL AND repost_author <> new.author_id THEN
+      INSERT INTO public.notifications (recipient_id, actor_id, type, post_id)
+      VALUES (repost_author, new.author_id, 'repost', new.id);
+    END IF;
+  END IF;
+
+  RETURN new;
+END;
+$$;
+
+CREATE TRIGGER on_post_created
+  AFTER INSERT ON public.posts
+  FOR EACH ROW EXECUTE FUNCTION public.handle_post_notification();
+```
+
+#### follows → follow 通知
+
+```sql
+CREATE OR REPLACE FUNCTION public.handle_follow_notification()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  IF new.follower_id <> new.followee_id THEN
+    INSERT INTO public.notifications (recipient_id, actor_id, type)
+    VALUES (new.followee_id, new.follower_id, 'follow');
+  END IF;
+  RETURN new;
+END;
+$$;
+
+CREATE TRIGGER on_follow_created
+  AFTER INSERT ON public.follows
+  FOR EACH ROW EXECUTE FUNCTION public.handle_follow_notification();
+```
+
+#### UC1「新規投稿のフォロワー通知」を追加するか
+
+01_要件定義書.md FR9 には「いいね・リプライ・リポスト・フォロー」の4種類のみ記載。
+UC1「新規投稿のフォロワー通知」を `notifications.type` に追加する場合は
+`new_post` 種別を追加し、上記 `handle_post_notification()` に
+フォロワー一覧をループして通知を挿入する処理を追加する。B7 で確定。
+
 ## 4. Realtime の購読契約
 
 対象テーブルを `supabase_realtime` publication に追加するマイグレーション：
@@ -163,6 +320,79 @@ ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
 
 アプリ側では購読開始前に初回 `select`、再接続後に再 `select`、
 受信時に重複排除（同じ `id` / `created_at` の二重配信を無視）を行う。
+
+## 5. Storage のパス設計とポリシー
+
+### 5.1 bucket 制約
+
+```sql
+-- bucket レベルで MIME タイプとファイルサイズを制限
+-- Supabase Dashboard またはマイグレーションで設定
+insert into storage.buckets (id, name, public, allowed_mime_types, file_size_limit)
+values ('post-images', 'post-images', true, '{"image/jpeg", "image/png"}', 5242880);
+```
+
+### 5.2 パス設計
+
+- `{auth.uid}/{post_id}/{random-uuid}.{ext}`
+- `auth.uid` によるユーザー分離は必須。
+- `post_id` はまだ存在しない新規投稿の場合、クライアント側で生成した UUID を使う
+  （05_DB 設計書の default `gen_random_uuid()` と合わせる）。
+
+### 5.3 RLS ポリシー
+
+```sql
+CREATE POLICY "storage_select_all" ON storage.objects FOR SELECT
+  USING (bucket_id = 'post-images');
+
+CREATE POLICY "storage_insert_own" ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'post-images'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+CREATE POLICY "storage_delete_own" ON storage.objects FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'post-images'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+```
+
+## 6. エラーハンドリングの共通方針
+
+Supabase SDK が返すエラーを画面に出す方針。仮案：
+
+| エラーコード | 画面表示 |
+|---|---|
+| `23505` （unique violation）| その値はすでに使われています |
+| `23503` （foreign key violation）| 参照先が見つかりません。再度お試しください |
+| `42501` （RLS 拒否）| 権限がありません（内部知識で補完しない） |
+| `AuthApiError: Email not confirmed` | メール確認を完了してください |
+
+詳細は 04_詳細設計書.md 承認後に確定。
+
+## 7. API キーの取り扱い契約
+
+### 7.1 許可されるキー
+
+- `publishable key`（`sb_publishable_...`）のみをアプリに埋め込む。
+- `anon` キー（レガシー版 publishable）も同様に安全。
+
+### 7.2 禁止されるキー
+
+- `secret key`（`sb_secret_...`）
+- `service_role` キー（レガシー版 secret）
+
+これらは `BYPASSRLS` 属性を持ち、RLS を丸ごと迂回する。アプリに埋めると
+改造クライアントから全データを読み書き可能になる。
+
+### 7.3 環境変数と CI
+
+- `.env` はリポジトリに含めず、`.env.example` には `EXPO_PUBLIC_SUPABASE_URL`
+  と `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` のみを置く。
+- EAS Build の secrets に publishable key を登録する。
+- 公開リポジトリでは、publishable key ですら build artifact から読めることを
+  学習者に正直に示す（Round 12 指摘）。
 
 ## 参照元
 
