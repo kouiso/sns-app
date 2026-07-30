@@ -31,7 +31,7 @@
 | 01_要件定義書 | ドラフト・局長レビュー待ち | 前提を「単体でも始められる」に改訂済み（2026-07-24局長決定）。**Round 12 反映**: パフォーマンス200ms目安を見直し中、FR9にRealtime再取得、FR1にReact Nativeセッションライフサイクル、前提にExpo Go/development buildの注意を追記 |
 | 02_技術選定書 | ドラフト・局長レビュー待ち | **Expo (React Native) + Supabase**（2026-07-26局長決定で振り直し）。**Round 12 反映**: 既知の限界に R6 SDK版/Expo Goの食い違い、R7 development buildの必要性を追加。未決定事項に B16・B17・B18 を追加 |
 | 03_基本設計書 | ドラフト・局長レビュー待ち | **Round 12 反映**: UC1/UC2にRealtime再取得、UC3にdevelopment buildの必要性、SupabaseクライアントのReact Nativeライフサイクルを補足 |
-| 04_詳細設計書 | 未着手（Phase 1） | 着手条件: 03承認。**Round 12 反映**: 目次に deep link/development build、Realtime publication/再取得、RLS 列単位権限、SDK 版選択を追加。内容本体は 03 承認後に着手 |
+| 04_詳細設計書 | 未着手（Phase 1）→ ドラフト先行版 | 着手条件: 03承認。**Round 12 反映**: 目次に deep link/development build、Realtime publication/再取得、RLS 列単位権限、SDK 版選択を追加。**03 承認前の仮案として 7 画面の詳細設計とセクション 2-7 を追加** |
 | 05_DB設計書 | ドラフト・局長レビュー待ち | **Round 12 反映**: RLS節にキー取り違え防止、UUID/created_atのDB default追加、Realtime publication設定を新設 |
 | 06_API設計書 | 未着手（Phase 1）→ ドラフト先行版 | 着手条件: 03+05承認。**Round 12 反映**: 目次に DB default、RLS 列単位権限、`auth.users` トリガー、Realtime 再取得、Storage bucket 制限、API キー契約を追加。**03/05 承認前の仮案として RLS SQL・トリガー・Realtime publication の先行記述を追加** |
 | 07_開発スケジュール | ドラフト・局長レビュー待ち | **Round 12 反映**: 実装フェーズ引き継ぎ条件に Expo SDK 版/development build、Storage bucket 制限、カスタム SMTP 捨て試作を追加 |
