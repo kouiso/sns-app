@@ -33,7 +33,7 @@
 | 03_基本設計書 | ドラフト・局長レビュー待ち | **Round 12 反映**: UC1/UC2にRealtime再取得、UC3にdevelopment buildの必要性、SupabaseクライアントのReact Nativeライフサイクルを補足 |
 | 04_詳細設計書 | 未着手（Phase 1） | 着手条件: 03承認。**Round 12 反映**: 目次に deep link/development build、Realtime publication/再取得、RLS 列単位権限、SDK 版選択を追加。内容本体は 03 承認後に着手 |
 | 05_DB設計書 | ドラフト・局長レビュー待ち | **Round 12 反映**: RLS節にキー取り違え防止、UUID/created_atのDB default追加、Realtime publication設定を新設 |
-| 06_API設計書 | 未着手（Phase 1） | 着手条件: 03+05承認。**Round 12 反映**: 目次に DB default、RLS 列単位権限、`auth.users` トリガー、Realtime 再取得、Storage bucket 制限、API キー契約を追加。内容本体は 03+05 承認後に着手 |
+| 06_API設計書 | 未着手（Phase 1）→ ドラフト先行版 | 着手条件: 03+05承認。**Round 12 反映**: 目次に DB default、RLS 列単位権限、`auth.users` トリガー、Realtime 再取得、Storage bucket 制限、API キー契約を追加。**03/05 承認前の仮案として RLS SQL・トリガー・Realtime publication の先行記述を追加** |
 | 07_開発スケジュール | ドラフト・局長レビュー待ち | **Round 12 反映**: 実装フェーズ引き継ぎ条件に Expo SDK 版/development build、Storage bucket 制限、カスタム SMTP 捨て試作を追加 |
 | 08_テスト計画書 | 未着手（Phase 1） | 着手条件: 04+06確定。**Round 12 反映**: 目次の200ms測定条件を「DB側EXPLAIN ANALYZEとクライアント体感時間の分離」へ見直し。実機確認手順に SDK 版/development build を追加 |
 | 09_教材シリーズロードマップ | ドラフト・局長レビュー待ち | |

@@ -44,6 +44,126 @@
    - publishable key のみを `supabaseClient` 初期化に使い、secret / `service_role` キーを
      クライアントに埋め込まないための環境変数・CI・ビルドフロー設計
 
+## 1. データアクセス一覧
+
+本書は 03/05 のドラフト版に基づく先行案。03/05 の局長承認後に最終確定する。
+
+| 画面 | 読み取り | 挿入 | 更新 | 削除 |
+|---|---|---|---|---|
+| ログイン | `auth.users`（Supabase Auth） | — | — | — |
+| 新規登録 | — | `auth.users`（Supabase Auth） | — | — |
+| タイムライン | `posts`, `users`, `post_media`, `likes`, `follows` | `posts`, `post_media` | `posts`（`deleted_at` のみ） | — |
+| 投稿作成 | `posts`（リプライ/リポスト元） | `posts`, `post_media`, `post_hashtags`, `hashtags` | — | — |
+| 投稿詳細 | `posts`, `post_media`, `likes`, `users` | `likes`, `posts`（リプライ） | — | `posts`（`deleted_at`） |
+| プロフィール | `users`, `posts` | — | `users`（自分のみ） | — |
+| フォロー中一覧 | `users`, `follows` | `follows`（自分が follower） | — | `follows`（自分が follower） |
+| 通知 | `notifications`, `users` | — | `notifications`（`read_at` のみ） | — |
+| 検索 | `posts`, `users`, `hashtags` | — | — | — |
+| ブックマーク | `bookmarks`, `posts` | `bookmarks` | — | `bookmarks` |
+
+## 2. RLS ポリシー定義
+
+05 §5 の方針を SQL として書き下す。以下は 03/05 ドラフトに基づく先行案。
+
+### 2.1 users
+
+```sql
+-- 自分の行だけを更新・削除できる。SELECT は全員。
+-- INSERT は auth.users 作成トリガー経由のため、クライアントから直接行わない。
+CREATE POLICY "users_select_all" ON users FOR SELECT USING (true);
+CREATE POLICY "users_update_own" ON users FOR UPDATE TO authenticated
+  USING (id = auth.uid());
+```
+
+### 2.2 posts
+
+```sql
+-- 削除は誰にも許可しない。削除相当の操作は `deleted_at` を立てる UPDATE。
+CREATE POLICY "posts_select_all" ON posts FOR SELECT
+  USING (deleted_at IS NULL);
+CREATE POLICY "posts_insert_own" ON posts FOR INSERT TO authenticated
+  WITH CHECK (author_id = auth.uid());
+CREATE POLICY "posts_update_own" ON posts FOR UPDATE TO authenticated
+  USING (author_id = auth.uid());
+-- DELETE ポリシーは作成しない。DELETE 自体を拒否する。
+```
+
+### 2.3 notifications
+
+```sql
+-- SELECT は本人のみ。UPDATE 可能な列を read_at のみにするため、
+-- まず authenticated から UPDATE を revoke してから read_at 列のみ GRANT。
+CREATE POLICY "notifications_select_own" ON notifications FOR SELECT TO authenticated
+  USING (recipient_id = auth.uid());
+
+REVOKE UPDATE ON notifications FROM authenticated;
+GRANT UPDATE (read_at) ON notifications TO authenticated;
+
+CREATE POLICY "notifications_update_read_at" ON notifications FOR UPDATE TO authenticated
+  USING (recipient_id = auth.uid())
+  WITH CHECK (recipient_id = auth.uid());
+```
+
+### 2.4 他テーブル（TODO: 03/05承認後に全部）
+
+`post_media`, `likes`, `follows`, `hashtags`, `post_hashtags`, `bookmarks` の
+RLS ポリシーは 03/05 承認後に追加する。
+
+## 3. DB トリガー関数の仕様
+
+### 3.1 auth.users → users の行作成
+
+```sql
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  INSERT INTO public.users (id, username, display_name, updated_at)
+  VALUES (
+    new.id,
+    new.raw_user_meta_data ->> 'username',
+    COALESCE(new.raw_user_meta_data ->> 'display_name', new.raw_user_meta_data ->> 'username'),
+    now()
+  );
+  RETURN new;
+END;
+$$;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+```
+
+**注意**: `username` が `raw_user_meta_data` に含まれない場合、トリガーは失敗し
+新規登録自体をブロックする。B20 で username を登録画面で必須とするか、
+トリガー側で仮の値を作るかを確定するまで、この SQL は仮案とする。
+
+### 3.2 通知行の作成
+
+`likes`, `follows`, `posts`（リプライ/リポスト）の変更を検知して
+`notifications` 行を作るトリガー。詳細は 05 §3 未解決課題 1 と連動。
+
+## 4. Realtime の購読契約
+
+対象テーブルを `supabase_realtime` publication に追加するマイグレーション：
+
+```sql
+BEGIN;
+  DROP PUBLICATION IF EXISTS supabase_realtime;
+  CREATE PUBLICATION supabase_realtime;
+COMMIT;
+
+ALTER PUBLICATION supabase_realtime ADD TABLE posts;
+ALTER PUBLICATION supabase_realtime ADD TABLE likes;
+ALTER PUBLICATION supabase_realtime ADD TABLE follows;
+ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+```
+
+アプリ側では購読開始前に初回 `select`、再接続後に再 `select`、
+受信時に重複排除（同じ `id` / `created_at` の二重配信を無視）を行う。
+
 ## 参照元
 
 - 画面一覧: `03_基本設計書.md` セクション2
