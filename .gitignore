@@ -18,3 +18,7 @@ prototype-chapter/snapshots/
 
 # AIエージェントの作業ツリー（リポジトリの成果物ではない）
 /.claude/worktrees/
+
+# Python の中間生成物（検査スクリプト実行時に出る）
+__pycache__/
+*.pyc
