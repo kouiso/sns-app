@@ -22,3 +22,10 @@ prototype-chapter/snapshots/
 # Python の中間生成物（検査スクリプト実行時に出る）
 __pycache__/
 *.pyc
+
+# 組版（Vivliostyle）の生成物。13 §3 の Git 運用規約に従い追跡しない。
+# build のたびに作業ディレクトリ直下へ生まれる（.vivliostyle は 20K、PDF は1章 290KB）。
+# 配布物は CI かローカルで生成する。決定の経緯は decisions/D23_Vivliostyle採用の影響.md
+.vivliostyle/
+*.pdf
+*.epub

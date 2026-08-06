@@ -36,7 +36,7 @@
 | `material-writing` スキル一式（272KB） | `.claude/skills/material-writing/` | 無変更。hana652-tech-writing-pack（CC BY 4.0・guides 6本＋`ai-smell-lint.py`）と xamfonos-technical-writing-best-practices、`references/voice-spec.md` を含む |
 | 強制フック4本 | `.claude/hooks/` | 対象ディレクトリと印の置き場を変更（§2） |
 | フックの配線 | `.claude/settings.json` | 新規。PreToolUse(Write/Edit/Bash) と PostToolUse(Skill) |
-| 検査スクリプト28本＋テスト17本 | `scripts/curriculum-qa/` | 無変更で搬入。**動く保証はまだ無い**（§4 の分類が済むまで実行しない） |
+| 検査スクリプト28本＋テスト17本 | `scripts/curriculum-qa/` | 無変更で搬入。**動く保証はまだ無い**（§4 の分類が済むまで実行しない）。**★ 2026-08-06: Vivliostyle 採用でも「Markdown を読む」という前提は崩れない**（Vivliostyle の入力も Markdown＝VFM）。実際に効くのは2点で、(1) `check_zip_reference.py` / `sale_package.py` / `check-sale-package.sh` の配布形式前提（§4 で移植先を確定）(2) `markdown_scan.paragraphs()` が frontmatter を地の文1段落として返すこと（実測）。ただし **12 §1.1.1 で教材本文の frontmatter を禁止した**ので (2) は当面顕在化しない。`check_tone.py` は VFM 記法入りでも同判定（陰性 rc=0 / 陽性 rc=1・22件検出）を実測済み。**残り26本は VFM 記法（ルビ・`ts:パス` 形式のフェンス・`{.class}`）を通せるか未実測** — 教材本文が1文字も無く検査が想定するディレクトリ構成を作れないため。特に `check_tag_balance.py`（波括弧をタグとして誤って数える可能性）と `check_ja_line_break.py`（VFM は段落内の改行の意味が違う）は骨格ができた時点で必ず実測しなおす。B31 の分類の入力にする |
 | textlint 設定 | `.textlintrc.json` | 本作の既存設定（prh 辞書・sentence-length 100）へ **`@textlint-ja/preset-ai-writing` を追加**して統合 |
 
 ## 2. フックの変更点（ここだけは無変更で持ち込めない）
@@ -130,6 +130,27 @@
 `○` は17本になった（初版6本 + ◎からの降格10本 + 表外の `curriculum_blocks.py`）。
 
 ### △ 作り直しが要る（4本）
+
+> **★ 2026-08-06 追記: 下表のうち ZIP を土台にする3本は、移植先が確定した。**
+> 16 B9 が決着し（教材本文＝PDF が正本、EPUB を機械検査用に併産。
+> `decisions/D23_Vivliostyle採用の影響.md`）、**作り直す対象は ZIP ではなくなった。**
+>
+> | スクリプト | 新しい区分 | 根拠 |
+> |---|---|---|
+> | `sale_package.py` | **EPUB 版へ移植** | 実測で **EPUB は ZIP フォーマット**であり、本文の `<code>` / `<pre>` / 相対 `href` が XHTML にそのまま残る。「パッケージのエントリ名を読む」という発想はほぼそのまま動く（`zipfile.ZipFile(...).namelist()` で確認） |
+> | `check_zip_reference.py` | **EPUB 版へ移植 ＋ PDF 版を新規** | 本文参照とパッケージ内容の照合は EPUB に対してなら移植できる。**PDF に対しては別実装が要る** — PDF は原稿の構造を失う（バッククォートが消えて `src/` が裸になり、行の折り返しで文が分断されて grep が当たらない。実測）ので文字列照合が偽陰性を出す。PDF 側はリンク注釈を `pdftohtml -stdout -i -noframes` で列挙する検査になる（`pdftotext` にはリンク文字列しか出ず URL が取れない） |
+> | `check-sale-package.sh` | **廃止** | 前作の ZIP ファイル名 `task-app-curriculum-v1.1.zip` を直書きしており、移植する中身が無い |
+>
+> **`check_procedure_order.py` は上の話と無関係**（tRPC 前提の読み替え）なので区分は変わらない。
+>
+> **検査の層を分けること**（D23 §2-8）: 28本＋G3/G5 は **Markdown 原稿にのみ**走らせ続け、
+> PDF には走らせない。PDF / EPUB には別建ての薄い配布物検査を新設する（16 B53）。
+>
+> **なお `check_tag_balance.py` / `check_false_success.py` が今まったく動かない理由は
+> 引数仕様ではない。** `check_tag_balance.py:183` → `sale_package.py:66` の
+> `BUILD_ZIP.read_text` が未搬入の `scripts/build-zip.sh` を読みにいって
+> `FileNotFoundError` で落ちる（＝この△の欠落と同根）。
+> **「教材本文ができれば動く」という期待は成立しない。**`sale_package.py` の移植が先である。
 
 | スクリプト | 理由 | 依存する他スクリプト | 外部ファイル依存 | D1命名での挙動 | 0件走査 |
 |---|---|---|---|---|---|
