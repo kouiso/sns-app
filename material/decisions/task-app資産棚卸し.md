@@ -86,43 +86,78 @@
 搬入は済んでいるが、**本作で動く保証はまだ無い。** 前作は Next.js + tRPC + shadcn/ui、
 本作は Expo(React Native) + Supabase であり、前提が違うものが混ざっている。
 
-### ◎ 技術非依存。ほぼそのまま効く（15本）
+**2026-08-06 改訂（D14）**: 初版の分類は docstring から導いたもので実走していなかった。
+28本すべてを実際に走らせ、依存・命名前提・0件走査の挙動を測り直した。生の出力は
+`decisions/D14_検査スクリプトの実走結果.md`。初版が覆っていたのは25本で、
+`markdown_scan.py` / `curriculum_blocks.py` / `gen_procedure_map.py` の3本が表に無かった。
+**実走で ◎ に残ったのは15本ではなく5本である。**
 
-| スクリプト | 何を見るか |
-|---|---|
-| `check_why.py` | コードブロックの直後に「なぜ」があるか。**外部レビューの「翻訳文感」の実体はここだったと前作が特定している** |
-| `check_false_success.py` | 構造が閉じていない時点で「これでエラーが出なくなります」と書いていないか |
-| `check_anchor.py` | コードブロックの書き込み先が、そのブロックだけ見て分かるか |
-| `check_crossref.py` | 章間の参照先が実在するか |
-| `check_step_ref.py` | 本文が指す Step 番号がその章に在るか |
-| `check_step_time.py` | 所要時間の表の合計と本文の合計が合っているか |
-| `check_step_length.py` | コードブロックが長すぎないか |
-| `check_terms.py` | 同じ概念に2通りの書き方が混ざっていないか |
-| `check_variants.py` | 同じ語の表記ゆれ（「すでに」46件に対し「既に」21件の混在を実測） |
-| `check_tone.py` | 関西弁・タメ口・AI構文（**本作へ移植済みの1本**） |
-| `check_comprehension.py` | 初心者向けの数値基準 |
-| `check_visualization.py` | 表・図の量 |
-| `check_no_skip.py` | ステップの連続性 |
-| `check_code_completeness.py` | `filepath:` コメントの有無・分割禁止 |
-| `check_unused_image.py` | 参照されていない画像 |
+区分: ◎ そのまま効く／○ 手直しが要る／△ 作り直しが要る／× 本作では使わない
 
-### ○ 手直しが要る（6本）
+### ◎ そのまま効く（5本）
 
-| スクリプト | 手直しの内容 |
-|---|---|
-| `check_ja_line_break.py` | JSX 内の日本語途中改行。**React Native でも同じ事故が起きる**が、判定対象の要素名が違う |
-| `check_jsx_marker.py` | 同上 |
-| `check_tag_balance.py` | 同上 |
-| `check_tech_stack.py` | Next.js / shadcn/ui 前提 → Expo / React Native へ |
-| `check_scaffold_curriculum_alignment.py` | scaffold の概念が本作に無い。A7 の章末スナップショットへ読み替え |
-| `check_quality.sh` | 統合スクリプト。上記の結果を受けて配線し直す |
+| スクリプト | 何を見るか | 依存する他スクリプト | 外部ファイル依存 | D1命名での挙動 | 0件走査 |
+|---|---|---|---|---|---|
+| `markdown_scan.py` | フェンス・段落・インラインコードの走査。**20本が import する土台**。単体では走らない | 無し（標準ライブラリのみ） | 無し | 入力を見ないので無関係 | — |
+| `check_tone.py` | 関西弁・タメ口・AI構文（**本作へ移植済みの1本**） | `markdown_scan` | 無し | 1ファイル入力で動く。実入力で1件検出 rc=1 | 該当なし（1ファイル専用） |
+| `check_variants.py` | 同じ語の表記ゆれ（「すでに」46件に対し「既に」21件の混在を実測） | `markdown_scan` | 無し | `*.md` glob。ディレクトリ入力で動く rc=0（2ファイル） | 対象0件で rc=2（fail closed） |
+| `check_step_length.py` | コードブロックが長すぎないか | 無し | 無し | 1ファイル入力で動く（6ブロック判定） | 該当なし |
+| `check_visualization.py` | 表・図の量 | 無し | 無し | 1ファイル入力で動く。実入力で不足2件 rc=1 | 該当なし |
 
-### △ 作り直しが要る（3本）
+### ○ 手直しが要る（17本）
 
-| スクリプト | 理由 |
-|---|---|
-| `check_zip_reference.py` / `check-sale-package.sh` / `sale_package.py` | **前作の30周目で見つかった最も重い1件**（本文8箇所が「リポジトリの `src/` と見比べて」と書いていたが、販売ZIPにその照合先が入っていない）に対応する道具。本作は配布が**3系統**（教材本文＝Drive／完成コード＝公開リポジトリ／章末スナップショット＝別配布）に分かれるため、前作の1系統前提では成立しない。**分岐が増えるぶん、前作より危険度は高い** |
-| `check_procedure_order.py` | tRPC の手続き前提。Supabase SDK 呼び出しと RLS ポリシーへ読み替え |
+| スクリプト | 手直しの内容 | 依存する他スクリプト | 外部ファイル依存 | D1命名での挙動 | 0件走査 |
+|---|---|---|---|---|---|
+| `curriculum_blocks.py` | `day_number()` が `dayNN` 以外に **0** を返し、章の前後関係が消える。章分割表の並び順を引く形へ | `markdown_scan` | 無し | 全章が 0 に潰れる。警告なし | — |
+| `check_why.py` | コード直後の「なぜ」。**外部レビューの「翻訳文感」の実体はここだと前作が特定**。ディレクトリ glob が `day[0-9][0-9]_*.md` | `markdown_scan` | 無し | ディレクトリ入力で `対象ファイルがありません` rc=2 | rc=2（fail closed） |
+| `check_step_ref.py` | 本文が指す Step 番号がその章に在るか。glob 同上 | `markdown_scan` | 無し | 同上 rc=2 | rc=2 |
+| `check_crossref.py` | 章間の参照先が実在するか。glob が `day/00*/appendix_*` | `markdown_scan` | 無し | `dayファイルが見つかりません` rc=2 | rc=2 |
+| `check_terms.py` | 同じ概念に2通りの書き方。glob 同上 | `markdown_scan` | 無し | `教材ファイルが見つかりません` rc=2 | rc=2 |
+| `check_step_time.py` | 所要時間の表と本文の合計。**番号ベースの暗黙免除（`NO_TABLE_DAYS`）が D1 命名で全章へ広がる** | `markdown_scan` | 無し | ディレクトリ rc=2／**1ファイルは `✅ OK（0 ファイル）` rc=0** | **緑になる（要修正）** |
+| `check_anchor.py` | 書き込み先がそのブロックだけで分かるか。プレフィックスが `src/ prisma/ scripts/` 固定で、D1-5 の `app/ supabase/` に1件も当たらない | `markdown_scan`（`FILEPATH` は自前で重複定義） | **リポジトリ根の実ファイル**（存在確認） | `*.md` glob で走るが検出0 rc=0 | **緑になる（要修正）** |
+| `check_comprehension.py` | 初心者向けの数値基準。Step 見出しが無いと丸ごとスキップ。用語リストが Next.js/tRPC/shadcn 寄り（:20-21） | 無し | 無し | 1ファイル専用。`チェックスキップ` rc=0 | **緑になる（要修正）** |
+| `check_no_skip.py` | ステップの連続性。0本でも合格を印字 | `curriculum_blocks` | 無し | 1ファイル専用。`全0ステップが完全` rc=0 | **緑になる（要修正）** |
+| `check_code_completeness.py` | `filepath:` コメントの有無・分割禁止。**1つも無くても警告どまりで PASS** | `curriculum_blocks` | 無し | 1ファイル専用 rc=0 | **緑になる（要修正）** |
+| `check_tech_stack.py` | Next.js / shadcn/ui 前提 → Expo / React Native へ。**未検出でも PASS するので本作では常に緑** | 無し | 無し | 1ファイル専用 rc=0 | **緑になる（要修正）** |
+| `check_unused_image.py` | 参照されていない画像。本体は `rglob("*.md")` で命名非依存 | `markdown_scan` | 入力配下の `screenshots/`。**自己テストが `.github/workflows/material-gate.yml`（前作のワークフロー名）を読んで落ちる** | `screenshots` 不在で rc=2 | rc=2 |
+| `check_ja_line_break.py` | JSX 内の日本語途中改行。**React Native でも同じ事故が起きる**が、判定対象の要素名が違う | `markdown_scan` | 無し | `rglob("*.md")` で走る rc=0 | 対象0件で rc=2 |
+| `check_jsx_marker.py` | 同上 | `markdown_scan` | 無し | 同上 rc=0 | rc=2 |
+| `check_tag_balance.py` | 同上。**加えて `sale_package`（△）へ依存し、値が要求された時点で `build-zip.sh` 欠落で落ちる** | `curriculum_blocks`, **`sale_package`(△)** | `scripts/build-zip.sh`（遅延） | ディレクトリ rc=2／1ファイルで `FileNotFoundError` rc=1 | rc=2 |
+| `check_false_success.py` | 構造が閉じていない時点で「これでエラーが出なくなります」と書いていないか。**`check_tag_balance` 経由で `sale_package`(△) に依存**し、△を作り直すまで1回も完走しない | `check_tag_balance`, `curriculum_blocks`, `markdown_scan` | `scripts/build-zip.sh`（遅延） | ディレクトリ rc=2／1ファイルで `FileNotFoundError` rc=1 | rc=2 |
+| `check_scaffold_curriculum_alignment.py` | scaffold の概念が本作に無い。A7 の章末スナップショットへ読み替え | `curriculum_blocks` | `scripts/scaffold-from-scratch.sh` / `package.json` / `material/30days-curriculum/day*.md` / `src/` 4ファイル。**全部無い** | 引数を見ずに `FileNotFoundError` rc=1 | — |
+| `check_quality.sh` | 統合スクリプト。**`day[0-9][0-9]_*.md` 以外の .md を検出すると即 exit 1**（:26-38）。D1 の章IDではディレクトリ入力を1件も通さない。さらに day ファイルが無いと corpus 検査14本を黙って飛ばす（:266-271） | 単体22本＋自己テスト17本を呼ぶ | 無し | ディレクトリ入力 rc=1（命名拒否） | **corpus 14本が黙ってスキップ（要修正）** |
+
+`○` は17本になった（初版6本 + ◎からの降格10本 + 表外の `curriculum_blocks.py`）。
+
+### △ 作り直しが要る（4本）
+
+| スクリプト | 理由 | 依存する他スクリプト | 外部ファイル依存 | D1命名での挙動 | 0件走査 |
+|---|---|---|---|---|---|
+| `sale_package.py` | ZIP の中身を `build-zip.sh` から読む土台。**`check_tag_balance` / `check_false_success` / `check_zip_reference` の3本がこれを経由する。◎/○ を先に配線しても、これを作り直すまで起動しない** | `check_scaffold_curriculum_alignment`(○) | `scripts/build-zip.sh`。**無い** | 入力を見ない | — |
+| `check_zip_reference.py` | **前作の30周目で見つかった最も重い1件**（本文8箇所が「リポジトリの `src/` と見比べて」と書いていたが、販売ZIPにその照合先が入っていない）に対応。本作は配布が**3系統**に分かれるため1系統前提では成立しない | `sale_package`, `markdown_scan` | `scripts/build-zip.sh`（遅延） | `*.md` glob で走る。**当たりが無いと rc=0 で緑、1件でも当たると `FileNotFoundError` rc=1** | **違反ゼロと未判定が同じ出力（要修正）** |
+| `check-sale-package.sh` | 同上。ZIP のエントリ名を直接照合する。前作のファイル名 `task-app-curriculum-v1.1.zip` と `scripts/_*` 13ディレクトリが前提 | 無し | ZIP 本体・`scripts/_*` 13ディレクトリ。**全部無い** | `販売用 ZIP が見つかりません` rc=1 | — |
+| `check_procedure_order.py` | tRPC の手続き前提（`src/server/api/routers/*.ts` の filepath を読む）。Supabase SDK 呼び出しと RLS ポリシーへ読み替え | `markdown_scan` | 無し | ディレクトリ rc=2／**1ファイルは `手続き 0 個` rc=0。Supabase 構成では常に0件＝常に緑** | **緑になる（要修正）** |
+
+### × 本作では使わない（1本）
+
+| スクリプト | 理由 | 実走結果 |
+|---|---|---|
+| `gen_procedure_map.py` | 検査ではなく、tRPC の手続きと day の対応表を生成する道具。Supabase SDK 構成の本作に対応物が無い。出力先も `material/30days-curriculum/_meta/` | `[FATAL] router source dir not found: scripts/_server-routers` rc=2 |
+
+### 自己テスト17本（B31 が言う「既知の陽性/陰性サンプル」の実体）
+
+`python3 -m pytest` は **1件も収集しない**（rc=5）。17本に `def test_*` も
+`unittest.TestCase` も無く、`main()` が自前でループする単体スクリプト形式だからである。
+`check_quality.sh:229-247` も `python3 <file>` として1本ずつ呼んでいる。
+**pytest を入れても解決しない。** 第三者パッケージへの依存はゼロで、
+`requirements.txt` も `pyproject.toml` も要らない。
+
+`python3 test_xxx.py` で1本ずつ走らせた結果は **11本合格・6本失敗**（合格分のケース総数 132 件）。
+失敗6本のうち4本（`test_sale_package` / `test_check_tag_balance` /
+`test_check_false_success` / `test_check_zip_reference`）は同じ `scripts/build-zip.sh` の欠落、
+1本（`test_check_unused_image`）は `.github/workflows/material-gate.yml` の名前違い、
+1本（`test_check_anchor`、21件中2件失敗）は本作に `src/app/page.tsx` が存在しないこと
+による。内訳は `D14_検査スクリプトの実走結果.md` §1-3。
 
 ## 5. この棚卸しが露わにした、本作の設計の穴
 
@@ -148,5 +183,13 @@
 - **`@textlint-ja/preset-ai-writing` の依存追加と、ルート `package.json` の要否**は
   B2（リポジトリ構造）と連動するため、ここでは設定ファイルのみ置いた。
   依存が入るまで、ルートの `.textlintrc.json` は不活性である
-- 28本のスクリプトは**搬入しただけで、1本も実行していない**。§4 の分類は
-  docstring と前作の記録から導いたもので、本作での実走で確かめたものではない
+- ~~28本のスクリプトは**搬入しただけで、1本も実行していない**~~ →
+  2026-08-06（D14）に28本＋テスト17本を実走し、§4 を測定値で書き直した。
+  生の出力は `decisions/D14_検査スクリプトの実走結果.md`
+- `check_anchor.py` の許可プレフィックスを何にするかは、Expo プロジェクトを1本
+  作ってディレクトリ構成を実測するまで決められない（D14 §6）
+- `check_quality.sh` の命名ガードの置き換え先は、D1-6 の `material/17_章分割表.md` と
+  その読み取り口（`chapter_table.py`）が実在してから決める（D14 §6）
+- 17本の検知テストを CI のどのジョブにどう並べるかは D13 と同時に決める。
+  本書で確定できるのは「pytest は不要」「第三者依存はゼロ」
+  「17本は `python3 <file>` で個別に呼ぶ」の3点まで（D14 §6）
