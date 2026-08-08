@@ -167,7 +167,9 @@ for num, body in objs.items():
 
 def page_fontmap(body):
     out = {}
-    for name, n in re.findall(rb"/([A-Za-z0-9#\.\-\+]+)\s+(\d+)\s+0\s+R", body):
+    # 世代番号は 0 とはかぎらない。0 だけを受けると、その字体の対応表を素通りして
+    # 本文が化けたまま最後の検査を抜ける。
+    for name, n in re.findall(rb"/([A-Za-z0-9#\.\-\+]+)\s+(\d+)\s+\d+\s+R", body):
         n = int(n)
         if n in font_to_cmap:
             out[name.decode()] = font_to_cmap[n]
