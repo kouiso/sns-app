@@ -25,17 +25,42 @@ def stop(msg):
 
 
 # --- オブジェクトを集める ------------------------------------------------
-# `endobj` を最初の一致で切ると、ストリームの中身にたまたま同じ並びがあったときに
-# オブジェクトが途中で切れる。次のオブジェクトの見出しまでを本体とし、
-# 末尾側の `endobj` で閉じる。
-objs = {}
-heads = [(m.start(), int(m.group(1))) for m in re.finditer(rb"(?:^|[\s>])(\d+)\s+(\d+)\s+obj\b", data)]
-for i, (pos, num) in enumerate(heads):
-    end = heads[i + 1][0] if i + 1 < len(heads) else len(data)
-    chunk = data[pos:end]
-    tail = chunk.rfind(b"endobj")
-    body = chunk[:tail] if tail != -1 else chunk
-    objs[num] = body[body.find(b"obj") + 3:]
+# ストリームの中身に、オブジェクトの見出しらしい並びが現れることがある。
+# 本文に `(12 0 obj) Tj` と書いてあるだけ、という場合がそれにあたる。
+# 全文をそのまま走査すると、それを本物の見出しと取り違えて本物を上書きする。
+# 辞書が申告する /Length ぶんを読み飛ばしながら、順に拾う。
+HDR = re.compile(rb"(?:^|[\s>])(\d+)\s+(\d+)\s+obj\b")
+STREAM = re.compile(rb"stream\r?\n")
+LEN = re.compile(rb"/Length\s+([^/>]+?)(?=/|>>)")
+
+
+def scan_objects(resolve_len):
+    out = {}
+    pos = 0
+    while True:
+        m = HDR.search(data, pos)
+        if not m:
+            return out
+        num, bstart = int(m.group(1)), m.end()
+        sm = STREAM.search(data, bstart)
+        eo = data.find(b"endobj", bstart)
+        end = eo
+        if sm and (eo == -1 or sm.start() < eo):
+            lm = LEN.search(data, bstart, sm.start())
+            n = resolve_len(lm.group(1)) if lm else None
+            after = None
+            if n is not None and sm.end() + n <= len(data):
+                if b"endstream" in data[sm.end() + n:sm.end() + n + 32]:
+                    after = sm.end() + n
+            if after is None:
+                after = data.find(b"endstream", sm.end())
+                if after == -1:
+                    stop(f"オブジェクト {num} に endstream がありません。")
+            end = data.find(b"endobj", after)
+        if end == -1:
+            end = len(data)
+        out[num] = data[bstart:end]
+        pos = end + 6
 
 
 def deref_int(v):
@@ -49,6 +74,12 @@ def deref_int(v):
         m2 = re.search(rb"\d+", t)
         return int(m2.group(0)) if m2 else None
     return None
+
+
+# 1回目は直接書かれた長さだけで区切る。2回目はその結果を使って
+# `/Length 12 0 R` のような間接参照も引けるようにする。
+objs = scan_objects(lambda v: int(v) if v.strip().isdigit() else None)
+objs = scan_objects(deref_int)
 
 
 def stream_of(body, num=None):
@@ -103,7 +134,14 @@ for num, body in objs.items():
             lo, hi, st = int(a, 16), int(b, 16), int(c, 16)
             for i in range(lo, min(hi, lo + 65535) + 1):
                 mp[i] = chr(st + (i - lo))
-    cmaps[num] = mp
+    # 何バイトで1文字かは対応表が自分で宣言している。2バイト決め打ちにすると、
+    # 1バイトの表で `<4142>` を1文字と読み違え、字数も文の数も狂う。
+    widths = {len(a) // 2 for a, _ in re.findall(
+        rb"<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>",
+        b"".join(re.findall(rb"begincodespacerange(.*?)endcodespacerange", s, re.S)))}
+    if len(widths) > 1:
+        stop(f"オブジェクト {num} の対応表が、1文字の長さを複数宣言しています。")
+    cmaps[num] = (mp, widths.pop() if widths else 2)
 
 font_to_cmap = {}
 for num, body in objs.items():
@@ -160,12 +198,24 @@ else:
     stop("ページの木の根（/Type /Pages）が見つかりません。")
 
 
-def resolve_res(body):
-    # /Resources が別オブジェクトなら引く。ページ本体に直接書いてあるなら本体を返す。
-    m = re.search(rb"/Resources\s+(\d+)\s+0\s+R", body)
-    if m:
-        return objs.get(int(m.group(1)), b"")
-    return body
+def resolve_res(num):
+    """フォントの定義はページに直接書かれているとは限らない。
+    上位の /Pages に置いて子ページに継がせる書き方も正しい PDF なので、
+    見つかるまで /Parent を上へ辿る。継承を見ないと、そのページだけ
+    本文が読めずに黙って欠ける。"""
+    seen = set()
+    cur = num
+    while cur is not None and cur not in seen:
+        seen.add(cur)
+        body = objs.get(cur, b"")
+        m = re.search(rb"/Resources\s+(\d+)\s+\d+\s+R", body)
+        if m:
+            return objs.get(int(m.group(1)), b"")
+        if re.search(rb"/Resources\s*<<", body):
+            return body
+        pm = re.search(rb"/Parent\s+(\d+)\s+\d+\s+R", body)
+        cur = int(pm.group(1)) if pm else None
+    return b""
 
 
 def content_refs(body, num):
@@ -199,14 +249,14 @@ ESC = {b"n": "\n", b"r": "\r", b"t": "\t", b"b": "\b", b"f": "\f",
        b"(": "(", b")": ")", b"\\": "\\"}
 
 
-def decode_literal(b):
-    """PDF の ( ) 文字列。バックスラッシュの逃がし方と8進を戻す。
-    そのまま latin-1 で読むと、逃がし記号と8進が字数に混ざる。"""
+def literal_bytes(b):
+    """PDF の ( ) 文字列から、逃がし記号と8進を戻して生のバイト列にする。
+    そのまま読むと、逃がし記号と8進の数字が字数に混ざる。"""
     out, i = [], 0
     while i < len(b):
         ch = b[i:i + 1]
         if ch != b"\\":
-            out.append(ch.decode("latin-1"))
+            out.append(ch)
             i += 1
             continue
         nxt = b[i + 1:i + 2]
@@ -217,46 +267,63 @@ def decode_literal(b):
             i += 2  # 行継続。何も出さない
         elif nxt.isdigit():
             m = re.match(rb"[0-7]{1,3}", b[i + 1:])
-            out.append(chr(int(m.group(0), 8)))
+            out.append(bytes([int(m.group(0), 8) & 0xFF]))
             i += 1 + len(m.group(0))
         else:
             i += 1  # 逃がし記号そのものは落とす
-    return "".join(out)
+    return b"".join(out)
 
 
-def decode_hex(h, cmap):
-    s = h.decode()
+def decode_bytes(raw, cm):
+    """本文のバイト列を字に直す。( ) で書かれていても < > で書かれていても、
+    フォントに対応表が付いていればそれが正で、生のバイトではない。
+    ( ) のときだけ対応表を無視すると、その部分が制御文字として数えられる。"""
+    if not cm:
+        return raw.decode("latin-1")
+    mp, w = cm
     res = []
-    for i in range(0, len(s), 4):
-        code = int(s[i:i + 4], 16)
-        if cmap and code in cmap:
-            res.append("".join(map(unify, cmap[code])))
+    for i in range(0, len(raw), w):
+        code = int.from_bytes(raw[i:i + w].ljust(w, b"\0"), "big")
+        if code in mp:
+            res.append("".join(map(unify, mp[code])))
         else:
             res.append("\N{REPLACEMENT CHARACTER}")
     return "".join(res)
+
+
+def decode_hex(h, cm):
+    s = h.decode()
+    if len(s) % 2:
+        s += "0"  # PDF の規則。端数は 0 で埋める
+    return decode_bytes(bytes.fromhex(s), cm)
 
 
 TOK = (rb"/([A-Za-z0-9#\.\-\+]+)\s+[\d\.]+\s+Tf"
        rb"|<([0-9A-Fa-f]+)>\s*Tj"
        rb"|\[(.*?)\]\s*TJ"
        rb"|\(((?:\\.|[^()\\])*)\)\s*Tj"
-       rb"|(TD|Td|T\*|ET)")
+       rb"|(TD|Td|T\*|ET)"
+       rb"|/([A-Za-z0-9#\.\-\+]+)\s+Do")
 
-texts = []
-for num in page_nums:
-    body = objs[num]
-    res = resolve_res(body)
-    fm = page_fontmap(res + body)
-    content = b""
-    for cnum in content_refs(body, num):
-        c = objs.get(cnum)
-        if c is None:
-            stop(f"ページ {num} の本文オブジェクト {cnum} がありません。")
-        s = stream_of(c, cnum)
-        if s:
-            content += s + b"\n"
-    if not content:
-        continue
+def xobject_map(res):
+    """ページが呼び出せる図形部品の一覧。名前 -> オブジェクト番号。"""
+    m = re.search(rb"/XObject\s+(\d+)\s+\d+\s+R", res)
+    if m:
+        src = objs.get(int(m.group(1)), b"")
+    else:
+        m = re.search(rb"/XObject\s*<<(.*?)>>", res, re.S)
+        src = m.group(1) if m else b""
+    return {n.decode(): int(o) for n, o in
+            re.findall(rb"/([A-Za-z0-9#\.\-\+]+)\s+(\d+)\s+\d+\s+R", src)}
+
+
+def read_content(content, res, page, depth=0):
+    """本文の並びを字に直す。`Do` で呼ばれた部品の中にも本文が入るので、
+    そこも読みに行く。読まないと、そのページは「成功」のまま字数だけ減る。"""
+    if depth > 8:
+        stop(f"ページ {page} の部品の呼び出しが深すぎます。")
+    fm = page_fontmap(res)
+    xm = xobject_map(res)
     cur = None
     out = []
     for tok in re.finditer(TOK, content, re.S):
@@ -270,12 +337,44 @@ for num in page_nums:
                 if em.group(1) is not None:
                     out.append(decode_hex(em.group(1), cur))
                 else:
-                    out.append(decode_literal(em.group(2)))
+                    out.append(decode_bytes(literal_bytes(em.group(2)), cur))
         elif tok.group(4) is not None:
-            out.append(decode_literal(tok.group(4)))
+            out.append(decode_bytes(literal_bytes(tok.group(4)), cur))
         elif tok.group(5):
             out.append("\n")
-    texts.append((num, "".join(out)))
+        elif tok.group(6):
+            name = tok.group(6).decode()
+            onum = xm.get(name)
+            if onum is None:
+                continue  # 画像など、本文を持たない呼び出し
+            sub = objs.get(onum)
+            if sub is None:
+                stop(f"ページ {page} が呼ぶ部品 {name}（オブジェクト {onum}）がありません。")
+            if not re.search(rb"/Subtype\s*/Form\b", sub):
+                continue  # 画像。本文は入っていない
+            s = stream_of(sub, onum)
+            if not s:
+                stop(f"ページ {page} の部品 {name} の中身が取れません。")
+            sres = resolve_res(onum)
+            out.append(read_content(s, sres if sres else res, page, depth + 1))
+    return "".join(out)
+
+
+texts = []
+for num in page_nums:
+    body = objs[num]
+    res = resolve_res(num)
+    content = b""
+    for cnum in content_refs(body, num):
+        c = objs.get(cnum)
+        if c is None:
+            stop(f"ページ {num} の本文オブジェクト {cnum} がありません。")
+        s = stream_of(c, cnum)
+        if s:
+            content += s + b"\n"
+    if not content:
+        continue
+    texts.append((num, read_content(content, res + body, num)))
 
 
 # --- 発話に切り分けて数える -----------------------------------------------
