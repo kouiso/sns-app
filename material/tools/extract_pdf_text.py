@@ -82,12 +82,26 @@ objs = scan_objects(lambda v: int(v) if v.strip().isdigit() else None)
 objs = scan_objects(deref_int)
 
 
-def stream_of(body, num=None):
+def filters_of(head):
+    m = re.search(rb"/Filter\s*(/[A-Za-z0-9]+|\[[^\]]*\])", head)
+    return re.findall(rb"/([A-Za-z0-9]+)", m.group(1)) if m else []
+
+
+def stream_of(body, num=None, strict=True):
+    """strict=False は「読めなければ None を返す」。対応表を探す最初の走査で使う。
+    画像など、この道具が読む必要のないストリームまで止めないため。"""
     m = re.search(rb"stream\r?\n", body)
     if not m:
         return None
     start = m.end()
     head = body[:m.start()]
+    # 圧縮の種類を見ずに中身を返すと、圧縮されたままの箱を本文として数える。
+    # 本文が黙って消え、ページ数の検査は通ってしまう。
+    unknown = [f for f in filters_of(head) if f != b"FlateDecode"]
+    if unknown:
+        if not strict:
+            return None
+        stop(f"オブジェクト {num} は未対応の圧縮です（{b','.join(unknown).decode()}）。")
     # 長さは辞書の /Length を正とする。endstream の最初の一致で切ると、
     # 圧縮データの中身にその並びが出たときにデータが欠ける。
     raw = None
@@ -120,7 +134,7 @@ for num, body in objs.items():
         # 展開してみないと分からないので、ストリームを持つものだけ試す
         if b"stream" not in body:
             continue
-    s = stream_of(body, num)
+    s = stream_of(body, num, strict=False)
     if not s or (b"beginbfchar" not in s and b"beginbfrange" not in s):
         continue
     mp = {}
@@ -245,8 +259,8 @@ def unify(c):
     return c
 
 
-ESC = {b"n": "\n", b"r": "\r", b"t": "\t", b"b": "\b", b"f": "\f",
-       b"(": "(", b")": ")", b"\\": "\\"}
+ESC = {b"n": b"\n", b"r": b"\r", b"t": b"\t", b"b": b"\b", b"f": b"\f",
+       b"(": b"(", b")": b")", b"\\": b"\\"}
 
 
 def literal_bytes(b):
@@ -265,7 +279,8 @@ def literal_bytes(b):
             i += 2
         elif nxt in (b"\n", b"\r"):
             i += 2  # 行継続。何も出さない
-        elif nxt.isdigit():
+        elif nxt in b"01234567":
+            # `isdigit()` で受けると 8 と 9 まで通り、8進として読めずに落ちる。
             m = re.match(rb"[0-7]{1,3}", b[i + 1:])
             out.append(bytes([int(m.group(0), 8) & 0xFF]))
             i += 1 + len(m.group(0))
@@ -298,12 +313,85 @@ def decode_hex(h, cm):
     return decode_bytes(bytes.fromhex(s), cm)
 
 
-TOK = (rb"/([A-Za-z0-9#\.\-\+]+)\s+[\d\.]+\s+Tf"
-       rb"|<([0-9A-Fa-f]+)>\s*Tj"
-       rb"|\[(.*?)\]\s*TJ"
-       rb"|\(((?:\\.|[^()\\])*)\)\s*Tj"
-       rb"|(TD|Td|T\*|ET)"
-       rb"|/([A-Za-z0-9#\.\-\+]+)\s+Do")
+# --- 本文の並びを切り分ける ----------------------------------------------
+# ここは正規表現ではなく1文字ずつ読む。( ) の中に ( ) が入る書き方が正しい PDF で、
+# 正規表現ではその文字列がまるごと一致せず、本文が黙って消えるためである。
+# 消えても `�` は出ないので、置換文字の数では気づけない。
+WS = b" \t\r\n\f\x00"
+NAME = re.compile(rb"/([^\s/\[\]<>(){}%]*)")
+NUM = re.compile(rb"[+-]?[\d\.]+")
+OPER = re.compile(rb"[A-Za-z'\"][A-Za-z0-9*']*|\"|'")
+EI = re.compile(rb"[\s>]EI(?=[\s\[\]/<(%]|$)")
+
+
+def tokenize(buf, page):
+    """演算子と、その手前に積まれる値に切る。返り値は (種類, 中身) の並び。"""
+    toks, i, n = [], 0, len(buf)
+    while i < n:
+        c = buf[i:i + 1]
+        if c in WS:
+            i += 1
+        elif c == b"%":
+            j = buf.find(b"\n", i)
+            i = n if j == -1 else j + 1
+        elif c == b"(":
+            j, depth, raw = i + 1, 1, bytearray()
+            while j < n:
+                ch = buf[j:j + 1]
+                if ch == b"\\":
+                    raw += buf[j:j + 2]
+                    j += 2
+                    continue
+                if ch == b"(":
+                    depth += 1
+                elif ch == b")":
+                    depth -= 1
+                    if not depth:
+                        j += 1
+                        break
+                raw += ch
+                j += 1
+            else:
+                stop(f"ページ {page} の本文に、閉じていない丸括弧があります。")
+            toks.append(("str", bytes(raw)))
+            i = j
+        elif buf[i:i + 2] in (b"<<", b">>"):
+            i += 2
+        elif c == b"<":
+            j = buf.find(b">", i)
+            if j == -1:
+                stop(f"ページ {page} の本文に、閉じていない山括弧があります。")
+            toks.append(("hex", re.sub(rb"\s", b"", buf[i + 1:j])))
+            i = j + 1
+        elif c in b"[]":
+            toks.append(("op", c))
+            i += 1
+        elif c == b"/":
+            m = NAME.match(buf, i)
+            toks.append(("name", m.group(1)))
+            i = m.end()
+        elif c in b"+-0123456789.":
+            m = NUM.match(buf, i)
+            i = m.end() if m else i + 1
+        else:
+            m = OPER.match(buf, i)
+            if not m:
+                i += 1
+                continue
+            op = m.group(0)
+            i = m.end()
+            if op == b"BI":
+                # 画像の生データ。本文の記号がたまたま混ざっていることがあるので、
+                # 中を読まずに飛ばす。飛ばせなければ止める。
+                d = buf.find(b"ID", i)
+                e = EI.search(buf, d + 2) if d != -1 else None
+                if not e:
+                    stop(f"ページ {page} の画像データの終わりが見つかりません。")
+                i = e.end()
+                continue
+            toks.append(("op", op))
+    return toks
+
 
 def xobject_map(res):
     """ページが呼び出せる図形部品の一覧。名前 -> オブジェクト番号。"""
@@ -326,25 +414,55 @@ def read_content(content, res, page, depth=0):
     xm = xobject_map(res)
     cur = None
     out = []
-    for tok in re.finditer(TOK, content, re.S):
-        if tok.group(1):
-            cur = fm.get(tok.group(1).decode())
-        elif tok.group(2):
-            out.append(decode_hex(tok.group(2), cur))
-        elif tok.group(3):
-            # 配列には16進の字とそのまま書いた字が混ざる。両方読む。
-            for em in re.finditer(rb"<([0-9A-Fa-f]*)>|\(((?:\\.|[^()\\])*)\)", tok.group(3), re.S):
-                if em.group(1) is not None:
-                    out.append(decode_hex(em.group(1), cur))
-                else:
-                    out.append(decode_bytes(literal_bytes(em.group(2)), cur))
-        elif tok.group(4) is not None:
-            out.append(decode_bytes(literal_bytes(tok.group(4)), cur))
-        elif tok.group(5):
+    stack = []  # 演算子の手前に積まれた値
+
+    def show(v):
+        k, x = v
+        if k == "hex":
+            return decode_hex(x, cur)
+        if k == "str":
+            return decode_bytes(literal_bytes(x), cur)
+        return ""
+
+    for kind, val in tokenize(content, page):
+        if kind != "op":
+            stack.append((kind, val))
+            continue
+        if val == b"[":
+            stack.append(("mark", b""))
+        elif val == b"]":
+            k = len(stack) - 1
+            while k >= 0 and stack[k][0] != "mark":
+                k -= 1
+            items = stack[k + 1:] if k >= 0 else stack[:]
+            del stack[k if k >= 0 else 0:]
+            stack.append(("arr", items))
+        elif val == b"Tf":
+            if stack and stack[0][0] == "name":
+                cur = fm.get(stack[0][1].decode())
+            stack = []
+        elif val == b"Tj":
+            if stack:
+                out.append(show(stack[-1]))
+            stack = []
+        elif val == b"TJ":
+            if stack and stack[-1][0] == "arr":
+                # 配列には16進の字とそのまま書いた字が混ざる。両方読む。
+                out.extend(show(v) for v in stack[-1][1])
+            stack = []
+        elif val in (b"'", b'"'):
+            # 改行してから1行出す書き方。読み飛ばすと、その行がまるごと消える。
             out.append("\n")
-        elif tok.group(6):
-            name = tok.group(6).decode()
-            onum = xm.get(name)
+            if stack:
+                out.append(show(stack[-1]))
+            stack = []
+        elif val in (b"TD", b"Td", b"T*", b"ET"):
+            out.append("\n")
+            stack = []
+        elif val == b"Do":
+            name = stack[0][1].decode() if stack and stack[0][0] == "name" else None
+            stack = []
+            onum = xm.get(name) if name else None
             if onum is None:
                 continue  # 画像など、本文を持たない呼び出し
             sub = objs.get(onum)
@@ -357,6 +475,8 @@ def read_content(content, res, page, depth=0):
                 stop(f"ページ {page} の部品 {name} の中身が取れません。")
             sres = resolve_res(onum)
             out.append(read_content(s, sres if sres else res, page, depth + 1))
+        else:
+            stack = []
     return "".join(out)
 
 
