@@ -18,3 +18,6 @@ prototype-chapter/snapshots/
 
 # AIエージェントの作業ツリー（リポジトリの成果物ではない）
 /.claude/worktrees/
+
+# AIツールのセッション状態（成果物ではない。公開リポジトリに入れない）
+.omc/
