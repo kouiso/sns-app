@@ -17,7 +17,7 @@ objs = {}
 for m in re.finditer(rb"(\d+)\s+(\d+)\s+obj(.*?)endobj", data, re.S):
     objs[int(m.group(1))] = m.group(3)
 
-def stream_of(body):
+def stream_of(body, num=None):
     m = re.search(rb"stream\r?\n", body)
     if not m:
         return None
@@ -25,19 +25,18 @@ def stream_of(body):
     end = body.find(b"endstream", start)
     raw = body[start:end]
     if b"FlateDecode" in body[:m.start()]:
+        # 途中まで展開できてもそれは本文の欠けた状態なので、採用せず止める。
+        # 欠けたまま数えると、実測値が黙って小さく出る。
         try:
             return zlib.decompress(raw)
-        except Exception:
-            try:
-                return zlib.decompressobj().decompress(raw)
-            except Exception:
-                return None
+        except Exception as e:
+            raise SystemExit(f"オブジェクト {num} の展開に失敗しました（{e}）。実測を中止します。")
     return raw
 
 # --- build ToUnicode CMaps per font ---
 cmaps = {}  # objnum of tounicode -> dict
 for num, body in objs.items():
-    s = stream_of(body)
+    s = stream_of(body, num)
     if not s or (b"beginbfchar" not in s and b"beginbfrange" not in s):
         continue
     mp = {}
@@ -109,9 +108,10 @@ for num, body in sorted(pages):
     fm = page_fontmap(res + body)
     content = b""
     for m in re.finditer(rb"/Contents\s+(\d+)\s+0\s+R", body):
-        c = objs.get(int(m.group(1)))
+        cnum = int(m.group(1))
+        c = objs.get(cnum)
         if c:
-            s = stream_of(c)
+            s = stream_of(c, cnum)
             if s:
                 content += s
     if not content:
