@@ -8,8 +8,12 @@ PDF 本体は局長の著作物なのでリポジトリには入れていない�
 """
 import re, zlib, sys, unicodedata
 
+USAGE = "使い方: python3 extract_pdf_text.py <PDFのパス> [--text]"
 if not 2 <= len(sys.argv) <= 3:
-    sys.exit("使い方: python3 extract_pdf_text.py <PDFのパス> [--text]")
+    sys.exit(USAGE)
+# 綴り違いを黙って無視すると、本文が出ないのを仕様だと思い込む。
+if len(sys.argv) == 3 and sys.argv[2] != "--text":
+    sys.exit(f"知らない指定です: {sys.argv[2]}\n{USAGE}")
 data = open(sys.argv[1], "rb").read()
 
 # --- collect all objects ---
@@ -76,10 +80,10 @@ for num, body in objs.items():
         pages.append((num, body))
 
 def resolve_res(body):
+    # /Resources が別オブジェクトなら引く。ページ本体に直接書いてあるなら本体を返す。
     m = re.search(rb"/Resources\s+(\d+)\s+0\s+R", body)
     if m:
         return objs.get(int(m.group(1)), b"")
-    m = re.search(rb"/Resources\s*<<(.*?)>>\s*(/|\Z)", body, re.S)
     return body
 
 def unify(c):
@@ -161,9 +165,16 @@ def strip_trailing(text, heads):
     return text
 
 
+# 抽出に失敗したPDFを渡されたとき、全部0の「実測」を印字すると
+# 本物の測定値と見分けがつかない。数える前に止める。
+if not texts:
+    sys.exit("本文のあるページが1枚も取れませんでした。実測を中止します。")
+
 page_texts = [t for _, t in texts]
 flat = re.sub(r"\s", "", "".join(page_texts))
 turns = split_turns(flat)
+if not turns:
+    sys.exit("「磯貝）」「阿部）」の話者ラベルが1件も見つかりません。実測を中止します。")
 heads = headings(page_texts[0]) if page_texts else []
 
 teacher = [x for lbl, x in turns if lbl.startswith("磯")]
