@@ -229,7 +229,7 @@ day19:511  途中がないかもしれない値には `?.` を使います。   
 `--fix` オプションで一部自動修正可能:
 
 ```bash
-npx textlint --fix material/30days-curriculum/dayXX_xxx.md
+npx textlint --fix curriculum/<章ID>.md
 ```
 
 例外が必要な場合（コード例内の文体など）:
@@ -244,7 +244,7 @@ npx textlint --fix material/30days-curriculum/dayXX_xxx.md
 ### Gate 2: 品質チェック（check_quality.sh）
 
 ```bash
-bash scripts/curriculum-qa/check_quality.sh material/30days-curriculum/dayXX_xxx.md
+bash scripts/curriculum-qa/check_quality.sh curriculum/<章ID>.md
 ```
 
 **チェック項目:**
@@ -252,11 +252,21 @@ bash scripts/curriculum-qa/check_quality.sh material/30days-curriculum/dayXX_xxx
 2. コードブロック長さ（25行以下）
 3. ステップ連続性（省略なし）
 4. 禁止ワード（「同様に」「残りも」「以下略」etc.）
-5. 技術スタック（shadcn/ui必須・MUI禁止）
+5. 技術スタック（**本作では成立しない。下の警告を読むこと**）
 6. コード完全性（filepath:コメント・省略禁止）
 7. 理解度（注釈なし専門用語5個超 → FAIL）
 
 **全Step PASS になるまで修正して再実行。**
+
+> ⚠️ **Step 5（技術スタック）は本作では通らない。**（2026-08-09 追記。codex 指摘）
+> `check_tech_stack.py` は前作 task-app の Web 構成を前提に **shadcn/ui を必須・MUI を禁止**として
+> 検査する。本作は **Expo (React Native) + Supabase** で、shadcn/ui も MUI も使わない。
+> このまま走らせると、正しく書いた章が Step 5 で落ちるか、**誤ったスタックを強制される**。
+>
+> **本作の教材本文に対して `check_quality.sh` を通す前に、Step 5 の置き換えを済ませること。**
+> 何を検査に残し何を作り直すかは `material/16_決定バックログ.md` の **B31**（G0 の道具一覧の書き直し）で
+> 決める。実走による分類は `material/decisions/D14_検査スクリプトの実走結果.md` にある。
+> **B31 が閉じるまで、この Gate 2 の合格をもって「品質チェックを通した」と宣言しない。**
 
 ---
 
@@ -345,8 +355,8 @@ hana652はブログ記事向けの原則であり、30日カリキュラムの�
 
 ```bash
 # 全ゲートを一括確認
-npx textlint material/30days-curriculum/dayXX_xxx.md && \
-bash scripts/curriculum-qa/check_quality.sh material/30days-curriculum/dayXX_xxx.md && \
+npx textlint curriculum/<章ID>.md && \
+bash scripts/curriculum-qa/check_quality.sh curriculum/<章ID>.md && \
 echo "全ゲートPASS — コミット可"
 ```
 
