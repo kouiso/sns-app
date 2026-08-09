@@ -80,11 +80,40 @@ case "$TOOL" in
     CMD="$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
     [[ -n "$CMD" ]] || exit 0
     # 教材のパスに触れていなければ関係ない。
+    # 展開前の字面だけで対象を決めると、glob ですり抜ける（codex 指摘 2026-08-09）。
+    # `rm -f curriculu?/ch01.md` は文字列 "curriculum" を含まないが、シェルは展開する。
+    # 実際に展開してみて、教材の木に着地するなら対象にする。
+    # **コマンドは実行しない。**bash の compgen は名前の展開だけを行う。
+    GLOB_HIT=0
+    if printf '%s' "$CMD" | grep -qE '[*?[{]'; then
+      while IFS= read -r TOK; do
+        [[ -n "$TOK" ]] || continue
+        case "$TOK" in
+          # 波括弧の展開は compgen で追えない。中身を追えないものは対象側へ倒す。
+          # ただし全部の波括弧を拾うと無関係な作業まで止まるので、
+          # 教材の名前の断片を含むものに限る（ここは網羅ではなく実用の線引き）。
+          *'{'*)
+            case "$TOK" in *[Cc]urric*) GLOB_HIT=1; break ;; esac
+            ;;
+          *[*?[]*)
+            # compgen -G は非対話のこの文脈で何も返さないことがある（実測）。
+            # bash 自身の展開を使う。$TOK を引用しないのはパス名展開を働かせるためで、
+            # 値の中の `$` などがさらに評価されることはない（パラメータ展開は再帰しない）。
+            EXPANDED="$(cd "$ROOT" 2>/dev/null && shopt -s nullglob dotglob 2>/dev/null; printf '%s\n' ${TOK//\"/} 2>/dev/null || true)"
+            if printf '%s' "$EXPANDED" | grep -qE '(^|/)curriculum(/|$)'; then
+              GLOB_HIT=1
+              break
+            fi
+            ;;
+        esac
+      done <<< "$(printf '%s' "$CMD" | tr ' \t' '\n\n')"
+    fi
+
     # `.md` で終わるパスだけを見ていると、ディレクトリ単位の操作が丸ごと素通りする
     # （codex 指摘 2026-08-09）。`rm -rf curriculum` や `mv curriculum /tmp/backup` は
     # **章を全部消す**のに、下の既定拒否の分析へ一度も入らなかった。
     # ディレクトリ名そのものに触れる形も対象にする。
-    if printf '%s' "$CMD" | grep -qE '(^|[^A-Za-z0-9_/.-])(\./)?curriculum(/|$|[^A-Za-z0-9_.-])|'"$ROOT"'/curriculum(/|$|[^A-Za-z0-9_.-])'; then
+    if printf '%s' "$CMD" | grep -qE '(^|[^A-Za-z0-9_/.-])(\./)?curriculum(/|$|[^A-Za-z0-9_.-])|'"$ROOT"'/curriculum(/|$|[^A-Za-z0-9_.-])' || [[ "$GLOB_HIT" -eq 1 ]]; then
       # 書き込みの手段を列挙する方式はやめた。node -e や自作スクリプトのように
       # 名前を挙げきれない経路がいくらでもあり、列挙は必ず漏れる（codex 指摘）。
       # 既定を拒否にして、明らかに読むだけの入り口だけを通す。
@@ -123,50 +152,26 @@ case "$TOOL" in
 
         SEG_OK=0
         case "$FIRST" in
-          grep|rg|egrep|fgrep|cat|head|tail|wc|ls|file|stat|diff|md5|md5sum|shasum|sha256sum|cut|nl|column)
+          grep|egrep|fgrep|cat|head|tail|wc|ls|file|stat|diff|md5|md5sum|shasum|sha256sum|cut|nl|column)
             SEG_OK=1 ;;
-          # 2026-08-09 に外したもの（codex 指摘）。**名前が読むだけでも、引数で書ける。**
-          #   sort  … `-o FILE` / `--output=FILE` で結果をファイルへ書く。
-          #           `sort -o curriculum/ch01.md curriculum/ch01.md` はリダイレクトを含まない。
-          #   uniq  … 第2引数が出力先。`uniq in curriculum/ch01.md` で上書きされる。
-          #   awk   … `system("rm ...")` が書ける（`>` を含まないので下の検査でも拾えない）。
-          #   less / more … 対話中に外部コマンドを起動できる。
-          # 読むだけの用途はどれも cat / grep / head で足りる。
-          # git と find は実行ファイル名だけでは読み書きを判定できない（codex 指摘 2026-08-09）。
-          # `git checkout -- curriculum/ch01.md` `git restore` `git rm` は教材を書き換え・削除するし、
-          # `find curriculum/ch01.md -delete` も同じ。どれもリダイレクトを含まないので、
-          # 下のリダイレクト検査では拾えない。**実行ファイル名を読むだけ扱いにしていたのが誤り。**
-          git)
-            # **実行時の設定を差し込む指定があれば、副問い合わせが何であれ通さない**
-            # （codex 指摘 2026-08-09）。`git -c diff.external=/tmp/evil diff curriculum/ch01.md` は
-            # 副問い合わせが diff なので読むだけに見えるが、git が指定された外部コマンドを起動し、
-            # 章を書き換えも削除もできる。`diff.external` だけの話ではない
-            # （`core.pager` / `alias.*` / `sequence.editor` など、同じ形の指定は多数ある）。
-            # 危ない設定名を列挙する方式は必ず漏れるので、**指定の存在だけで落とす**。
-            if printf '%s' "$SEG" | grep -qE '(^|[[:space:]])(-c|--config-env)([[:space:]=]|$)'; then
-              SEG_OK=0
-              READONLY=0
-              break
-            fi
-            # 部分文字列で判定しない（`git checkout` が `git check` を含む形で
-            # すり抜けるのを避ける）。副問い合わせを1語だけ取り出して完全一致で見る。
-            GIT_SUB="$(printf '%s' "$SEG" | sed -E 's/^[[:space:]]*//; s/^\(//' | awk '{
-              for (i = 2; i <= NF; i++) {
-                # -C <path> / -c k=v などのグローバルオプションを読み飛ばす
-                if ($i == "-C") { i++; continue }
-                if (substr($i, 1, 1) == "-") { continue }
-                print $i; exit
-              }
-            }')"
-            case "$GIT_SUB" in
-              grep|show|log|diff|status|blame|cat-file|ls-files|ls-tree|rev-parse|describe)
-                SEG_OK=1 ;;
-            esac
-            ;;
-          # find は読むだけの形もあるが、`-delete` `-exec` `-execdir` `-ok` `-fprint*`
-          # を1つでも取りこぼすと書き換えが素通りする。列挙は必ず漏れるという
-          # 本フック自身の方針（上のコメント）に従い、**find は通さない**。
-          # 読むだけの用途は ls / grep で足りる。
+          # ---- 一覧から外したものと、その理由 ----------------------------------
+          # 2026-08-09 の4周で、**名前が読むだけでも引数や設定で書ける**ものが次々に出た。
+          # 危ない入り口を1つずつ塞ぐのはやめ、**外す**側へ倒した。
+          #
+          #   sort  … `-o FILE` / `--output=FILE`
+          #   uniq  … 第2引数が出力先
+          #   awk   … `system("rm ...")`
+          #   less / more … 対話中に外部コマンドを起動できる
+          #   find  … `-delete` `-exec` `-execdir` `-ok` `-fprint*`
+          #   rg    … `--pre COMMAND` が入力ごとに COMMAND を起動する（`--pre-glob` も同族）。
+          #           読むだけの用途は grep で足りるので、丸ごと外す
+          #   git   … `-c diff.external=...` を塞いでも、**先に `git config` で
+          #           永続化されていれば `git diff` がその外部コマンドを起動する**。
+          #           `--no-ext-diff` / `--no-textconv` を強制するには
+          #           コマンドを書き換える必要があり、このフックは書き換えをしない。
+          #           `git show` / `git log -p` も同じ経路を持つので、**git は丸ごと外す**。
+          #           履歴を読む必要があるならスキルを読み込んでから行う
+          # --------------------------------------------------------------------
         esac
         [[ "$SEG_OK" -eq 1 ]] || READONLY=0
       done <<< "$SEGMENTS"
