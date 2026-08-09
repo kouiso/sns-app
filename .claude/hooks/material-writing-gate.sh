@@ -56,6 +56,11 @@ TOOL="$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null || true)"
 is_material() {
   local f="$1"
   [[ "$f" == *.md ]] || return 1
+  # README.md はディレクトリを実在させるための道しるべであって教材本文ではない（D1-1）。
+  # ここを対象にすると、README 自体を直すのに文体スキルの読み込みが要る。
+  case "$f" in
+    */curriculum/README.md|curriculum/README.md|./curriculum/README.md) return 1 ;;
+  esac
   case "$f" in
     "$ROOT"/curriculum/*) return 0 ;;
     curriculum/*) return 0 ;;
@@ -105,8 +110,15 @@ case "$TOOL" in
 
         SEG_OK=0
         case "$FIRST" in
-          grep|rg|egrep|fgrep|cat|head|tail|less|more|wc|ls|file|stat|diff|md5|md5sum|shasum|sha256sum|awk|cut|sort|uniq|nl|column)
+          grep|rg|egrep|fgrep|cat|head|tail|wc|ls|file|stat|diff|md5|md5sum|shasum|sha256sum|cut|nl|column)
             SEG_OK=1 ;;
+          # 2026-08-09 に外したもの（codex 指摘）。**名前が読むだけでも、引数で書ける。**
+          #   sort  … `-o FILE` / `--output=FILE` で結果をファイルへ書く。
+          #           `sort -o curriculum/ch01.md curriculum/ch01.md` はリダイレクトを含まない。
+          #   uniq  … 第2引数が出力先。`uniq in curriculum/ch01.md` で上書きされる。
+          #   awk   … `system("rm ...")` が書ける（`>` を含まないので下の検査でも拾えない）。
+          #   less / more … 対話中に外部コマンドを起動できる。
+          # 読むだけの用途はどれも cat / grep / head で足りる。
           # git と find は実行ファイル名だけでは読み書きを判定できない（codex 指摘 2026-08-09）。
           # `git checkout -- curriculum/ch01.md` `git restore` `git rm` は教材を書き換え・削除するし、
           # `find curriculum/ch01.md -delete` も同じ。どれもリダイレクトを含まないので、
@@ -137,6 +149,12 @@ case "$TOOL" in
 
       # リダイレクトがあれば読むだけではない。sed の上書きも同じ。
       if printf '%s' "$CMD" | grep -qE '>|\btee\b|\bsed\b[^|]*-i'; then
+        READONLY=0
+      fi
+
+      # 出力先を指定する引数があれば、実行ファイル名が何であれ読むだけではない。
+      # 上の一覧から sort を外したが、**一覧に頼らない側の防御も要る**（codex 指摘）。
+      if printf '%s' "$CMD" | grep -qE '(^|[[:space:]])(-o|--output)([[:space:]=]|$)'; then
         READONLY=0
       fi
       [[ "$READONLY" -eq 1 ]] || TARGETED=1

@@ -33,7 +33,13 @@ command -v jq >/dev/null 2>&1 || exit 0
 # cwd ガード: sns-app 配下でなければ何もしない。
 # worktree（.../sns-app/.claude/worktrees/<name>）でも効くよう部分一致にする。
 CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-}"
-[[ "$CLAUDE_PROJECT_DIR" == *sns-app* ]] || exit 0
+# 2026-08-09 訂正（codex 指摘）: リポジトリ名での判定をやめた。
+# 別名でチェックアウトすると（例: course-materials）黙って無効になる。
+# ディレクトリ名は同一性の根拠にならない。**このフック自身が
+# CLAUDE_PROJECT_DIR の配下にあるか**で判定する。worktree でも成立する。
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P)" || exit 0
+ROOT_DIR="$(cd "$CLAUDE_PROJECT_DIR" 2>/dev/null && pwd -P)" || exit 0
+[[ "$SELF_DIR" == "$ROOT_DIR"/* ]] || exit 0
 
 # 対象ファイルパスを stdin JSON から取得（過去バグ(1)）
 FILE_PATH="$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)"
