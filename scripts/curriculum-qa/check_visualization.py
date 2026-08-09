@@ -13,10 +13,36 @@ def check_visualization(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # 表の数をカウント
-    table_pattern = r'\|.*\|.*\|'
-    tables = re.findall(table_pattern, content)
-    table_count = len([t for t in tables if '---' not in t])  # ヘッダー行を除く
+    # 表の数をカウント。
+    # 2026-08-09 修正（codex 指摘）: 以前は行を数えていたので、
+    # **1つの表のデータ行がそれぞれ1個の表として数えられていた**。
+    # ヘッダー＋データ3行の表1つが「表4つ」と報告され、
+    # 「表が4つ以上」の条件を満たしたことになっていた（要求の3つ分が実際には無い）。
+    # 連続する表の塊を1つとして数え、囲みの中は数えない。
+    table_count = 0
+    in_fence = False
+    fence_mark = None
+    prev_was_table_row = False
+    for line in content.splitlines():
+        stripped = line.strip()
+        fence = re.match(r'^(`{3,}|~{3,})', stripped)
+        if fence:
+            if not in_fence:
+                in_fence = True
+                fence_mark = fence.group(1)[0]
+            elif fence.group(1)[0] == fence_mark:
+                in_fence = False
+                fence_mark = None
+            prev_was_table_row = False
+            continue
+        if in_fence:
+            prev_was_table_row = False
+            continue
+
+        is_table_row = bool(re.match(r'^\|.*\|$', stripped))
+        if is_table_row and not prev_was_table_row:
+            table_count += 1  # 塊の先頭でだけ1つ数える
+        prev_was_table_row = is_table_row
 
     # スクショ位置をカウント（複数パターンに対応）
     # 1. 旧形式: 【スクリーンショット:...】

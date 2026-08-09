@@ -32,3 +32,9 @@ __pycache__/
 
 # AIツールのセッション状態（成果物ではない。公開リポジトリに入れない）
 .omc/
+
+# 文体ゲートの緊急停止マーカー。**絶対にコミットしない。**
+# これが入ったチェックアウトでは material-writing-gate.sh が冒頭で exit 0 するので、
+# 教材本文の保護がそのチェックアウト全体で黙って無効になる（codex 指摘 2026-08-09。
+# rollback 手順は「コミットされない」と書いていたが、実際は ignore されていなかった）。
+.claude/disable-material-writing-gate

@@ -80,7 +80,11 @@ case "$TOOL" in
     CMD="$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
     [[ -n "$CMD" ]] || exit 0
     # 教材のパスに触れていなければ関係ない。
-    if printf '%s' "$CMD" | grep -qE '(^|[^A-Za-z0-9_/.-])(\./)?curriculum/[^ "'"'"']*\.md|'"$ROOT"'/curriculum/[^ "'"'"']*\.md'; then
+    # `.md` で終わるパスだけを見ていると、ディレクトリ単位の操作が丸ごと素通りする
+    # （codex 指摘 2026-08-09）。`rm -rf curriculum` や `mv curriculum /tmp/backup` は
+    # **章を全部消す**のに、下の既定拒否の分析へ一度も入らなかった。
+    # ディレクトリ名そのものに触れる形も対象にする。
+    if printf '%s' "$CMD" | grep -qE '(^|[^A-Za-z0-9_/.-])(\./)?curriculum(/|$|[^A-Za-z0-9_.-])|'"$ROOT"'/curriculum(/|$|[^A-Za-z0-9_.-])'; then
       # 書き込みの手段を列挙する方式はやめた。node -e や自作スクリプトのように
       # 名前を挙げきれない経路がいくらでもあり、列挙は必ず漏れる（codex 指摘）。
       # 既定を拒否にして、明らかに読むだけの入り口だけを通す。
@@ -104,8 +108,17 @@ case "$TOOL" in
         # 空白だけの区間は読み飛ばす（`a && b` を割ると空が出る）
         [[ -n "${SEG//[[:space:]]/}" ]] || continue
 
-        # 先頭の空白・開き括弧・環境変数の代入を落として1語目を取る
-        FIRST="$(printf '%s' "$SEG" | sed -E 's/^[[:space:]]*//; s/^\(//; s/^[A-Za-z_][A-Za-z0-9_]*=[^ ]*[[:space:]]+//' | awk '{print $1}' | xargs -n1 basename 2>/dev/null || true)"
+        # 環境変数の代入を前置きした形は通さない。読み飛ばしていたので
+        # `GIT_EXTERNAL_DIFF=/tmp/evil git diff curriculum/ch01.md` が素通りしていた。
+        # 実行時の挙動を変える指定を1つずつ見分けるのは、このフックが避けると決めた
+        # 「列挙」そのものなので、**前置きがあったら通さない**へ倒す。
+        if printf '%s' "$SEG" | grep -qE '^[[:space:]]*\(?[[:space:]]*[A-Za-z_][A-Za-z0-9_]*='; then
+          READONLY=0
+          continue
+        fi
+
+        # 先頭の空白・開き括弧を落として1語目を取る
+        FIRST="$(printf '%s' "$SEG" | sed -E 's/^[[:space:]]*//; s/^\(//' | awk '{print $1}' | xargs -n1 basename 2>/dev/null || true)"
         [[ -n "$FIRST" ]] || continue
 
         SEG_OK=0
@@ -124,12 +137,23 @@ case "$TOOL" in
           # `find curriculum/ch01.md -delete` も同じ。どれもリダイレクトを含まないので、
           # 下のリダイレクト検査では拾えない。**実行ファイル名を読むだけ扱いにしていたのが誤り。**
           git)
+            # **実行時の設定を差し込む指定があれば、副問い合わせが何であれ通さない**
+            # （codex 指摘 2026-08-09）。`git -c diff.external=/tmp/evil diff curriculum/ch01.md` は
+            # 副問い合わせが diff なので読むだけに見えるが、git が指定された外部コマンドを起動し、
+            # 章を書き換えも削除もできる。`diff.external` だけの話ではない
+            # （`core.pager` / `alias.*` / `sequence.editor` など、同じ形の指定は多数ある）。
+            # 危ない設定名を列挙する方式は必ず漏れるので、**指定の存在だけで落とす**。
+            if printf '%s' "$SEG" | grep -qE '(^|[[:space:]])(-c|--config-env)([[:space:]=]|$)'; then
+              SEG_OK=0
+              READONLY=0
+              break
+            fi
             # 部分文字列で判定しない（`git checkout` が `git check` を含む形で
             # すり抜けるのを避ける）。副問い合わせを1語だけ取り出して完全一致で見る。
             GIT_SUB="$(printf '%s' "$SEG" | sed -E 's/^[[:space:]]*//; s/^\(//' | awk '{
               for (i = 2; i <= NF; i++) {
                 # -C <path> / -c k=v などのグローバルオプションを読み飛ばす
-                if ($i == "-C" || $i == "-c") { i++; continue }
+                if ($i == "-C") { i++; continue }
                 if (substr($i, 1, 1) == "-") { continue }
                 print $i; exit
               }

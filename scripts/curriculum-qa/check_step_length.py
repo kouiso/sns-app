@@ -11,9 +11,18 @@ def check_code_blocks(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # コードブロックを抽出（```で囲まれた部分）
-    code_block_pattern = r'```[\w]*\n(.*?)```'
-    code_blocks = re.findall(code_block_pattern, content, re.DOTALL)
+    # コードブロックを抽出。
+    # 2026-08-09 修正（codex 指摘）: ``` しか見ておらず、`~~~tsx` のような
+    # チルダの囲みを **1個も認識しなかった**。26行のチルダ囲みが
+    # 「全0個のコードブロック」として上限検査を素通りしていた。
+    # 同じリポジトリの markdown_scan.py は両方の囲みに対応しており、
+    # ここだけが取り残されていた。
+    # 開きと閉じは同じ記号・同じ長さでそろえる（Markdown の規定）。
+    code_block_pattern = r'^(`{3,}|~{3,})[^\n]*\n(.*?)^\1[ \t]*$'
+    code_blocks = [
+        m.group(2)
+        for m in re.finditer(code_block_pattern, content, re.DOTALL | re.MULTILINE)
+    ]
 
     errors = []
     for i, block in enumerate(code_blocks, 1):
