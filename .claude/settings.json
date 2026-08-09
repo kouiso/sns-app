@@ -50,6 +50,24 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/plan-memory-reminder.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/plan-memory-reminder.sh"
+          }
+        ]
+      },
+      {
         "matcher": "Skill",
         "hooks": [
           {

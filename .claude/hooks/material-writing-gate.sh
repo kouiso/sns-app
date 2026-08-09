@@ -83,8 +83,32 @@ case "$TOOL" in
       FIRST="$(printf '%s' "$CMD" | sed -E 's/^[[:space:]]*//; s/^\(//; s/^[A-Za-z_][A-Za-z0-9_]*=[^ ]*[[:space:]]+//' | awk '{print $1}' | xargs -n1 basename 2>/dev/null || true)"
       READONLY=0
       case "$FIRST" in
-        grep|rg|egrep|fgrep|cat|head|tail|less|more|wc|ls|find|file|stat|diff|git|md5|md5sum|shasum|sha256sum|awk|cut|sort|uniq|nl|column)
+        grep|rg|egrep|fgrep|cat|head|tail|less|more|wc|ls|file|stat|diff|md5|md5sum|shasum|sha256sum|awk|cut|sort|uniq|nl|column)
           READONLY=1 ;;
+        # git と find は実行ファイル名だけでは読み書きを判定できない（codex 指摘 2026-08-09）。
+        # `git checkout -- curriculum/ch01.md` `git restore` `git rm` は教材を書き換え・削除するし、
+        # `find curriculum/ch01.md -delete` も同じ。どれもリダイレクトを含まないので、
+        # 下のリダイレクト検査では拾えない。**実行ファイル名を読むだけ扱いにしていたのが誤り。**
+        git)
+          # 部分文字列で判定しない（`git checkout` が `git check` を含む形で
+          # すり抜けるのを避ける）。副問い合わせを1語だけ取り出して完全一致で見る。
+          GIT_SUB="$(printf '%s' "$CMD" | sed -E 's/^[[:space:]]*//; s/^\(//' | awk '{
+            for (i = 2; i <= NF; i++) {
+              # -C <path> / -c k=v などのグローバルオプションを読み飛ばす
+              if ($i == "-C" || $i == "-c") { i++; continue }
+              if (substr($i, 1, 1) == "-") { continue }
+              print $i; exit
+            }
+          }')"
+          case "$GIT_SUB" in
+            grep|show|log|diff|status|blame|cat-file|ls-files|ls-tree|rev-parse|describe)
+              READONLY=1 ;;
+          esac
+          ;;
+        # find は読むだけの形もあるが、`-delete` `-exec` `-execdir` `-ok` `-fprint*`
+        # を1つでも取りこぼすと書き換えが素通りする。列挙は必ず漏れるという
+        # 本フック自身の方針（上のコメント）に従い、**find は通さない**。
+        # 読むだけの用途は ls / grep で足りる。
       esac
       # リダイレクトがあれば読むだけではない。sed の上書きも同じ。
       if printf '%s' "$CMD" | grep -qE '>|\btee\b|\bsed\b[^|]*-i'; then
