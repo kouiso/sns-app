@@ -19,5 +19,22 @@ prototype-chapter/snapshots/
 # AIエージェントの作業ツリー（リポジトリの成果物ではない）
 /.claude/worktrees/
 
+# Python の中間生成物（検査スクリプト実行時に出る）
+__pycache__/
+*.pyc
+
+# 組版（Vivliostyle）の生成物。13 §3 の Git 運用規約に従い追跡しない。
+# build のたびに作業ディレクトリ直下へ生まれる（.vivliostyle は 20K、PDF は1章 290KB）。
+# 配布物は CI かローカルで生成する。決定の経緯は decisions/D23_Vivliostyle採用の影響.md
+.vivliostyle/
+*.pdf
+*.epub
+
 # AIツールのセッション状態（成果物ではない。公開リポジトリに入れない）
 .omc/
+
+# 文体ゲートの緊急停止マーカー。**絶対にコミットしない。**
+# これが入ったチェックアウトでは material-writing-gate.sh が冒頭で exit 0 するので、
+# 教材本文の保護がそのチェックアウト全体で黙って無効になる（codex 指摘 2026-08-09。
+# rollback 手順は「コミットされない」と書いていたが、実際は ignore されていなかった）。
+.claude/disable-material-writing-gate

@@ -10,6 +10,7 @@
     },
     "prh": {
       "rulePaths": ["./prh/sns-app.yml"]
-    }
+    },
+    "@textlint-ja/preset-ai-writing": true
   }
 }

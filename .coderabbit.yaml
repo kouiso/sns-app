@@ -1,0 +1,20 @@
+# CodeRabbit の設定
+#
+# 目的は1つだけ: **第三者から無変更で持ち込んだパックをレビュー対象から外す。**
+# 本作が書いたものではないので、指摘されても直す先がこのリポジトリに無い。
+# あわせて、1PR あたりのファイル数の上限（100）に当たってレビューが
+# まるごとスキップされる事象への手当てにもなっている（2026-08-09 に実際に当たった）。
+#
+# ⚠️ 自分たちが書いたものは1つも除外していない。
+#    material/ の設計文書・scripts/curriculum-qa/ の検査群・.claude/hooks/ は
+#    すべてレビュー対象のまま残す。ここを外すと、レビューを通す意味が無くなる。
+
+language: ja-JP
+
+reviews:
+  path_filters:
+    # hana652-tech-writing-pack（CC BY 4.0）。上流をそのまま置いている。
+    # 出典と改変の有無は .claude/skills/material-writing/references/ATTRIBUTION.md にある。
+    - "!.claude/skills/material-writing/hana652-tech-writing-pack/**"
+    # xamfonos technical-writing-best-practices。同上。
+    - "!.claude/skills/material-writing/xamfonos-technical-writing-best-practices/**"
