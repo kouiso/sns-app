@@ -8,12 +8,14 @@
     "gate:quote": "tools/g5-quote.sh",
     "gate": "npm run gate:style && npm run gate:quote",
     "snapshot": "tools/make-snapshot.sh",
-    "g6": "tools/g6-run.sh"
+    "g6": "tools/g6-run.sh",
+    "gate:style:selftest": "prh/testdata/run.sh"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@textlint-ja/textlint-rule-preset-ai-writing": "^1.7.0",
     "textlint": "^15.7.1",
     "textlint-rule-preset-ja-technical-writing": "^12.0.2",
     "textlint-rule-prh": "^6.1.0"

@@ -1,0 +1,23 @@
+{
+  "filters": {
+    "comments": true
+  },
+  "rules": {
+    "preset-ja-technical-writing": {
+      "no-mix-dearu-desumasu": {
+        "preferInBody": "ですます",
+        "preferInList": "である"
+      },
+      "sentence-length": { "max": 100 },
+      "max-comma": { "max": 3 },
+      "ja-no-mixed-period": { "periodMark": "。" },
+      "no-exclamation-question-mark": false,
+      "ja-no-weak-phrase": true,
+      "no-doubled-joshi": { "min_interval": 1 }
+    },
+    "@textlint-ja/preset-ai-writing": true,
+    "prh": {
+      "rulePaths": ["./prototype-chapter/prh/sns-app.yml"]
+    }
+  }
+}

@@ -1,0 +1,225 @@
+#!/bin/bash
+# material-writing-gate.sh
+# PreToolUse hook (matcher: Write|Edit|Bash): 文体スペックを読まずに教材へ書くのを止める。
+#
+# WHY: 同じディレクトリの material-writing-reminder.sh は、自分でも書いているとおり
+#   「書いた後に届く安全網」である。PreToolUse の additionalContext はツール結果の隣に
+#   届くので、モデルは書いてから読む。外部レビューで指摘された「AIっぽい・翻訳文みたい」は
+#   書く前に効く機構が無いことが原因で、注意の払い方では止まらない。
+#   ここは permissionDecision で書き込みそのものを拒否する。
+#
+# Bash も見る理由: Write/Edit だけを塞いでも、python3 や printf で同じファイルへ書ける。
+#   実際にこのリポジトリでは python3 のワンライナーで教材を一括置換した実績がある。
+#   塞いだつもりで一番使う抜け道が空いている状態は、無いより悪い。
+#   書き込み手段を列挙する方式は取らない。node -e や自作スクリプトのように名前を
+#   挙げきれない経路があり、列挙は必ず漏れる。教材のパスに触れるコマンドは既定で
+#   拒否し、明らかに読むだけの入り口だけを通す。
+#
+# 判定材料は material-writing-skill-marker.sh がセッションIDごとに置く印だけ。
+# 印が無ければ deny する。逃げ道は「スキルを読む」1つだけなので、詰まることはない。
+#
+# 対象はこのリポジトリの curriculum/ 配下の .md だけ。他の場所は常に通す。
+# 緊急停止: リポジトリ直下に .claude/disable-material-writing-gate を作る。
+#   これはチェックアウト単位で効く。同じチェックアウトの他セッションにも効くので、
+#   置いたら用が済み次第すぐ消すこと。
+#
+# 契約: 判定できない場合（jq が無い、payload が壊れている、対象外パス）は exit 0。
+#   deny するのは「対象パス かつ 印が無い」と確定したときだけ。
+#
+# ROLLBACK: .claude/hooks/rollback-material-writing-gate.md を参照。
+
+set -uo pipefail
+
+INPUT="$(cat 2>/dev/null || true)"
+[[ -n "$INPUT" ]] || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
+
+# リポジトリの実体。ここを基準に「このリポジトリの教材本文」を決める。
+# 以前は CLAUDE_PROJECT_DIR にリポジトリ名が含まれるかで判定していたが、
+# 別名でチェックアウトすると黙って無効になり、/tmp/material/notes.md のような
+# 無関係なパスまで拾っていた（codex 指摘）。
+#
+# task-app からの移植にあたって対象ディレクトリを変えた。task-app は
+# `material/30days-curriculum/` が教材本文だったが、sns-app の `material/` は
+# 設計文書（00〜16・PROGRESS・承認パッケージ）であって教材本文ではない。
+# ここを task-app と同じ `material/` にすると、設計文書の編集が全部止まる。
+# 教材本文の置き場は B1・B2 で確定するまで暫定で `curriculum/` とする。
+# ディレクトリが無い間このゲートは不活性で、作られた時点で自動的に効き始める。
+ROOT="${CLAUDE_PROJECT_DIR:-}"
+[[ -n "$ROOT" ]] || exit 0
+[[ -d "$ROOT/curriculum" ]] || exit 0
+[[ -f "$ROOT/.claude/disable-material-writing-gate" ]] && exit 0
+
+TOOL="$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null || true)"
+
+# 教材本文にあたるか。監査記録・スクリプト・設定は文体スペックの管轄外なので通す。
+is_material() {
+  local f="$1"
+  [[ "$f" == *.md ]] || return 1
+  # README.md はディレクトリを実在させるための道しるべであって教材本文ではない（D1-1）。
+  # ここを対象にすると、README 自体を直すのに文体スキルの読み込みが要る。
+  case "$f" in
+    */curriculum/README.md|curriculum/README.md|./curriculum/README.md) return 1 ;;
+  esac
+  case "$f" in
+    "$ROOT"/curriculum/*) return 0 ;;
+    curriculum/*) return 0 ;;
+    ./curriculum/*) return 0 ;;
+  esac
+  return 1
+}
+
+TARGETED=0
+case "$TOOL" in
+  Write|Edit|NotebookEdit)
+    FILE_PATH="$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)"
+    [[ -n "$FILE_PATH" ]] || exit 0
+    is_material "$FILE_PATH" && TARGETED=1
+    ;;
+  Bash)
+    CMD="$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
+    [[ -n "$CMD" ]] || exit 0
+    # 教材のパスに触れていなければ関係ない。
+    # 展開前の字面だけで対象を決めると、glob ですり抜ける（codex 指摘 2026-08-09）。
+    # `rm -f curriculu?/ch01.md` は文字列 "curriculum" を含まないが、シェルは展開する。
+    # 実際に展開してみて、教材の木に着地するなら対象にする。
+    # **コマンドは実行しない。**bash の compgen は名前の展開だけを行う。
+    GLOB_HIT=0
+    if printf '%s' "$CMD" | grep -qE '[*?[{]'; then
+      while IFS= read -r TOK; do
+        [[ -n "$TOK" ]] || continue
+        case "$TOK" in
+          # 波括弧の展開は compgen で追えない。中身を追えないものは対象側へ倒す。
+          # ただし全部の波括弧を拾うと無関係な作業まで止まるので、
+          # 教材の名前の断片を含むものに限る（ここは網羅ではなく実用の線引き）。
+          *'{'*)
+            case "$TOK" in *[Cc]urric*) GLOB_HIT=1; break ;; esac
+            ;;
+          *[*?[]*)
+            # compgen -G は非対話のこの文脈で何も返さないことがある（実測）。
+            # bash 自身の展開を使う。$TOK を引用しないのはパス名展開を働かせるためで、
+            # 値の中の `$` などがさらに評価されることはない（パラメータ展開は再帰しない）。
+            EXPANDED="$(cd "$ROOT" 2>/dev/null && shopt -s nullglob dotglob 2>/dev/null; printf '%s\n' ${TOK//\"/} 2>/dev/null || true)"
+            if printf '%s' "$EXPANDED" | grep -qE '(^|/)curriculum(/|$)'; then
+              GLOB_HIT=1
+              break
+            fi
+            ;;
+        esac
+      done <<< "$(printf '%s' "$CMD" | tr ' \t' '\n\n')"
+    fi
+
+    # `.md` で終わるパスだけを見ていると、ディレクトリ単位の操作が丸ごと素通りする
+    # （codex 指摘 2026-08-09）。`rm -rf curriculum` や `mv curriculum /tmp/backup` は
+    # **章を全部消す**のに、下の既定拒否の分析へ一度も入らなかった。
+    # ディレクトリ名そのものに触れる形も対象にする。
+    if printf '%s' "$CMD" | grep -qE '(^|[^A-Za-z0-9_/.-])(\./)?curriculum(/|$|[^A-Za-z0-9_.-])|'"$ROOT"'/curriculum(/|$|[^A-Za-z0-9_.-])' || [[ "$GLOB_HIT" -eq 1 ]]; then
+      # 書き込みの手段を列挙する方式はやめた。node -e や自作スクリプトのように
+      # 名前を挙げきれない経路がいくらでもあり、列挙は必ず漏れる（codex 指摘）。
+      # 既定を拒否にして、明らかに読むだけの入り口だけを通す。
+      # 誤って止めても逃げ道は「スキルを読む」1つなので、漏れるより厳しい側へ倒す。
+      # 合成コマンドを1語目だけで判定しない（codex 指摘 2026-08-09）。
+      # `cat curriculum/ch01.md && rm curriculum/ch01.md` は、1語目が cat なので
+      # 読むだけと判定され、リダイレクトも含まないので下の検査でも拾えなかった。
+      # 制御演算子で切り、**全部の区間が読むだけのときだけ**通す。
+      #
+      # コマンド置換（$( ) と backtick）が入っていたら中身を追えないので、その時点で通さない。
+      READONLY=1
+      if printf '%s' "$CMD" | grep -qE '\$\(|`'; then
+        READONLY=0
+      fi
+
+      # 制御演算子を改行へ置き換えて区間に割る。&& || ; | & と実際の改行が対象。
+      SEGMENTS="$(printf '%s' "$CMD" | sed -E 's/\|\||&&|;|\||&/\n/g')"
+
+      while IFS= read -r SEG; do
+        [[ "$READONLY" -eq 1 ]] || break
+        # 空白だけの区間は読み飛ばす（`a && b` を割ると空が出る）
+        [[ -n "${SEG//[[:space:]]/}" ]] || continue
+
+        # 環境変数の代入を前置きした形は通さない。読み飛ばしていたので
+        # `GIT_EXTERNAL_DIFF=/tmp/evil git diff curriculum/ch01.md` が素通りしていた。
+        # 実行時の挙動を変える指定を1つずつ見分けるのは、このフックが避けると決めた
+        # 「列挙」そのものなので、**前置きがあったら通さない**へ倒す。
+        if printf '%s' "$SEG" | grep -qE '^[[:space:]]*\(?[[:space:]]*[A-Za-z_][A-Za-z0-9_]*='; then
+          READONLY=0
+          continue
+        fi
+
+        # 先頭の空白・開き括弧を落として1語目を取る
+        FIRST="$(printf '%s' "$SEG" | sed -E 's/^[[:space:]]*//; s/^\(//' | awk '{print $1}' | xargs -n1 basename 2>/dev/null || true)"
+        [[ -n "$FIRST" ]] || continue
+
+        SEG_OK=0
+        case "$FIRST" in
+          grep|egrep|fgrep|cat|head|tail|wc|ls|file|stat|diff|md5|md5sum|shasum|sha256sum|cut|nl|column)
+            SEG_OK=1 ;;
+          # ---- 一覧から外したものと、その理由 ----------------------------------
+          # 2026-08-09 の4周で、**名前が読むだけでも引数や設定で書ける**ものが次々に出た。
+          # 危ない入り口を1つずつ塞ぐのはやめ、**外す**側へ倒した。
+          #
+          #   sort  … `-o FILE` / `--output=FILE`
+          #   uniq  … 第2引数が出力先
+          #   awk   … `system("rm ...")`
+          #   less / more … 対話中に外部コマンドを起動できる
+          #   find  … `-delete` `-exec` `-execdir` `-ok` `-fprint*`
+          #   rg    … `--pre COMMAND` が入力ごとに COMMAND を起動する（`--pre-glob` も同族）。
+          #           読むだけの用途は grep で足りるので、丸ごと外す
+          #   git   … `-c diff.external=...` を塞いでも、**先に `git config` で
+          #           永続化されていれば `git diff` がその外部コマンドを起動する**。
+          #           `--no-ext-diff` / `--no-textconv` を強制するには
+          #           コマンドを書き換える必要があり、このフックは書き換えをしない。
+          #           `git show` / `git log -p` も同じ経路を持つので、**git は丸ごと外す**。
+          #           履歴を読む必要があるならスキルを読み込んでから行う
+          # --------------------------------------------------------------------
+        esac
+        [[ "$SEG_OK" -eq 1 ]] || READONLY=0
+      done <<< "$SEGMENTS"
+
+      # リダイレクトがあれば読むだけではない。sed の上書きも同じ。
+      if printf '%s' "$CMD" | grep -qE '>|\btee\b|\bsed\b[^|]*-i'; then
+        READONLY=0
+      fi
+
+      # 出力先を指定する引数があれば、実行ファイル名が何であれ読むだけではない。
+      # 上の一覧から sort を外したが、**一覧に頼らない側の防御も要る**（codex 指摘）。
+      if printf '%s' "$CMD" | grep -qE '(^|[[:space:]])(-o|--output)([[:space:]=]|$)'; then
+        READONLY=0
+      fi
+      [[ "$READONLY" -eq 1 ]] || TARGETED=1
+    fi
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+
+[[ "$TARGETED" -eq 1 ]] || exit 0
+
+SESSION="$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null || true)"
+# セッションIDが取れない＝判定材料が無い。ここで deny すると復旧手段まで塞ぐので通す。
+[[ -n "$SESSION" ]] || exit 0
+
+# 印の置き場は実行ユーザーごとに分ける。共有ホストで /tmp を使うと、
+# 先に作った利用者の 0755 ディレクトリへ後の利用者が書けない（codex 指摘）。
+MARKER_DIR="${TMPDIR:-/tmp}/sns-app-material-writing-loaded-$(id -u)"
+[[ -f "$MARKER_DIR/$SESSION" ]] && exit 0
+
+REASON='教材ファイルへの書き込みを止めました。
+
+このセッションはまだ .claude/skills/material-writing を読み込んでいません。
+外部レビューで指摘された「AIっぽい・翻訳文みたい」は、書いたあとに直すのでは
+戻らないため、書く前に文体スペックを通す必要があります。
+
+次の1手: Skill ツールで material-writing を読み込んでから、同じ操作をやり直してください。
+
+対象はこのリポジトリの curriculum/ 配下の .md だけです。設計文書（material/ の 00〜16）・
+監査記録・スクリプト・設定は影響を受けません。Write/Edit だけでなく、
+シェル経由の書き込みも同じ扱いです。
+緊急停止が要る場合は .claude/disable-material-writing-gate を作ってください
+（同じチェックアウトの他セッションにも効くので、用が済んだら消してください）。'
+
+jq -n --arg reason "$REASON" \
+  '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $reason}}'
+
+exit 0
