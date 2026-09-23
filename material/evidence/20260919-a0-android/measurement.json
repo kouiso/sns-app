@@ -1,0 +1,35 @@
+{
+  "events": [
+    {
+      "event": "start",
+      "utc": "2026-09-19T13:37:30.214766+00:00",
+      "elapsedSeconds": 0.0
+    },
+    {
+      "event": "initial",
+      "utc": "2026-09-19T13:37:34.178851+00:00",
+      "elapsedSeconds": 3.964
+    },
+    {
+      "event": "source-edited",
+      "utc": "2026-09-19T13:37:34.180012+00:00",
+      "elapsedSeconds": 3.965
+    },
+    {
+      "event": "edited",
+      "utc": "2026-09-19T13:37:37.220792+00:00",
+      "elapsedSeconds": 7.006
+    },
+    {
+      "event": "source-restored",
+      "utc": "2026-09-19T13:37:37.221590+00:00",
+      "elapsedSeconds": 7.007
+    }
+  ],
+  "automatedCommandSeconds": 6.995,
+  "elapsedSeconds": 7.007,
+  "humanActiveSeconds": null,
+  "humanTimeNote": "自動実行のため人間の作業時間は未計測。コマンド処理時間にADB待機を含む。初心者の学習時間ではない。",
+  "sourceSha256": "5c7d8b989dc7a6a70e4a6be61ec95b1c5a1562e8a510efb3aa6b8cbe94033190",
+  "route": "USB adb reverse tcp:8093; exp URL via am start; QR not tested"
+}
