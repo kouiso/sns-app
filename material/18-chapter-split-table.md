@@ -87,7 +87,7 @@ Android技術試作の結果を章全体のPASSへ置き換えない。
 | likes | FR7 | 投稿詳細 | likes作成、RLS有効、本人INSERT/DELETE | いいね、解除、二重いいね、他人なりすまし | 投稿詳細、複数利用者 | - |
 | realtime-notifications | FR9 | 通知 | notifications本人SELECT、既読更新、生成境界 | 4種通知、他人閲覧拒否、列改変拒否、再接続 | いいね、リプライ、リポスト、フォロー | - |
 | password-reset | FR14 | パスワード再発行,パスワード再設定 | Auth管理、RLS対象外 | メール到達、リンク復帰、新旧パスワード、期限切れ | メール確認、ディープリンク | - |
-| rls-denial-check | - | 投稿詳細,プロフィール,通知 | users/posts/likes/follows/notificationsの正負RLS | FR1,FR2,FR3,FR5,FR6,FR7,FR8,FR9を人が照合、本人成功、他人失敗、DB状態、0行と構文失敗の識別 | 認証とパートB全操作 | - |
+| rls-denial-check | - | 投稿詳細,プロフィール,通知 | users/posts/post_media/likes/follows/notificationsの正負RLS、Storage境界 | FR1,FR2,FR3,FR5,FR6,FR7,FR8,FR9を人が照合、本人成功、他人失敗、DB状態、0行と構文失敗の識別 | 認証とパートB全操作 | - |
 | search-posts-and-users | FR10 | 検索 | users/posts検索、索引候補 | 投稿検索、利用者検索、空文字、0件 | 投稿、プロフィール | - |
 | hashtag-timeline | FR11 | ハッシュタグ別一覧 | hashtags/post_hashtags親所有者RLS | 正規化、重複、他人結付け拒否、既存投稿バックフィル | 検索、投稿 | - |
 | private-bookmarks | FR12 | ブックマーク一覧,投稿詳細 | bookmarks本人SELECT/INSERT/DELETE | 保存、解除、他人閲覧拒否、削除投稿 | 投稿詳細、複数利用者 | - |
