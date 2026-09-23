@@ -201,7 +201,7 @@ class ChapterTableTests(unittest.TestCase):
         ids = ",".join(r["章ID"] for r in self.rows[-3:])
         for row in self.rows[-3:]:
             row["見える変化"] = "tool"
-        common = f"版: test-v1\n対象章: {ids}\nゲート: G1\n種別: tool連続例外\n範囲: sns-app/material/18_章分割表.md\n"
+        common = f"版: test-v1\n対象章: {ids}\nゲート: G1\n種別: tool連続例外\n範囲: sns-app/material/18-chapter-split-table.md\n"
         (self.root / "adr.md").write_text(common + "理由: 開発順序を守る\n", encoding="utf-8")
         (self.root / "approval.md").write_text(common + "判断: 承認\n承認者: 局長\nADR: adr.md\n", encoding="utf-8")
         return "\n## tool連続例外\n" + table(("対象章", "ADR", "承認記録"), [
@@ -215,7 +215,7 @@ class ChapterTableTests(unittest.TestCase):
         for old, new in (("test-v1", "old-v0"), ("ゲート: G1", "ゲート: G3"),
                          ("判断: 承認", "判断: 未承認"), ("承認者: 局長", "承認者: 作者"),
                          ("ADR: adr.md", "ADR: fake.md"), ("chapter-dx", "missing-chapter"),
-                         ("範囲: sns-app/material/18_章分割表.md", "範囲: 別教材")):
+                         ("範囲: sns-app/material/18-chapter-split-table.md", "範囲: 別教材")):
             path.write_text(original.replace(old, new), encoding="utf-8")
             with self.subTest(old=old):
                 self.assertInvalid(self.check(extra))

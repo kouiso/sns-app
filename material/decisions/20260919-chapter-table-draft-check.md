@@ -37,7 +37,7 @@ DONEは上記全条件の積。物理A0の片方でも未実施なら、この�
 
 ## 章表の書式を一つにする
 
-正本は `material/18_章分割表.md` のみ。別のJSON/YAML正本を作らない。
+正本は `material/18-chapter-split-table.md` のみ。別のJSON/YAML正本を作らない。
 共通処理は `scripts/curriculum-qa/chapter_table.py`。他の検査はここをimportする。
 
 - `版: <版識別子>` を文書に1回書く。現行下書きは `v35-draft-1`。
@@ -92,7 +92,7 @@ split/mergeの元IDは表内にtombstoneとして保持し、renameの元IDは�
 対象章: <対象の現役章ID列>
 ゲート: G1
 種別: tool連続例外
-範囲: sns-app/material/18_章分割表.md
+範囲: sns-app/material/18-chapter-split-table.md
 ```
 
 承認記録にはさらに `判断: 承認`、`承認者: 局長`、`ADR: <相対パス>` を記す。
@@ -106,8 +106,8 @@ split/mergeの元IDは表内にtombstoneとして保持し、renameの元IDは�
 全パート・FRの漏れ、tombstoneへの依存・対応・証拠、架空/未承認/版違い/対象違いの例外をテストする。
 新parserの緑と既存QA全体の緑は区別する。実測は環境・版が変わった依存範囲だけ取り直す。
 
-- S0の対応証拠: `20260919-未決入力の対応.md`、運用正本は16。
-- 実環境・既存QA・解除条件: `20260919-試作環境と既存QAの確認.md`。
+- S0の対応証拠: `20260919-unresolved-input-handling.md`、運用正本は16。
+- 実環境・既存QA・解除条件: `20260919-prototype-env-and-qa-check.md`。
 - 直後の担当: 統括が台帳・設計統合、試作担当が両実機A0と認証、独立実走担当がD4/G6。
   自分で書いた教材を同じ文脈で完走したことを独立実走の証拠にしない。
 - D4は重いRLS章を本番書式の隔離試作にし、本人成功/他者拒否/DB状態を照合する。

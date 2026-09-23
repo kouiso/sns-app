@@ -18,7 +18,7 @@
 
 ## 検査が見るもの（D15）
 
-1. このディレクトリ直下の `.md` の basename が、章分割表（`material/18_章分割表.md`）の
+1. このディレクトリ直下の `.md` の basename が、章分割表（`material/18-chapter-split-table.md`）の
    **生きている章ID集合に含まれること**
 2. 教材PRの対象章に受領証が**存在すること**（`test -f material/reviews/g4/<章ID>.md`）
 
