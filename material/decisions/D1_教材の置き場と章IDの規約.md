@@ -251,7 +251,7 @@ snapshots/<章ID>/           ← 読者へ配る章末スナップショット�
 測り方は D1-9 に書いた。閾値を超えるなら「追跡」から「CI で生成」へ切り替える判断になるが、
 その数字が無いうちに決めない。
 
-### D1-6. 章分割表の正本は `material/18_章分割表.md`
+### D1-6. 章分割表の正本は `material/18-chapter-split-table.md`
 
 - 場所が `material/` なのは、これが設計文書だからである（G1 で局長承認して凍結する
   対象。10:122）。教材本文ではないので文体ゲートの対象にならないのが正しい。
@@ -272,7 +272,7 @@ snapshots/<章ID>/           ← 読者へ配る章末スナップショット�
   「章分割表の第二の正本を作ること」であって、正本から生成される派生物ではない。**
   `listings/<章ID>/` を「タグ時点の正本から機械生成される派生物・手編集禁止・git 追跡」と
   定めた D1-5 の枠がそのまま使える。
-  よって `vivliostyle.config.js` は **`18_章分割表.md` から `chapter_table.py` 経由で
+  よって `vivliostyle.config.js` は **`18-chapter-split-table.md` から `chapter_table.py` 経由で
   機械生成される派生物とし、手編集を禁止する。**
   config は素の JS なので外部データから `entry` を生成できることは実測済み
   （`decisions/D23_Vivliostyle採用の影響.md` §1-1）。
@@ -376,7 +376,7 @@ D1-3 の 32 文字は実測ではなく線引きなので、越える章が出�
 | D1-3 | 章ID は `^[a-z][a-z0-9]*(-[a-z0-9]+)*$` / 3〜32字 / 連番禁止 / tombstone 済みの再利用禁止 |
 | D1-4 | 改名は未着手章のみ。ADR＋表の supersedes＋3ディレクトリの `git mv`＋旧ID残存0件を1PRで |
 | D1-5 | 正本は単一アプリ。`listings/<章ID>/` はタグから生成する追跡された派生物。`supabase/` は章ごとに丸ごと持つ |
-| D1-6 | 章分割表の正本は `material/18_章分割表.md`。読み取りは `chapter_table.py` 1本 |
+| D1-6 | 章分割表の正本は `material/18-chapter-split-table.md`。読み取りは `chapter_table.py` 1本 |
 | D1-7 | 開発ログは `dev-logs/<章ID>.md`。1章1ファイル |
 | D1-8 | 定数1箇所＋配線検査1本＋「0件は FAIL」共通規約。実装は B31 と新規起票へ |
 
