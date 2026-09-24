@@ -156,12 +156,11 @@ jobs:
             n=$(printf '%s\n' "$out" | grep -cE '^  [^ ]+:[0-9]+')
             total=$((total + n))
           done
-          # 文体もフィクスチャには参考として回す。plain は対照版でわざと
-          # 手順書調に書いてあるので対象外（g3-style.sh の従来の除外と同じ）。
+          # 文体もフィクスチャには参考として回す。対照版（*-plain.md）も
+          # 含める（D17-1 で対照版は文体ゲート内に戻った）。指摘は参考。
           fixture=()
           for f in prototype-chapter/chapter*.md; do
             [ -e "$f" ] || continue
-            case "$f" in *-plain.md) continue ;; esac
             fixture+=("$f")
           done
           if [ ${#fixture[@]} -gt 0 ]; then

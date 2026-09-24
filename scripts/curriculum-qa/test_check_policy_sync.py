@@ -9,6 +9,7 @@
 
 import contextlib
 import io
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -42,8 +43,14 @@ CASES = [
     # 途中で引用を開くだけだったり、`）` で終わる節見出しは話者ではない。
     ("手続き文の引用は話者にしない", CLEAN + "\n次に「保存」を押します。\n", 0),
     ("漢字語＋行中の引用は話者にしない", CLEAN + "\n画面の「設定」を開きます。\n設定「値」を入れます。\n", 0),
+    ("漢字語＋行中の引用は話者にしない2", CLEAN + "\n画面「設定」を開きます。\n", 0),
     ("）で終わる節見出しは話者にしない", CLEAN + "\n手順）\n", 0),
     ("規定外の話者（）形・本文つき）は止める", CLEAN + "\n田中）これはだめです\n", 1),
+    # 発話が次の行へ続く話者（行内で `」` が閉じない）も話者。規定外なら止める。
+    ("行またぎの発話の規定外話者は止める",
+     CLEAN + "\n田中「こんにちは、\n今日は保存を試します。」\n", 1),
+    ("行またぎの発話でも磯貝は通す",
+     CLEAN + "\n磯貝「こんにちは、\n今日は保存を試します。」\n", 0),
     ("PDF と EPUB の記述は通す", CLEAN + "\nPDF が正本で EPUB も出ます。\n", 0),
 ]
 
@@ -86,6 +93,32 @@ def main() -> int:
     # 走査対象が0件なら未判定。D1 §8-3「0件は黙って緑にしない」。
     with tempfile.TemporaryDirectory() as d:
         expect("対象0件なら未判定(3)", 3, run_main([str(d)]))
+
+    # 話者検出の回帰計: フィクスチャ（prototype-chapter/chapter*.md）では、
+    # 旧の緩い正規表現が見つけた「正本の登場人物」の行を、新しい正規表現も
+    # 1行も落とさないこと（行またぎの発話の取りこぼし防止）。旧側の誤検出
+    # （話者でない行）は数えない。
+    fixture = sorted(
+        (Path(__file__).parent.parent.parent / "prototype-chapter").glob("chapter*.md"))
+    if fixture:
+        old_pat = re.compile(r"^(.{2,8})[「）]")
+        old_cast = 0
+        lost: list[str] = []
+        for fp in fixture:
+            for ln, line in enumerate(fp.read_text(encoding="utf-8").splitlines(), 1):
+                mo = old_pat.match(line)
+                if not mo:
+                    continue
+                if mo.group(1) in ("磯貝", "阿部"):
+                    old_cast += 1
+                    mn = check_policy_sync.SPEAKER.match(line)
+                    if not (mn and mn.group(1) == mo.group(1)):
+                        lost.append(f"{fp.name}:{ln}")
+        expect("フィクスチャの正本話者を新正規表現も全件拾う",
+               old_cast, old_cast - len(lost))
+        if lost:
+            print(f"     取りこぼし: {', '.join(lost[:5])}")
+        expect("フィクスチャに正本話者の行がある（空振り防止）", True, old_cast > 0)
 
     if failed:
         print(f"❌ check_policy_sync 自己テスト {failed}/{total} 失敗")
