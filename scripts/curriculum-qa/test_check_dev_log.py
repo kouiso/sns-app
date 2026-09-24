@@ -45,9 +45,16 @@ def check_log_only(name, body, want_problems, want_warnings):
     return ok, problems, warnings
 
 
+# mkdtemp は消えないので、1個の TemporaryDirectory の中に全部作る。
+# 親がプロセス終了時にまとめて消える（毎回消すと呼び出し側で try が要る）。
+_TMP_ROOT: tempfile.TemporaryDirectory | None = None
+
+
 def _write_tmp(body):
-    import tempfile as _t
-    f = Path(_t.mkdtemp()) / f"{CID}.md"
+    global _TMP_ROOT
+    if _TMP_ROOT is None:
+        _TMP_ROOT = tempfile.TemporaryDirectory()
+    f = Path(tempfile.mkdtemp(dir=_TMP_ROOT.name)) / f"{CID}.md"
     f.write_text(body, encoding="utf-8")
     return f
 

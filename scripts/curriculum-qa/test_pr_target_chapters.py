@@ -30,9 +30,17 @@ def git(repo: Path, *args: str) -> None:
                    check=True, capture_output=True)
 
 
+# mkdtemp は消えないので、1個の TemporaryDirectory の中に全リポを作る。
+# 親がプロセス終了時にまとめて消える。
+_REPO_ROOT: tempfile.TemporaryDirectory | None = None
+
+
 def make_repo(files: dict[str, str]) -> Path:
     """files をコミット済みのリポジトリを作り、ベースSHAを返す。"""
-    repo = Path(tempfile.mkdtemp())
+    global _REPO_ROOT
+    if _REPO_ROOT is None:
+        _REPO_ROOT = tempfile.TemporaryDirectory()
+    repo = Path(tempfile.mkdtemp(dir=_REPO_ROOT.name))
     git(repo, "init", "-q")
     for name, body in files.items():
         p = repo / name
