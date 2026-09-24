@@ -1,13 +1,18 @@
 name: gates
 
-# 教材の機械ゲート（10_教材制作フロー.md §4）のうち、**今できる分だけ**を CI で常設する。
-#   G3 のうち文体チェック … textlint + preset-ja-technical-writing + prh辞書
-#   G5 引用ゲート        … embedmd。教材に貼ったコードが listings/ の実ファイルとズレていないか
+# 教材の機械ゲート（10_教材制作フロー.md §4）を CI で常設する。
+#   検査器の自己テスト … scripts/curriculum-qa/test_*.py を全部個別に走らせる。
+#                        検査器が壊れていても検査器自身が「緑」と言わないようにするためのもの。
+#   G3 … 文体（textlint + preset-ja-technical-writing + prh辞書）/
+#         構造（コードブロック25行・段落3文）/ 方針同期（配布語彙・不採用スタック・人物名）/
+#         開発ログの存在確認 / 開始状態混入検査
+#   G4 … material/reviews/g4/ の受領証の機械検査（D15-8）
+#   G5 … embedmd。教材に貼ったコードが listings/ の実ファイルとズレていないか
+#   配布 … EPUB 同梱物・PDF リンク・未使用画像
 #
-# ★ このジョブが緑でも「G3 と G5 を通過した」とは言えない。
-#   G3 は5検査のうち1つしか実装していない（下のステップ名に明記）。
-#   G5 も引用範囲の過不足は見ていない（道具検証の記録 §9 / §14）。
-#   必須チェックに指定するときは、この差を承知のうえで指定すること。
+# ★ 終了コード 3（未判定）は「その成果物がまだ存在しない」という意味で、
+#   FAIL ではない（開始状態・EPUB・PDF・完成版アプリは現時点で未生成）。
+#   該当ステップは 3 を 0 に読み替えるが、出力には ⏸️ をそのまま残す。
 #
 # ★ embedmd -d の終了コードは 1 ではなく 2 である（実測。道具検証の記録 §3）。
 #   スクリプト側で「非ゼロなら FAIL」として扱っているので、ここでは素直に呼ぶだけでよい。
@@ -57,16 +62,78 @@ jobs:
         # 実行環境の中だけで辻褄を合わせて通ってしまい、ズレたまま気づけなくなる。
         run: npm ci
 
-      # ★ これは G3 の全部ではない。10 §4 の G3 は5つの検査からなる。
-      #   実装済み: 文体チェック（textlint）
-      #   未実装:   構造チェック / 開始状態混入検査 / 方針同期チェック / 開発ログの存在確認
-      #   この4つは Phase 2 のゲート実装で作る。それまで、このジョブが緑でも
-      #   「G3 を通過した」とは言えない。名前を「G3」にすると通過したと読めるので付けない。
-      - name: G3のうち文体チェックのみ（残り4検査は未実装）
+      # 検査器そのものの退行テスト。検査器が壊れていると「緑」が信じられないので
+      # 一番先に置く。1本でも落ちたらそこで止める（後続の判定は意味をなさない）。
+      - name: 検査器の自己テスト（test_*.py を個別に実行）
+        run: |
+          failed=0
+          for t in scripts/curriculum-qa/test_*.py; do
+            echo "=== $t"
+            if ! python3 "$t"; then
+              echo "❌ $t が落ちました"
+              failed=1
+            fi
+          done
+          exit $failed
+
+      # G3（10 §4）の5検査。未判定（3）は成果物未生成を意味するので 0 に読み替える。
+      # 後続の検査も走らせて全部の結果を出すため、失敗しても止まらない if: always()。
+      - name: G3 文体チェック（textlint）
+        if: always()
         working-directory: prototype-chapter
         run: npm run gate:style
 
+      - name: G3 構造チェック（コードブロック25行・段落3文）
+        if: always()
+        working-directory: prototype-chapter
+        run: npm run gate:structure
+
+      - name: G3 方針同期チェック（配布語彙・不採用スタック・人物名）
+        if: always()
+        working-directory: prototype-chapter
+        run: npm run gate:policy
+
+      - name: G3 開発ログの存在確認
+        if: always()
+        working-directory: prototype-chapter
+        run: npm run gate:dev-log
+
+      - name: G3 開始状態混入検査（未判定可）
+        if: always()
+        working-directory: prototype-chapter
+        run: |
+          npm run gate:start-state || rc=$?
+          if [ "${rc:-0}" -eq 3 ]; then
+            echo "⏸️ 開始状態は未作成（G0 未決項目）。未判定として扱い、FAIL にはしない"
+            exit 0
+          fi
+          exit "${rc:-0}"
+
+      - name: G4 受領証の検査
+        if: always()
+        working-directory: prototype-chapter
+        run: npm run gate:g4
+
+      - name: 配布物の検査（EPUB 参照・PDF リンク・未使用画像。未判定可）
+        if: always()
+        run: |
+          rc_all=0
+          for t in scripts/curriculum-qa/check_epub_reference.py \
+                   scripts/curriculum-qa/check_pdf_links.py \
+                   scripts/curriculum-qa/check_unused_image.py; do
+            echo "=== $t"
+            python3 "$t" && continue
+            rc=$?
+            if [ "$rc" -eq 3 ]; then
+              echo "⏸️ $t: 未判定（配布物・画像がまだ無い）"
+            else
+              rc_all=$rc
+            fi
+          done
+          exit $rc_all
+
       - name: G5 引用ゲート
+        if: always()
         working-directory: prototype-chapter
         env:
           EMBEDMD: ${{ github.workspace }}/go/bin/embedmd
