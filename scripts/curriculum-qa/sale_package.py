@@ -139,7 +139,14 @@ def pdf_link_uris(pdf: Path) -> frozenset[str]:
             h = re.sub(rb"\s", b"", m.group(1)).decode()
             if len(h) % 2:
                 h += "0"
-            uris.add(bytes.fromhex(h).decode("utf-16-be", "replace"))
+            raw = bytes.fromhex(h)
+            # 16進文字列の規格上の姿は UTF-16BE（BOM `FE FF` 付き）だが、
+            # 生成器によっては ASCII をそのまま hex にしただけの物を出す。
+            # BOM が無いのに UTF-16BE で読むと化けるので、BOM の有無で分ける。
+            if raw.startswith(b"\xfe\xff"):
+                uris.add(raw[2:].decode("utf-16-be", "replace"))
+            else:
+                uris.add(raw.decode("latin-1"))
     return frozenset(uris)
 
 

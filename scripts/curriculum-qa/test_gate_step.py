@@ -7,8 +7,10 @@ D1 §8-3: 走査対象が0件なら緑にしない、でも FAIL とも違う。
 """
 
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -62,6 +64,83 @@ def main() -> int:
     expect("違反(1)はそのまま 1", rc == 1, f"(rc={rc})")
     rc, _ = run(2)
     expect("使い方の誤り(2)はそのまま 2", rc == 2, f"(rc={rc})")
+
+    # bash 3.2（macOS の /bin/bash）では空配列の "${arr[@]}" が set -u で
+    # unbound variable になる。引数なしで各ラッパを素の /bin/bash で叩き、
+    # この綴りの事故が起きないことを見る（bash が無い環境では飛ばす）。
+    bash = Path("/bin/bash")
+    if bash.exists():
+        tools = WRAPPER.parent
+        proc = subprocess.run(
+            [str(bash), str(tools / "g4-receipt.sh")],
+            capture_output=True, text=True, cwd=tools.parent,
+        )
+        expect("g4-receipt.sh は bash 3.2 でも引数なしで落ちない",
+               proc.returncode == 3 and "unbound" not in proc.stderr,
+               f"(rc={proc.returncode} {proc.stderr.strip()[:80]})")
+        proc = subprocess.run(
+            [str(bash), str(tools / "gate-step.sh"), str(tools / "g4-receipt.sh")],
+            capture_output=True, text=True, cwd=tools.parent,
+        )
+        expect("gate-step 経由なら未判定(3)が 0 に読み替わる",
+               proc.returncode == 0 and "unbound" not in proc.stderr,
+               f"(rc={proc.returncode} {proc.stderr.strip()[:80]})")
+
+        # g3-style.sh の既定対象は curriculum/*.md（README 除く）。
+        # フィクスチャを既定で読むと教材本文が永遠に文体検査から抜ける。
+        # 実リポジトリの状態に依存しないよう、tools/ と textlint の置き場を
+        # まねた一時ツリーを作って確かめる。
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            ttools = tmp / "proto" / "tools"
+            ttools.mkdir(parents=True)
+            shutil.copy(tools / "g3-style.sh", ttools / "g3-style.sh")
+            stub_dir = tmp / "proto" / "node_modules" / ".bin"
+            stub_dir.mkdir(parents=True)
+            stub = stub_dir / "textlint"
+            stub.write_text('#!/bin/sh\necho "TEXTLINT:$*"\n', encoding="utf-8")
+            stub.chmod(0o755)
+
+            proc = subprocess.run(
+                [str(bash), str(ttools / "g3-style.sh")],
+                capture_output=True, text=True, cwd=tmp,
+            )
+            expect("文体の既定対象が0件なら未判定(3)",
+                   proc.returncode == 3, f"(rc={proc.returncode} {proc.stderr.strip()[:80]})")
+
+            (tmp / "curriculum").mkdir()
+            (tmp / "curriculum" / "ch1.md").write_text("# 章\n", encoding="utf-8")
+            (tmp / "curriculum" / "README.md").write_text("# 目次\n", encoding="utf-8")
+            proc = subprocess.run(
+                [str(bash), str(ttools / "g3-style.sh")],
+                capture_output=True, text=True, cwd=tmp,
+            )
+            expect("文体の既定は curriculum の章を検査する",
+                   proc.returncode == 0 and "ch1.md" in proc.stdout,
+                   f"(rc={proc.returncode} {proc.stdout.strip()[:80]})")
+            expect("README.md は文体の対象外",
+                   "README" not in proc.stdout, f"({proc.stdout.strip()[:80]})")
+
+            proc = subprocess.run(
+                [str(bash), str(ttools / "g3-style.sh"), "custom.md"],
+                capture_output=True, text=True, cwd=tmp,
+            )
+            expect("明示したファイルはそのまま検査する",
+                   proc.returncode == 0 and "custom.md" in proc.stdout,
+                   f"(rc={proc.returncode} {proc.stdout.strip()[:80]})")
+
+    # check_quality.sh の合否対象も教材本文だけ。CHAPTER_MDS の収集に
+    # フィクスチャが混ざると、既知のフィクスチャ指摘で全体が赤くなる。
+    quality = (ROOT / "scripts" / "curriculum-qa" / "check_quality.sh").read_text(
+        encoding="utf-8")
+    qlines = quality.splitlines()
+    for n, line in enumerate(qlines):
+        if "CHAPTER_MDS+=(" in line:
+            head = "\n".join(qlines[max(0, n - 4):n + 1])
+            expect("check_quality.sh の合否対象は curriculum のみ",
+                   "prototype-chapter" not in head, f"(L{n + 1} 周辺)")
+    expect("check_quality.sh はフィクスチャを参考扱いで回す",
+           "FIXTURE_MDS" in quality and "|| true" in quality, "")
 
     if failed:
         print(f"❌ gate-step 自己テスト {failed}/{total} 失敗")

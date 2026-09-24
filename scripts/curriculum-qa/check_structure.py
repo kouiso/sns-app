@@ -100,11 +100,21 @@ def find_long_paragraphs(text: str) -> list[tuple[int, int]]:
     hits: list[tuple[int, int]] = []
     for para in paragraphs(text):
         joined = mask_inline_code(paragraph_text(para, sep="\n"))
-        marks = sum(
-            1
-            for i, ch in enumerate(joined)
-            if ch in SENTENCE_END and _counts_as_sentence_end(joined, i)
-        )
+        # 連続する文末記号（`えっ！？`）は1つの文末として数える。`！？` を
+        # 2文と数えると読者に1文と見える段落を止めてしまう。区間の判定に
+        # 渡す位置は連続区間の最後の記号（直後の `」` と行の続きを見るため）。
+        marks = 0
+        i = 0
+        while i < len(joined):
+            if joined[i] in SENTENCE_END:
+                j = i
+                while j + 1 < len(joined) and joined[j + 1] in SENTENCE_END:
+                    j += 1
+                if _counts_as_sentence_end(joined, j):
+                    marks += 1
+                i = j + 1
+            else:
+                i += 1
         # 末尾が文末記号なら記号の数がそのまま文数。そうでなければ、
         # 最後の記号の後ろに続く文（記号が無ければ段落全体）を足す。
         tail = joined.rstrip().rstrip(TRAIL_CLOSERS).rstrip()

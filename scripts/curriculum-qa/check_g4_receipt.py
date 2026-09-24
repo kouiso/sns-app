@@ -316,7 +316,13 @@ def check_receipt(path: Path) -> list[tuple[int, str]]:
             if not rm or not tm:
                 problems.append((i, "ラウンド一覧の行が様式と合いません"))
                 continue
-            ledger[(cells[1].strip("`"), int(rm.group(1)))] = i
+            key = (cells[1].strip("`"), int(rm.group(1)))
+            # 同じ (タグ, R<n>) の行が2本あると、後の行が dict を上書きして
+            # 4ラウンド目がカウンタの外に隠れる（D15-4 の抜け道）。
+            if key in ledger:
+                problems.append((i, f"ラウンド一覧に R{key[1]}（{key[0]}）の行が重複しています"))
+            else:
+                ledger[key] = i
         by_tag: dict[str, list[int]] = {}
         for tag, n in ledger:
             by_tag.setdefault(tag, []).append(n)
@@ -332,6 +338,7 @@ def check_receipt(path: Path) -> list[tuple[int, str]]:
     preamble_end = heads[0][0] if heads else 1 << 30
     problems.extend(_filled_rows([(i, l) for i, l in lines if i < preamble_end]))
     seen_ledger: set[tuple[str, int]] = set()
+    seen_sections: set[tuple[str, int]] = set()
     for idx, (start_i, round_no) in enumerate(heads):
         stop_i = heads[idx + 1][0] if idx + 1 < len(heads) else 1 << 30
         section = [(i, l) for i, l in lines if start_i <= i < stop_i]
@@ -353,6 +360,13 @@ def check_receipt(path: Path) -> list[tuple[int, str]]:
         if b1 is not None:
             tag_value = field_value(table_rows(section, *b1), "対象タグ") or ""
             tag_key = tag_value.strip("`")
+        # 同じ (タグ, R<n>) の節が2つあると、一覧の行数と辻褄が合ったまま
+        # 4ラウンド目相当の審査が行える。重複は隠し場所になるので止める。
+        if tag_key:
+            skey = (tag_key, round_no)
+            if skey in seen_sections:
+                problems.append((start_i, f"{label}（{tag_key}）の節が重複しています"))
+            seen_sections.add(skey)
         if tag_key and (tag_key, round_no) in ledger:
             seen_ledger.add((tag_key, round_no))
             is_r3 = round_no == 3

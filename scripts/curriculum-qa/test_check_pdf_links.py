@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from check_pdf_links import bad_uris  # noqa: E402
 from check_pdf_links import main as check_main  # noqa: E402
+from check_pdf_links import pdf_link_uris  # noqa: E402
 
 
 def make_pdf(uris: list[str], *, compressed: bool = False) -> bytes:
@@ -101,12 +102,10 @@ def check_exit_code() -> tuple[int, int]:
             print("  ❌ 公開 URL だけの PDF で 0 を返さない")
 
         # PDF が1つも無いディレクトリは未判定（0件 PASS にしない）。
-        if run(["check_pdf_links.py", str(root / "empty")]) != 2:
-            # 空ディレクトリは「見つからないパス」として 2 を返す。
-            (root / "empty").mkdir()
-            if run(["check_pdf_links.py", str(root / "empty")]) != 3:
-                failed += 1
-                print("  ❌ PDF が無いディレクトリで 3（未判定）を返さない")
+        (root / "empty").mkdir()
+        if run(["check_pdf_links.py", str(root / "empty")]) != 3:
+            failed += 1
+            print("  ❌ PDF が無いディレクトリで 3（未判定）を返さない")
 
         if run(["check_pdf_links.py", "/no/such/path"]) != 2:
             failed += 1
@@ -117,7 +116,38 @@ def check_exit_code() -> tuple[int, int]:
         if run(["check_pdf_links.py", str(not_pdf)]) != 2:
             failed += 1
             print("  ❌ PDF として読めないファイルで 2 を返さない")
-    return failed, 6
+
+        # /URI の16進文字列は2系統ある: BOM 付き UTF-16BE と、ASCII を
+        # そのまま hex にしただけの物。後者を UTF-16BE で読むと化けて
+        # localhost が見えなくなる。
+        ascii_hex = b"http://localhost".hex().encode()
+        hex_pdf = root / "hex-ascii.pdf"
+        hex_pdf.write_bytes(
+            b"%PDF-1.4\n1 0 obj\n<< /Annots [ << /Subtype /Link /A << /S /URI /URI <"
+            + ascii_hex + b">> >> ] >>\nendobj\n"
+        )
+        # rc だけだと「化けた文字列もスキーム無しで止まる」ので通ってしまう。
+        # 拾った URI そのものを比べる。
+        if pdf_link_uris(hex_pdf) != frozenset({"http://localhost"}):
+            failed += 1
+            print("  ❌ ASCII hex の /URI を ASCII として読めていない")
+        if run(["check_pdf_links.py", str(hex_pdf)]) != 1:
+            failed += 1
+            print("  ❌ ASCII hex の /URI で localhost を拾えない")
+
+        be_hex = (b"\xfe\xff" + "http://localhost".encode("utf-16-be")).hex().encode()
+        hex_be_pdf = root / "hex-be.pdf"
+        hex_be_pdf.write_bytes(
+            b"%PDF-1.4\n1 0 obj\n<< /Annots [ << /Subtype /Link /A << /S /URI /URI <"
+            + be_hex + b">> >> ] >>\nendobj\n"
+        )
+        if pdf_link_uris(hex_be_pdf) != frozenset({"http://localhost"}):
+            failed += 1
+            print("  ❌ BOM 付き UTF-16BE の /URI を UTF-16BE として読めていない")
+        if run(["check_pdf_links.py", str(hex_be_pdf)]) != 1:
+            failed += 1
+            print("  ❌ BOM 付き UTF-16BE の /URI で localhost を拾えない")
+    return failed, 10
 
 
 def main_test() -> int:

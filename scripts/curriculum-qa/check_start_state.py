@@ -76,10 +76,22 @@ def listing_files(listings: Path) -> dict[str, Path]:
 
 
 def _same_content(a: Path, b: Path) -> bool:
-    """内容が同じか。行末空白・改行コードの差は写経の揺れなので潰して比べる。"""
-    def norm(path: Path) -> list[str]:
-        return [line.rstrip() for line in path.read_text(encoding="utf-8").splitlines()]
-    return norm(a) == norm(b)
+    """内容が同じか。行末空白・改行コードの差は写経の揺れなので潰して比べる。
+
+    画像など UTF-8 に読めないファイルが来ても落ちないよう、まずバイト列で
+    比べる。バイト列が違う場合だけテキストとして正規化して比べ直す。
+    片方でも UTF-8 に読めなければ「同内容」とは言わない。
+    """
+    ba, bb = a.read_bytes(), b.read_bytes()
+    if ba == bb:
+        return True
+    try:
+        ta, tb = ba.decode("utf-8"), bb.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+    na = [line.rstrip() for line in ta.splitlines()]
+    nb = [line.rstrip() for line in tb.splitlines()]
+    return na == nb
 
 
 def main(argv: list[str]) -> int:

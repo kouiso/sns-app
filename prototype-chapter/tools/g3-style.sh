@@ -7,18 +7,22 @@
 #   ここが 0 で終わっても「G3 を通過した」とは言えない。
 #
 # 使い方:
-#   tools/g3-style.sh              捨て試作の章本文すべてを検査する
+#   tools/g3-style.sh              教材本文（curriculum/*.md）すべてを検査する
 #   tools/g3-style.sh chapter.md   ファイルを指定して検査する
 #
-# 対象から外すもの:
-#   chapter-*-plain.md … G6 の比較評価に使う対照版。わざと手順書調に書いてあるので
-#                        文体ゲートに掛けても意味がない（掛けると必ず落ちる）
+# 既定の対象は教材本文だけ。prototype-chapter/ の章は教材本文ではない
+# 使い捨てフィクスチャ（10 L140-143）なので既定では走査しない。フィクスチャを
+# 見るときはファイルを明示して渡す（CI の参考ステップがそうしている）。
+# 対照版（*-plain.md）はフィクスチャでは文体ゲートの対象外だったが、それは
+# 「わざと手順書調に書いた比較材料だから」というフィクスチャ固有の理由。
+# curriculum/ に置かれた章は plain でも文体を課す（D17-1）。
 #
 # 終了コード: 0=文体チェックのみ通過 / 1=textlint FAIL または環境不足 /
 #             3=未判定（対象0件。D1 §8-3「0件は黙って緑にしない」）
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO="$(cd "$ROOT/.." && pwd)"
 TEXTLINT="$ROOT/node_modules/.bin/textlint"
 
 if [[ ! -x "$TEXTLINT" ]]; then
@@ -30,9 +34,9 @@ if [[ $# -gt 0 ]]; then
   TARGETS=("$@")
 else
   TARGETS=()
-  for f in "$ROOT"/chapter*.md; do
+  for f in "$REPO"/curriculum/*.md; do
     [[ -e "$f" ]] || continue
-    [[ "$f" == *-plain.md ]] && continue
+    [[ "$f" == */README.md ]] && continue
     TARGETS+=("$f")
   done
 fi

@@ -86,12 +86,12 @@ jobs:
           done
           exit $failed
 
-      # G3（10 §4）の5検査。文体は従来どおり素通しで止める（origin/main と同じ
-      #  blocking）。残りの4検査は未判定（3）がありうるので gate-step.sh 経由。
+      # G3（10 §4）の5検査。文体も対象が curriculum/*.md に変わったので
+      # 教材本文が無い間は未判定（3）を返しうる → gate-step.sh 経由。
       - name: G3 文体チェック（textlint）
         if: ${{ !cancelled() }}
         working-directory: prototype-chapter
-        run: npm run gate:style
+        run: tools/gate-step.sh tools/g3-style.sh
 
       - name: G3 構造チェック（コードブロック25行・段落3文）
         if: ${{ !cancelled() }}
@@ -138,7 +138,7 @@ jobs:
       # 捨て試作は教材本文ではない（10 L140-143）。フィクスチャの指摘は
       # 執筆の参考情報なので ::warning に出すだけで、ジョブは落とさない。
       # dev-log・開始状態は実章にだけ課す検査なのでここでは回さない（D1-7）。
-      - name: 捨て試作フィクスチャへの構造・方針同期（参考。合否に数えない）
+      - name: 捨て試作フィクスチャへの構造・方針同期・文体（参考。合否に数えない）
         if: ${{ !cancelled() }}
         run: |
           set +e
@@ -156,6 +156,22 @@ jobs:
             n=$(printf '%s\n' "$out" | grep -cE '^  [^ ]+:[0-9]+')
             total=$((total + n))
           done
+          # 文体もフィクスチャには参考として回す。plain は対照版でわざと
+          # 手順書調に書いてあるので対象外（g3-style.sh の従来の除外と同じ）。
+          fixture=()
+          for f in prototype-chapter/chapter*.md; do
+            [ -e "$f" ] || continue
+            case "$f" in *-plain.md) continue ;; esac
+            fixture+=("$f")
+          done
+          if [ ${#fixture[@]} -gt 0 ]; then
+            echo "=== 文体（フィクスチャ。合否に数えない）"
+            prototype-chapter/tools/g3-style.sh "${fixture[@]}"
+            style_rc=$?
+            if [ $style_rc -ne 0 ]; then
+              echo "::warning::フィクスチャの文体チェックが終了コード $style_rc（参考。合否に数えない）"
+            fi
+          fi
           echo "::warning::捨て試作フィクスチャの構造・方針同期 指摘 ${total} 件（参考。合否に数えない）"
           exit 0
 

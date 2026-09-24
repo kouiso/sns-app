@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""開発ログの存在確認（10 §5 / D1-7 / D16-7）。
+r"""開発ログの存在確認（10 §5 / D1-7 / D16-7）。
 
 章Nの実装中に `dev-logs/<章ID>.md` が「実装のその場で」書かれる。
 記録がない章は対話のハマり場面を創作することになり、内容の嘘に戻るので、
@@ -36,6 +36,8 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
+
+from markdown_scan import fence_states
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEV_LOGS = REPO_ROOT / "dev-logs"
@@ -96,11 +98,30 @@ def check_log(path: Path, chapter_id: str, dirs: tuple[Path, ...] = CHAPTER_DIRS
         stop = entries[idx + 1][0] if idx + 1 < len(entries) else len(lines)
         section = lines[start:stop]
         label = f"{path.name}:詰まり{idx + 1}(L{start + 1})"
+        # フェンスの中の `- 項目: 値` は欄ではない（貼られたエラーの一部）。
+        # 「出たエラー（全文コピー）」は全文をフェンスで貼る書き方があるので、
+        # 欄の直後のフェンスの中身をその値として拾う。
         fields: dict[str, str] = {}
-        for line in section:
-            fm = FIELD.match(line)
-            if fm:
-                fields[fm.group(1).strip()] = fm.group(2).strip()
+        pending_error = False
+        fence_body: list[str] = []
+        for _ln, line, state, _fence in fence_states("\n".join(section)):
+            if state == "outside":
+                fm = FIELD.match(line)
+                if fm:
+                    fields[fm.group(1).strip()] = fm.group(2).strip()
+                    pending_error = fm.group(1).strip() == "出たエラー（全文コピー）"
+                    continue
+                if line.strip():
+                    pending_error = False
+            elif pending_error and state in ("inside", "close"):
+                if state == "inside":
+                    fence_body.append(line)
+                else:
+                    inline = fields["出たエラー（全文コピー）"]
+                    fields["出たエラー（全文コピー）"] = (
+                        inline + "\n" + "\n".join(fence_body)
+                    ).strip()
+                    pending_error = False
         for key in REQUIRED_FIELDS:
             if key not in fields:
                 problems.append(f"{label} 項目「{key}」がありません")

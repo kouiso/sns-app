@@ -14,4 +14,6 @@ ARGS=()
 for a in "$@"; do
   ARGS+=(--target "$a")
 done
-python3 "$REPO/scripts/curriculum-qa/check_g4_receipt.py" "${ARGS[@]}"
+# ${ARGS[@]+...} は空配列でも bash 3.2 の set -u で落ちない書き方。
+# "${ARGS[@]}" だけだと macOS の /bin/bash（3.2）で unbound variable になる。
+python3 "$REPO/scripts/curriculum-qa/check_g4_receipt.py" ${ARGS[@]+"${ARGS[@]}"}

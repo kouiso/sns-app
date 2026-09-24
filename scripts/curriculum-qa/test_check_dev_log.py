@@ -90,6 +90,43 @@ def main() -> int:
         VALID.replace("教材に載せる価値: 中", "教材に載せる価値: 激高"), True, False)
     expect("範囲外の価値は止める", ok, f"{p} {w}")
 
+    # 「出たエラー（全文コピー）」は全文をフェンスで貼る書き方がある。
+    # フェンスの中身がその欄の値になる（値が無い＝空欄扱いにしない）。
+    fenced = VALID.replace(
+        "- 出たエラー（全文コピー）: Unable to resolve module foo",
+        "- 出たエラー（全文コピー）:\n"
+        "```text\n"
+        "Unable to resolve module foo\n"
+        "  at build (index.ts:1)\n"
+        "```",
+    )
+    ok, p, w = check_log_only("エラー全文のフェンス貼りは空欄にしない", fenced, False, False)
+    expect("エラー全文のフェンス貼りは空欄にしない", ok, f"{p} {w}")
+
+    # フェンスの中の `- 項目: 値` 行は欄ではない。エラーログ中の
+    # `- friction種別: bogus` みたいな行を欄として拾うと、本物の欄を
+    # 上書きして壊れた判定になる。
+    fake_field = VALID.replace(
+        "- 出たエラー（全文コピー）: Unable to resolve module foo",
+        "- 出たエラー（全文コピー）:\n"
+        "```text\n"
+        "Unable to resolve module foo\n"
+        "- friction種別: bogus\n"
+        "```",
+    )
+    ok, p, w = check_log_only("フェンス内の欄もどきは欄にしない", fake_field, False, False)
+    expect("フェンス内の欄もどきは欄にしない", ok, f"{p} {w}")
+
+    # フェンス貼りのエラーでも「価値: 高」の対話登場チェックが効く
+    # （フェンスの1行目が章本文に現れるかを見る）。
+    fenced_high = fenced.replace("教材に載せる価値: 中", "教材に載せる価値: 高")
+    with tempfile.TemporaryDirectory() as d:
+        chapters = Path(d)
+        (chapters / f"{CID}.md").write_text(
+            "磯貝「`Unable to resolve module foo` が出たときは…」\n", encoding="utf-8")
+        p, w = check_dev_log.check_log(_write_tmp(fenced_high), CID, dirs=(chapters,))
+        expect("フェンス内エラーの「高」も対話登場を検査できる", not p and not w, f"{p} {w}")
+
     ok, p, w = check_log_only(
         "ai-artifact だけの章は警告で止めない",
         VALID.replace("friction種別: beginner", "friction種別: ai-artifact"), False, True)

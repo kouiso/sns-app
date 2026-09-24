@@ -301,8 +301,11 @@ run_corpus_checks() {
     fi
   }
 
+  # 合否に数えるのは教材本文（curriculum/*.md）だけ。prototype-chapter/ は
+  # 教材本文ではない使い捨てフィクスチャ（10 L140-143）なので、そこへの
+  # 指摘は参考として出すだけで FAILED に入れない（CI の参考ステップと同じ）。
   CHAPTER_MDS=()
-  for f in "$REPO_ROOT_DIR"/curriculum/*.md "$REPO_ROOT_DIR"/prototype-chapter/chapter*.md; do
+  for f in "$REPO_ROOT_DIR"/curriculum/*.md; do
     # README.md は目次・ナビ文書であり章本文ではないので対象外
     [ -e "$f" ] && [ "$(basename "$f")" != "README.md" ] && CHAPTER_MDS+=("$f")
   done
@@ -311,6 +314,17 @@ run_corpus_checks() {
     run_repo_check "方針同期チェック" python3 "$SCRIPT_DIR/check_policy_sync.py" "${CHAPTER_MDS[@]}"
   else
     echo "⏸️  構造・方針同期: 対象の章がまだ無い"
+  fi
+  FIXTURE_MDS=()
+  for f in "$REPO_ROOT_DIR"/prototype-chapter/chapter*.md; do
+    [ -e "$f" ] && FIXTURE_MDS+=("$f")
+  done
+  if [ ${#FIXTURE_MDS[@]} -gt 0 ]; then
+    echo ""
+    echo "ℹ️  捨て試作フィクスチャへの構造・方針同期（参考。合否に数えない）"
+    for c in check_structure check_policy_sync; do
+      python3 "$SCRIPT_DIR/$c.py" "${FIXTURE_MDS[@]}" || true
+    done
   fi
   run_repo_check "開始状態混入検査" python3 "$SCRIPT_DIR/check_start_state.py"
   run_repo_check "開発ログの存在確認" python3 "$SCRIPT_DIR/check_dev_log.py"

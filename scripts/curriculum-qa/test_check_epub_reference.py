@@ -293,14 +293,14 @@ def check_repo_root_reachable() -> int:
         ng = corpus / "ch2.md"
         ng.write_text("`app/missing.tsx` と見比べて確認してください。\n", encoding="utf-8")
         hits, pending = find_refs([ok, ng], repo_root=root)
-        if hits or pending:
-            # hits は app/missing.tsx の1件だけのはず
-            if [(n, i, loc) for n, i, loc, _ in hits] != [("ch2.md", 1, "app/missing.tsx")]:
-                failed += 1
-                print(f"  ❌ 完成版に無いパスを拾えていない: {hits}")
-            if pending:
-                failed += 1
-                print(f"  ❌ 完成版があるのに未判定へ逃がした: {pending}")
+        # hits は app/missing.tsx の1件だけのはず。([], []) が返っても
+        # 素通りしないよう、結果の有無を条件にしない。
+        if [(n, i, loc) for n, i, loc, _ in hits] != [("ch2.md", 1, "app/missing.tsx")]:
+            failed += 1
+            print(f"  ❌ 完成版に無いパスを拾えていない: {hits}")
+        if pending:
+            failed += 1
+            print(f"  ❌ 完成版があるのに未判定へ逃がした: {pending}")
     return failed
 
 

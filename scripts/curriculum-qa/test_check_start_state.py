@@ -97,6 +97,21 @@ def main() -> int:
                run_main(["--starter", str(starter), str(chapter), "--listings", str(listings)]))
         (starter / "App.tsx").unlink()
 
+        # UTF-8 に読めない同名バイナリ（画像等）でも検査が落ちない。
+        # バイト列が同じなら「完成品がそのまま混入」として止め、
+        # 違うなら下地として通す。
+        (listings / "some-chapter" / "assets").mkdir()
+        (listings / "some-chapter" / "assets" / "icon.png").write_bytes(b"\x89PNG\r\n\x1a\n\xff")
+        (starter / "assets").mkdir(exist_ok=True)
+        (starter / "assets" / "icon.png").write_bytes(b"\x89PNG\r\n\x1a\n\xff")
+        expect("同名バイナリの完全混入は止める", 1,
+               run_main(["--starter", str(starter), str(chapter), "--listings", str(listings)]))
+        (starter / "assets" / "icon.png").write_bytes(b"\x89PNG\r\n\x1a\n\x00")
+        expect("中身の違うバイナリは通す（検査が落ちない）", 0,
+               run_main(["--starter", str(starter), str(chapter), "--listings", str(listings)]))
+        (starter / "assets" / "icon.png").unlink()
+        (starter / "assets").rmdir()
+
         # マニフェスト（1行1パス）でも同じ判定になる。
         manifest = root / "starter.txt"
         manifest.write_text("package.json\napp/index.tsx\n", encoding="utf-8")

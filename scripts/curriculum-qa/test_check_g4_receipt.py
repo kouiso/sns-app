@@ -283,6 +283,18 @@ CASES = [
         ["ラウンド一覧"],
     ),
     (
+        # 一覧の R3 行を2本にして # R3 節も2つ置くと、dict への上書きで
+        # ラウンド数が3のままになり、実質4回目の審査が隠れる（D15-4）。
+        "一覧の行と節の重複で隠れた4回目は止める（D15-4）",
+        {f"{CID}.md": receipt({}, {}, {}).replace(
+            "| R3 | `chapter/known-chapter` | `abc3def` | 2026-09-23 | 指定・Codex/GPT系 | PASS | 2/2 |",
+            "| R3 | `chapter/known-chapter` | `abc3def` | 2026-09-23 | 指定・Codex/GPT系 | PASS | 2/2 |\n"
+            "| R3 | `chapter/known-chapter` | `abc3def` | 2026-09-23 | 指定・Codex/GPT系 | PASS | 2/2 |",
+        ) + "\n" + _block(3)},
+        LIVE,
+        ["重複"],
+    ),
+    (
         "一覧に無い basename（章IDでないファイル名）は止める（D15-8-1）",
         {"stray-chapter.md": VALID},
         LIVE,
