@@ -33,6 +33,38 @@ def run(code: int, github_actions: bool = False) -> tuple[int, str]:
     return proc.returncode, proc.stdout + proc.stderr
 
 
+def _write_min_chapter_table(root: Path) -> None:
+    """check_g4_receipt.py が読む最小限の章分割表を一時ツリーに書く。
+
+    検査に必要なのは「生きた章IDが1つ以上取れる」ことだけ。バックログ
+    （未決ID の台帳）と証拠ファイルも実在しないと読み込み自体が失敗する
+    ので、最小の形で一緒に置く。
+    """
+    material = root / "material"
+    material.mkdir(parents=True)
+    (material / "16_決定バックログ.md").write_text("| B1 | 仮 |\n", encoding="utf-8")
+    (material / "ev.md").write_text("証拠\n", encoding="utf-8")
+    ids = ["ch-a0", "ch-a", "ch-b", "ch-c", "ch-d", "ch-e"]
+    parts = ["A0", "A", "B", "C", "D", "E"]
+    frs = [["FR1", "FR2", "FR3"], ["FR4", "FR5", "FR6"], ["FR7", "FR8", "FR9"],
+           ["FR10", "FR11", "FR12"], ["FR13", "FR14"], ["FR15"]]
+    cols = ["章ID", "並び順", "パート", "章タイトル", "完成する状態", "前提とする前章成果",
+            "supersedes", "状態", "節目", "地図", "見える変化", "最初の結果", "未決依存"]
+    chapters = ["| " + " | ".join([c, str(i + 1), p, "題", "完了状態", "-", "-",
+                "未着手", "非節目", "地図", "screen", "結果", "-"]) + " |"
+                for i, (c, p) in enumerate(zip(ids, parts))]
+    tcols = ["章ID", "FR", "画面", "SQL/RLS", "テスト", "前提知識", "証拠"]
+    traces = ["| " + " | ".join([c, ",".join(fr), "画", "sql", "test", "pre",
+              "material/ev.md"]) + " |" for c, fr in zip(ids, frs)]
+    (material / "18-chapter-split-table.md").write_text(
+        "版: v1\n\n位置づけ: DRAFT / NON-G1\n\n## 章一覧\n\n"
+        + "| " + " | ".join(cols) + " |\n|" + "---|" * len(cols) + "\n"
+        + "\n".join(chapters)
+        + "\n\n## 対応表\n\n"
+        + "| " + " | ".join(tcols) + " |\n|" + "---|" * len(tcols) + "\n"
+        + "\n".join(traces) + "\n", encoding="utf-8")
+
+
 def main() -> int:
     failed = 0
     total = 0
@@ -71,20 +103,36 @@ def main() -> int:
     bash = Path("/bin/bash")
     if bash.exists():
         tools = WRAPPER.parent
-        proc = subprocess.run(
-            [str(bash), str(tools / "g4-receipt.sh")],
-            capture_output=True, text=True, cwd=tools.parent,
-        )
-        expect("g4-receipt.sh は bash 3.2 でも引数なしで落ちない",
-               proc.returncode == 3 and "unbound" not in proc.stderr,
-               f"(rc={proc.returncode} {proc.stderr.strip()[:80]})")
-        proc = subprocess.run(
-            [str(bash), str(tools / "gate-step.sh"), str(tools / "g4-receipt.sh")],
-            capture_output=True, text=True, cwd=tools.parent,
-        )
-        expect("gate-step 経由なら未判定(3)が 0 に読み替わる",
-               proc.returncode == 0 and "unbound" not in proc.stderr,
-               f"(rc={proc.returncode} {proc.stderr.strip()[:80]})")
+        # g4-receipt.sh の rc3 は「受領証0件の未判定」。実リポジトリに
+        # 依存すると最初の受領証が置かれた時点でこのテストが壊れるので、
+        # 章分割表と空の g4/ を持つ一時ツリーで確かめる。
+        with tempfile.TemporaryDirectory() as d:
+            gtmp = Path(d)
+            gtools = gtmp / "proto" / "tools"
+            gtools.mkdir(parents=True)
+            gscripts = gtmp / "scripts" / "curriculum-qa"
+            gscripts.mkdir(parents=True)
+            for w in ("g4-receipt.sh", "gate-step.sh"):
+                shutil.copy(tools / w, gtools / w)
+            for f in ("check_g4_receipt.py", "chapter_table.py", "markdown_scan.py"):
+                shutil.copy(ROOT / "scripts" / "curriculum-qa" / f, gscripts / f)
+            _write_min_chapter_table(gtmp)
+            (gtmp / "material" / "reviews" / "g4").mkdir(parents=True)
+
+            proc = subprocess.run(
+                [str(bash), str(gtools / "g4-receipt.sh")],
+                capture_output=True, text=True, cwd=gtmp / "proto",
+            )
+            expect("g4-receipt.sh は bash 3.2 でも引数なしで落ちない",
+                   proc.returncode == 3 and "unbound" not in proc.stderr,
+                   f"(rc={proc.returncode} {proc.stderr.strip()[:80]})")
+            proc = subprocess.run(
+                [str(bash), str(gtools / "gate-step.sh"), str(gtools / "g4-receipt.sh")],
+                capture_output=True, text=True, cwd=gtmp / "proto",
+            )
+            expect("gate-step 経由なら未判定(3)が 0 に読み替わる",
+                   proc.returncode == 0 and "unbound" not in proc.stderr,
+                   f"(rc={proc.returncode} {proc.stderr.strip()[:80]})")
 
         # g3-style.sh の既定対象は curriculum/*.md（README 除く）。
         # フィクスチャを既定で読むと教材本文が永遠に文体検査から抜ける。
