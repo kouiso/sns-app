@@ -31,7 +31,12 @@ if [[ ! -x "$TEXTLINT" ]]; then
 fi
 
 if [[ $# -gt 0 ]]; then
-  TARGETS=("$@")
+  # 呼び出し側の cwd からの相対指定は、後段の cd に備えて絶対パスへ直す。
+  # このまま渡すと cd 後に別の場所を探しにいく（g5-quote.sh と同じ罠）。
+  TARGETS=()
+  for a in "$@"; do
+    if [[ "$a" = /* ]]; then TARGETS+=("$a"); else TARGETS+=("$PWD/$a"); fi
+  done
 else
   TARGETS=()
   for f in "$REPO"/curriculum/*.md; do
@@ -47,5 +52,10 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
 fi
 
 echo "G3 文体チェック（5検査中1つ）: ${#TARGETS[@]} 件を検査する"
+# textlint は起動した cwd の .textlintrc を拾う。ルートの .textlintrc.json は
+# 依存パッケージの無い休眠中の設定（B41）なので、リポジトリ直下から起動すると
+# "No rules found" で何も検査せずに終わる。依存が実際に入っている
+# prototype-chapter/ を cwd にして起動する。
+cd "$ROOT"
 "$TEXTLINT" "${TARGETS[@]}"
 echo "文体チェック PASS（G3 はこのほか構造・開始状態・方針同期・開発ログの検査がある）"

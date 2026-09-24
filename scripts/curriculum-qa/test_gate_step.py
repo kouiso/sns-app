@@ -98,7 +98,12 @@ def main() -> int:
             stub_dir = tmp / "proto" / "node_modules" / ".bin"
             stub_dir.mkdir(parents=True)
             stub = stub_dir / "textlint"
-            stub.write_text('#!/bin/sh\necho "TEXTLINT:$*"\n', encoding="utf-8")
+            # textlint は起動した cwd の .textlintrc を拾うので、どこから
+            # 起動されたかが本質。スタブは自分の cwd と受け取った引数を
+            # そのまま表示するだけにする。
+            stub.write_text(
+                '#!/bin/sh\necho "TEXTLINT_CWD:$PWD"\necho "TEXTLINT:$*"\n',
+                encoding="utf-8")
             stub.chmod(0o755)
 
             proc = subprocess.run(
@@ -121,6 +126,29 @@ def main() -> int:
             expect("README.md は文体の対象外",
                    "README" not in proc.stdout, f"({proc.stdout.strip()[:80]})")
 
+            # textlint は proto/（実際に依存が入っている側）を cwd にして
+            # 起動され、対象は絶対パスで渡ること。リポジトリ直下の cwd で
+            # 起動すると休眠中のルート .textlintrc を拾って空振りする。
+            expect("textlint は prototype-chapter を cwd にして起動する",
+                   f"TEXTLINT_CWD:{tmp}/proto" in proc.stdout,
+                   f"({proc.stdout.strip()[:120]})")
+            expect("既定対象は絶対パスで渡る",
+                   f"{tmp}/curriculum/ch1.md" in proc.stdout,
+                   f"({proc.stdout.strip()[:120]})")
+
+            # 呼び出し側の cwd がリポジトリ外（ここでは /）でも同じ結果になる
+            proc = subprocess.run(
+                [str(bash), str(ttools / "g3-style.sh")],
+                capture_output=True, text=True, cwd="/",
+            )
+            expect("どの cwd からでも textlint は proto/ 起動で同じ対象を見る",
+                   proc.returncode == 0
+                   and f"TEXTLINT_CWD:{tmp}/proto" in proc.stdout
+                   and f"{tmp}/curriculum/ch1.md" in proc.stdout,
+                   f"(rc={proc.returncode} {proc.stdout.strip()[:120]})")
+
+            # 明示した相対パスは呼び出し側の cwd から絶対パスに解決する
+            (tmp / "custom.md").write_text("# 任意\n", encoding="utf-8")
             proc = subprocess.run(
                 [str(bash), str(ttools / "g3-style.sh"), "custom.md"],
                 capture_output=True, text=True, cwd=tmp,
@@ -128,6 +156,9 @@ def main() -> int:
             expect("明示したファイルはそのまま検査する",
                    proc.returncode == 0 and "custom.md" in proc.stdout,
                    f"(rc={proc.returncode} {proc.stdout.strip()[:80]})")
+            expect("相対指定は呼び出し側の cwd から絶対パスに解決する",
+                   f"{tmp}/custom.md" in proc.stdout,
+                   f"({proc.stdout.strip()[:120]})")
 
     # check_quality.sh の合否対象も教材本文だけ。CHAPTER_MDS の収集に
     # フィクスチャが混ざると、既知のフィクスチャ指摘で全体が赤くなる。
