@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import check_g4_receipt  # noqa: E402
 from check_g4_receipt import check_g4_dir  # noqa: E402
+from chapter_table import read_chapter_table  # noqa: E402
 
 CID = "known-chapter"
 TAG = f"chapter/{CID}"
@@ -350,6 +351,35 @@ def check_exit_code() -> tuple[int, int]:
     with tempfile.TemporaryDirectory() as d:
         Path(d, "stray.md").write_text(VALID, encoding="utf-8")
         expect("違反があれば 1", 1, run_main(["--g4-dir", d]))
+
+    # main()（CLI 経路）と check_g4_dir()（ライブラリ経路）が同じ指摘を
+    # 出すこと。2経路が別実装だと、自己テストが通っても CLI の判定が
+    # ずれうる（実際にずれていた）。受領証あり（違反あり）＋要求対象が
+    # 片方だけ存在する形で、指摘集合の一致を見る。
+    with tempfile.TemporaryDirectory() as d:
+        g4 = Path(d)
+        (g4 / "text-post.md").write_text(THREE_FAIL, encoding="utf-8")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(io.StringIO()):
+            rc = check_g4_receipt.main(
+                ["check_g4_receipt.py", "--g4-dir", str(g4),
+                 "--target", "text-post", "--target", "absent-chapter"])
+        cli = sorted(l.strip() for l in buf.getvalue().splitlines()
+                     if l.startswith("  "))
+        live = {row["章ID"] for row in
+                read_chapter_table(check_g4_receipt.TABLE,
+                                   check_g4_receipt.REPO_ROOT)["chapters"]}
+        direct = sorted(
+            f"{n}:{ln} {m}" if ln else f"{n} {m}"
+            for n, ln, m in check_g4_dir(
+                g4, live, ["text-post", "absent-chapter"]))
+        expect("main() と check_g4_dir() は同じ指摘を出す", 1, rc)
+        total += 1
+        if cli != direct:
+            failed += 1
+            print("  ❌ CLI の指摘一覧と check_g4_dir() の指摘一覧が一致しない")
+            print(f"     cli={cli[:5]}")
+            print(f"     dir={direct[:5]}")
     return failed, total
 
 

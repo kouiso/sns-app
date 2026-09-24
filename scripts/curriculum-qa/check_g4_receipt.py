@@ -396,15 +396,14 @@ def check_receipt(path: Path) -> list[tuple[int, str]]:
     return problems
 
 
-def check_g4_dir(g4_dir: Path, live_ids: set[str], target: str | None = None) -> list[tuple[str, int, str]]:
+def check_g4_dir(g4_dir: Path, live_ids: set[str], targets: list[str] | None = None) -> list[tuple[str, int, str]]:
     """g4/ ディレクトリ全体の検査。(ファイル名, 行番号, 指摘) を返す。
 
     live_ids は章分割表の生きている章IDの集合（呼び出し側が渡す）。
-    target に章IDを渡すと、その受領証の存在を要求する（D15-8-2）。
+    targets に章IDを渡すと、その受領証すべての存在を要求する（D15-8-2）。
     """
     problems: list[tuple[str, int, str]] = []
-    receipts = sorted(g4_dir.glob("*.md"))
-    for path in receipts:
+    for path in sorted(g4_dir.glob("*.md")):
         if path.name == "README.md":
             continue
         chapter_id = path.stem
@@ -413,8 +412,9 @@ def check_g4_dir(g4_dir: Path, live_ids: set[str], target: str | None = None) ->
             continue
         for line, msg in check_receipt(path):
             problems.append((path.name, line, msg))
-    if target is not None and not (g4_dir / f"{target}.md").is_file():
-        problems.append((f"{target}.md", 0, f"章 `{target}` の G4 受領証がありません（G4 未実施。D15-8-2）"))
+    for target in targets or []:
+        if not (g4_dir / f"{target}.md").is_file():
+            problems.append((f"{target}.md", 0, f"章 `{target}` の G4 受領証がありません（G4 未実施。D15-8-2）"))
     return problems
 
 
@@ -455,22 +455,14 @@ def main(argv: list[str]) -> int:
         print("⏸️ 未判定: 受領証の置き場がまだありません（material/reviews/g4/）")
         return NOT_JUDGED
 
-    problems: list[tuple[str, int, str]] = []
     receipts = sorted(p for p in g4_dir.glob("*.md") if p.name != "README.md")
     if not receipts and not targets:
         # 走査対象が0件。D1 §8-3「0件は黙って緑にしない」。
         print("⏸️ 未判定: 受領証がまだありません（material/reviews/g4/）")
         return NOT_JUDGED
-    for path in receipts:
-        chapter_id = path.stem
-        if chapter_id not in live_ids:
-            problems.append((path.name, 0, f"章ID `{chapter_id}` は章分割表の現役章にありません（D15-8-1）"))
-            continue
-        for line, msg in check_receipt(path):
-            problems.append((path.name, line, msg))
-    for target in targets:
-        if not (g4_dir / f"{target}.md").is_file():
-            problems.append((f"{target}.md", 0, f"章 `{target}` の G4 受領証がありません（G4 未実施。D15-8-2）"))
+    # 走査と判定は check_g4_dir に一本化。ここに同じ処理を書くと、
+    # 自己テスト（check_g4_dir 経由）と CLI（main 経由）で結果がずれる。
+    problems = check_g4_dir(g4_dir, live_ids, targets)
 
     if problems:
         print(f"❌ G4 受領証の検査で {len(problems)} 件の問題")
