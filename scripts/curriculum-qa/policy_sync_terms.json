@@ -1,0 +1,27 @@
+{
+  "_source": "material/13_記録・進捗管理規約.md §5（2026-08-06 改訂後）。配布語彙は 16 B9 / decisions/D23（PDF 正本・EPUB 併産）、登場人物名は 12 §1.1・§4（磯貝・阿部）。方針文書を改訂したら同じPRでこのファイルも更新する（13 §5 の運用要求）。",
+  "rejected_stack": [
+    "Capacitor",
+    "NestJS",
+    "Redis",
+    "BullMQ",
+    "MinIO",
+    "TanStack Router",
+    "Prisma",
+    "bcrypt",
+    "Xcode"
+  ],
+  "obsolete_distribution": [
+    "ZIP",
+    "Webサイト",
+    "webpub"
+  ],
+  "current_distribution": [
+    "PDF",
+    "EPUB"
+  ],
+  "characters": [
+    "磯貝",
+    "阿部"
+  ]
+}
