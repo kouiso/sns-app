@@ -1,177 +1,176 @@
 #!/usr/bin/env python3
-"""販売ZIPに何が入るかを `scripts/build-zip.sh` から読み出す。
+"""読者の手元に届く物を、現在の配布形態から読み出す。
 
-30周目に見つかった最も重い1件は、本文8箇所が「このリポジトリの `src/...` と見比べて
-確認してください」と書いていたことだった。`build-zip.sh` は完成アプリの
-`src/` `prisma/` `package.json` を入れない。買った人の手元にその照合先は無い。
+旧版は `scripts/build-zip.sh`（前作の ZIP 梱包）を読んで「ZIP に何が入るか」を
+返していた。本作の配布は 16 B9 / D23 で **PDF が正本・EPUB を併産**と決まっており、
+ZIP 梱包も scaffold スクリプトも存在しない。代わりにここが読むのは3系統
+（`decisions/task-app資産棚卸し.md` の「配布は3系統」）:
 
-「ZIP に何が入るか」を検査側へ書き写すと、`build-zip.sh` を変えたときに写した側が古くなる。
-ここでは build-zip.sh を読んで組み立てる。ZIP の作り方が変われば、この判定も一緒に動く。
+  - 教材本文 …… PDF（正本）/ EPUB（併産）。EPUB は ZIP 形式なので、
+    同梱ファイルの一覧は zipfile で読める。
+  - 完成コード …… 公開リポジトリ（C3）。ここでは「リポジトリに実在するか」だけを見る。
+  - 章末スナップショット / 開始状態 …… `snapshots/<章ID>/`（A7）や
+    学習者の開始状態。どちらも現時点ではリポジトリに存在しないため、
+    呼び出し側は「存在しなければ判定しない（未判定）」で扱う。
+
+「手元に在るか」をこのモジュールが答え、「手元にある物と照合させる指示が
+成り立つか」を判定するのは `check_epub_reference.py` の側である。
 """
 
 from __future__ import annotations
 
 import re
+import zlib
 from functools import cache
 from pathlib import Path
 
 __all__ = [
     "REPO_ROOT",
-    "comparable_src_paths",
-    "excluded_routers",
-    "scaffold_src_paths",
-    "uncovered_scaffold_dirs",
-    "zip_scaffold_dirs",
-    "zip_top_level",
+    "epub_entries",
+    "pdf_link_uris",
+    "starter_paths",
 ]
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-BUILD_ZIP = REPO_ROOT / "scripts" / "build-zip.sh"
-
-# scaffold の配布物が、読者の手元でどこへ置かれるか。
-# check_scaffold_curriculum_alignment.py の SCAFFOLD_COPY_MAP と同じ対応表を使う。
-from check_scaffold_curriculum_alignment import SCAFFOLD_COPY_MAP  # noqa: E402
-
-# SCAFFOLD_COPY_MAP はディレクトリ丸ごとのコピーしか表していない。
-# scaffold-from-scratch.sh はそれ以外に、ファイルを名指しで配る関数を3つ持つ
-# （copy_server_base / copy_app_base / copy_prisma_files）。こちらの配布物が
-# 表から抜けていると、読者の手元に確かに在るファイルを
-# check_zip_reference が「ZIP に無い照合先」として弾き、
-# check_tag_balance が配布済みの中身を無視して断片だけの収支を数える。
-# 値は (置かれる先, 配られるファイル名。None はそのディレクトリの全ファイル)。
-EXTRA_COPY_MAP: dict[str, tuple[str, frozenset[str] | None]] = {
-    "_server-base":  ("src/server/api", None),
-    "_app-api-trpc": ("src/app/api/trpc/[trpc]", frozenset({"route.ts"})),
-    "_app-base":     ("src/app", frozenset({"providers.tsx", "layout.tsx"})),
-    "_prisma":       ("prisma", frozenset({"schema.prisma"})),
-    "_seed":         ("src/command", frozenset({"seed.ts"})),
-}
-
-# 配置先がリポジトリ直下のもの。`src/` `prisma/` のどちらでも始まらないので、
-# この集合を使う検査（照合先の判定・構文の収支）はそもそも参照しない。
-# _docker は docker-compose.yml だけ、_prisma の prisma.config.ts も直下へ行く。
-ROOT_LEVEL_SCAFFOLD_DIRS = frozenset({"_docker"})
-
-
-# 返り値はどれも1プロセスの中で変わらない。`build-zip.sh` も `scripts/_*` も
-# 走っている最中に書き換わらないためである。それでも毎回ディレクトリを歩き直すと、
-# check_zip_reference が段落ごと・一致ごとに not_in_zip() を呼ぶため、
-# 同じ全走査が教材1本あたり数百回走る。ここで1回に畳む。
-#
-# 畳んだ値は呼び出し側で共有される。集合やリストのまま返すと、受け取った側が
-# 足したり消したりした結果が次の呼び出しへそのまま残り、以降の判定が狂う。
-# 変更できない型（frozenset / tuple）で返して、その事故を型の側で塞ぐ。
-@cache
-def _build_zip_text() -> str:
-    return BUILD_ZIP.read_text(encoding="utf-8")
 
 
 @cache
-def _array(name: str) -> tuple[str, ...]:
-    """build-zip.sh の bash 配列リテラルを読む。"""
-    m = re.search(rf"^{re.escape(name)}=\(\s*(.*?)^\)", _build_zip_text(), re.M | re.S)
-    if not m:
-        raise ValueError(f"build-zip.sh に {name} 配列がありません")
-    return tuple(re.findall(r'"([^"]+)"', m.group(1)))
+def epub_entries(epub: Path) -> frozenset[str]:
+    """EPUB に同梱されるファイルのパス一覧。EPUB は ZIP 形式（16 B9 / D23）。
 
-
-def zip_top_level() -> tuple[str, ...]:
-    """ZIP へ個別に入れるファイル（required_files）。"""
-    return _array("required_files")
-
-
-def zip_scaffold_dirs() -> tuple[str, ...]:
-    """ZIP へ入る scaffold 補助ディレクトリ（support_directories）。"""
-    return _array("support_directories")
-
-
-@cache
-def excluded_routers() -> frozenset[str]:
-    """`_server-routers` から意図的に外すファイル名。
-
-    この6本は読者が30日かけて自分で書くので、完成版を配らない。
+    返すのはエントリ名そのまま（`OEBPS/xxx.xhtml` など）。教材本文が
+    「EPUB に入っているファイル」と見なせるかの判定は呼び出し側が行う。
     """
-    return frozenset(re.findall(r'--exclude="([^"]+)"', _build_zip_text()))
+    import zipfile
+
+    if not zipfile.is_zipfile(epub):
+        raise ValueError(f"EPUB（ZIP形式）として読めません: {epub}")
+    with zipfile.ZipFile(epub) as zf:
+        return frozenset(zf.namelist())
 
 
-@cache
-def uncovered_scaffold_dirs() -> frozenset[str]:
-    """配布されるのに、置かれる先が分かっていない補助ディレクトリ。
-
-    scaffold の配布物が増えたとき、ここが空でなくなる。空でないまま放置すると、
-    読者の手元に在るファイルを検査が「無い」ものとして扱い、正しい記述が赤くなる。
-    自己テストがこの集合の空を見張る。
-    """
-    known = {d.split("/")[0] for d in SCAFFOLD_COPY_MAP} | set(EXTRA_COPY_MAP)
-    return frozenset(
-        d
-        for d in zip_scaffold_dirs()
-        if d not in known and d not in ROOT_LEVEL_SCAFFOLD_DIRS
-    )
-
-
-@cache
-def _scaffold_copies() -> tuple[tuple[str, Path], ...]:
-    """(読者の手元での置き場, 配られる現物) の組を全部返す。
-
-    ディレクトリ丸ごとのコピー（SCAFFOLD_COPY_MAP）と、ファイル名指しのコピー
-    （EXTRA_COPY_MAP）の両方を1つに束ねる。
-    """
-    out: list[tuple[str, Path]] = []
-    for directory, (dest, names) in EXTRA_COPY_MAP.items():
-        src_dir = REPO_ROOT / "scripts" / directory
-        if not src_dir.is_dir():
+def _literal_string(raw: bytes) -> bytes:
+    """PDF の `( )` 文字列の逃がし記号と8進を戻す。"""
+    esc = {b"n": b"\n", b"r": b"\r", b"t": b"\t", b"b": b"\b", b"f": b"\f",
+           b"(": b"(", b")": b")", b"\\": b"\\"}
+    out, i = [], 0
+    while i < len(raw):
+        ch = raw[i:i + 1]
+        if ch != b"\\":
+            out.append(ch)
+            i += 1
             continue
-        for f in sorted(src_dir.iterdir()):
-            if f.is_file() and (names is None or f.name in names):
-                out.append((f"{dest}/{f.name}", f))
+        nxt = raw[i + 1:i + 2]
+        if nxt in esc:
+            out.append(esc[nxt])
+            i += 2
+        elif nxt in (b"\n", b"\r"):
+            i += 2
+        elif nxt in b"01234567":
+            m = re.match(rb"[0-7]{1,3}", raw[i + 1:])
+            out.append(bytes([int(m.group(0), 8) & 0xFF]))
+            i += 1 + len(m.group(0))
+        else:
+            i += 1
+    return b"".join(out)
 
-    skip = excluded_routers()
-    for directory in zip_scaffold_dirs():
-        src_dir = REPO_ROOT / "scripts" / directory
-        if not src_dir.is_dir():
-            continue
-        for f in sorted(src_dir.rglob("*")):
-            if not f.is_file():
-                continue
-            rel = f.relative_to(src_dir)
-            key = f"{directory}/{rel.parts[0]}" if len(rel.parts) > 1 else directory
-            dest = SCAFFOLD_COPY_MAP.get(key) or SCAFFOLD_COPY_MAP.get(directory)
-            if dest is None:
-                continue
-            if directory == "_server-routers" and f.name in skip:
-                continue
-            tail = rel.name if key in SCAFFOLD_COPY_MAP and key != directory else str(rel)
-            out.append((f"{dest}/{tail}", f))
-    return tuple(out)
+
+def _pdf_bodies(data: bytes) -> list[bytes]:
+    """全オブジェクトの中身を返す。FlateDecode のストリームは展開した中身も添える。
+
+    Vivliostyle などが出す PDF ではリンク注釈（/Annots /Subtype /Link の
+    /A << /S /URI /URI (...) >>）がオブジェクトストリームの中に圧縮されて
+    入っていることがある。表面だけ走査するとその注釈は誰にも見えないまま
+    通ってしまうので、展開できるストリームはすべて覗く。
+    展開できないストリームがあると、そこにだけ在るリンクは検査から抜ける。
+    黙って続けると「リンクは確認済み」の嘘になるので、失敗したら止める。
+    """
+    hdr = re.compile(rb"(?:^|[\s>])(\d+)\s+(\d+)\s+obj\b")
+    bodies: list[bytes] = []
+    pos = 0
+    while True:
+        m = hdr.search(data, pos)
+        if not m:
+            return bodies
+        start = m.end()
+        end = data.find(b"endobj", start)
+        if end == -1:
+            end = len(data)
+        body = data[start:end]
+        bodies.append(body)
+        sm = re.search(rb"stream\r?\n", body)
+        if sm and b"FlateDecode" in body[: sm.start()]:
+            head_end = sm.start()
+            lm = re.search(rb"/Length\s+(\d+)", body[:head_end])
+            raw = None
+            if lm:
+                n = int(lm.group(1))
+                cand = body[sm.end(): sm.end() + n]
+                if b"endstream" in body[sm.end() + n: sm.end() + n + 32]:
+                    raw = cand
+            if raw is None:
+                es = body.find(b"endstream", sm.end())
+                if es != -1:
+                    raw = body[sm.end():es]
+            if raw is not None:
+                try:
+                    bodies.append(zlib.decompress(raw))
+                except zlib.error as e:
+                    raise ValueError(f"PDF のストリーム展開に失敗しました（{e}）")
+        pos = end + 6
 
 
 @cache
-def scaffold_src_paths() -> frozenset[str]:
-    """読者の手元に「最初から書かれた状態」で届く `src/` `prisma/` 配下のパス。
+def pdf_link_uris(pdf: Path) -> frozenset[str]:
+    """PDF のリンク注釈が指す URI の集合。
 
-    scaffold-from-scratch.sh がコピーするので、読者はこれらを写経しない。
-    構造の収支を数える検査は、この集合のファイルを対象から外す。写経していない
-    行が既にそこに在るため、教材のブロックだけを数えても収支は合わない。
-
-    ここで見るのは「読者の手元に在るか」だけで、中身が完成版と同じかは見ない。
-    照合先として使えるかは別の問いなので `comparable_src_paths()` が答える。
+    「紙面に印刷されるリンク」を確認するために、本文の見た目ではなく
+    /Annots の /URI を読む。取り出せるのは URI アクションだけであり、
+    ページ内リンク（/Dest）やリンクの無い文字列は対象外。
     """
-    return frozenset(dest for dest, _ in _scaffold_copies())
+    data = pdf.read_bytes()
+    if not data.startswith(b"%PDF-"):
+        raise ValueError(f"PDF として読めません: {pdf}")
+    uris: set[str] = set()
+    for body in _pdf_bodies(data):
+        for m in re.finditer(rb"/URI\s*\(((?:[^()\\]|\\[\s\S])*)\)", body):
+            uris.add(_literal_string(m.group(1)).decode("utf-8", "replace"))
+        for m in re.finditer(rb"/URI\s*<([0-9A-Fa-f\s]+)>", body):
+            h = re.sub(rb"\s", b"", m.group(1)).decode()
+            if len(h) % 2:
+                h += "0"
+            raw = bytes.fromhex(h)
+            # 16進文字列の規格上の姿は UTF-16BE（BOM `FE FF` 付き）だが、
+            # 生成器によっては ASCII をそのまま hex にしただけの物を出す。
+            # BOM が無いのに UTF-16BE で読むと化けるので、BOM の有無で分ける。
+            if raw.startswith(b"\xfe\xff"):
+                uris.add(raw[2:].decode("utf-16-be", "replace"))
+            else:
+                uris.add(raw.decode("latin-1"))
+    return frozenset(uris)
 
 
-@cache
-def comparable_src_paths() -> frozenset[str]:
-    """「このリポジトリの ◯◯ と見比べて」の照合先として成立するパス。
+# EPUB・PDF は不変の成果物なので読み出しをキャッシュしてよいが、
+# 開始状態は編集中に変わるディレクトリなのでキャッシュしない。
+def starter_paths(starter: Path) -> frozenset[str]:
+    """学習者の開始状態（スターター）が配るファイルの相対パス一覧。
 
-    scaffold が配る現物が、このリポジトリの同じ位置のファイルと1バイト違わない
-    ものだけを返す。中身が違えば、読者は自分の手元に無い版を見に行かされる。
-    現に `prisma/schema.prisma` `src/server/api/root.ts` と `_app-components` の
-    4ファイルは、配る版とこのリポジトリの版が違う。手元に在ることと、
-    照合先として使えることは別である。
+    2つの形を受ける:
+      - ディレクトリ …… 配布するファイルツリーそのもの（相対パスで返す）
+      - ファイル     …… 1行1パスの一覧表。空行と `#` 始まりの行は注釈。
+    開始状態は現時点でリポジトリに存在しない（10 §3 G0 の未決項）。
+    この関数は「在れば読む」だけを担い、不在の扱いは呼び出し側が決める。
     """
-    return frozenset(
-        dest
-        for dest, src in _scaffold_copies()
-        if (REPO_ROOT / dest).is_file() and (REPO_ROOT / dest).read_bytes() == src.read_bytes()
-    )
+    if starter.is_dir():
+        return frozenset(
+            f.relative_to(starter).as_posix()
+            for f in sorted(starter.rglob("*"))
+            if f.is_file()
+        )
+    if starter.is_file():
+        return frozenset(
+            line.strip()
+            for line in starter.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        )
+    raise ValueError(f"開始状態（ディレクトリまたは一覧ファイル）ではありません: {starter}")

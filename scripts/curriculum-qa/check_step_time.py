@@ -71,8 +71,8 @@ def main(argv: list[str]) -> int:
             return 2
 
     if not targets:
-        print("❌ 対象ファイルがありません", file=sys.stderr)
-        return 2
+        print("⏸️ 未判定: 走査対象が0件です")
+        return 3
 
     findings = []
     absent: list[tuple[str, list[str]]] = []
@@ -109,7 +109,14 @@ def main(argv: list[str]) -> int:
     if status:
         return status
 
-    print(f"✅ 所要時間の合計 OK（{checked} ファイル）")
+    # 「対象はあるが実際に検査した件数が0」は緑にしない（D1 §8-3）。
+    # 表を持たない日（NO_TABLE_DAYS）は明示の除外リストなので、
+    # 除外した件数を出力に出す。
+    skipped = len(targets) - checked - len(absent)
+    if checked == 0:
+        print(f"⏸️ 未判定: 実際に検査したファイルが0件です（{skipped} 件は表なし許容で除外）")
+        return 3
+    print(f"✅ 所要時間の合計 OK（{checked} ファイル、{skipped} 件は表なし許容で除外）")
     return 0
 
 

@@ -5,8 +5,15 @@
   "main": "index.js",
   "scripts": {
     "gate:style": "tools/g3-style.sh",
+    "gate:structure": "tools/g3-structure.sh",
+    "gate:policy": "tools/g3-policy.sh",
+    "gate:start-state": "tools/g3-start-state.sh",
+    "gate:dev-log": "tools/g3-dev-log.sh",
+    "gate:g4": "tools/g4-receipt.sh",
     "gate:quote": "tools/g5-quote.sh",
-    "gate": "npm run gate:style && npm run gate:quote",
+    "gate:epub": "python3 ../scripts/curriculum-qa/check_epub_reference.py",
+    "gate:pdf": "python3 ../scripts/curriculum-qa/check_pdf_links.py",
+    "gate": "tools/gate-step.sh tools/g3-style.sh && tools/gate-step.sh tools/g3-structure.sh && tools/gate-step.sh tools/g3-policy.sh && tools/gate-step.sh tools/g3-dev-log.sh && tools/gate-step.sh tools/g3-start-state.sh && tools/gate-step.sh tools/g4-receipt.sh && tools/gate-step.sh tools/g5-quote.sh",
     "snapshot": "tools/make-snapshot.sh",
     "g6": "tools/g6-run.sh",
     "gate:style:selftest": "prh/testdata/run.sh"

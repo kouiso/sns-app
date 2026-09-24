@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
 """`screenshots/` にあって、どの教材ファイルからも参照されない画像を見つける。
 
-横断監査の3件目。71枚のうち16枚がどこからも参照されていなかった。販売ZIPには入るので、
+横断監査の3件目。71枚のうち16枚がどこからも参照されていなかった。配布物には入るので、
 読まれないまま 2.3MB を占めていた。16枚を消して 8.5MB が 6.4MB になっている。
 
 参照が消えるのは本文を書き直したときで、消した本人には見えない。ここを機械で見ないと、
 次に本文を直した人がまた同じ状態を作る。
 
 逆向き（本文が指す画像が存在しない）は既存の相対リンク確認の担当なので、ここでは見ない。
+
+終了コード:
+  0 = 判定でき、未参照なし
+  1 = 未参照の画像がある
+  2 = 使い方の誤り・ディレクトリが無い
+  3 = 未判定。screenshots/ が無い、または画像が1枚も無いときは
+      「未参照0件の PASS」ではなく「見るべき画像がまだ無い」として報告する
+      （D1-8-3 の「検査件数0は緑にしない」に倣う）。
 """
 
 from __future__ import annotations
@@ -94,8 +102,13 @@ def find_unused(root: Path) -> tuple[list[Path], int, int]:
     return unused, len(images), len(md_files)
 
 
+NOT_JUDGED = 3
+
+
 def main(argv: list[str]) -> int:
-    args = argv[1:] or ["material/30days-curriculum"]
+    # 既定はリポジトリの curriculum/。cwd によらず動くようファイル位置から引く。
+    default = str(Path(__file__).resolve().parents[2] / "curriculum")
+    args = argv[1:] or [default]
     if len(args) != 1 or not Path(args[0]).is_dir():
         print("❌ 教材ディレクトリを1つ指定してください", file=sys.stderr)
         return 2
@@ -103,14 +116,14 @@ def main(argv: list[str]) -> int:
 
     unused, total, md_count = find_unused(root)
     if total == 0:
-        print(f"❌ 画像がありません: {root}/screenshots", file=sys.stderr)
-        return 2
+        print(f"⏸️ 未判定: 画像がまだありません（{root}/screenshots）")
+        return NOT_JUDGED
     if unused:
         size = sum(f.stat().st_size for f in unused)
         print(f"❌ どこからも参照されていない画像 {len(unused)} 枚（{size / 1024:.0f}KB）")
         for f in unused:
             print(f"  {f.relative_to(root)}")
-        print("  参照を戻すか、削除してください。販売ZIPにはそのまま入ります。")
+        print("  参照を戻すか、削除してください。配布物にはそのまま入ります。")
         return 1
 
     print(f"✅ 未参照の画像なし（画像 {total} 枚 / md {md_count} ファイル）")

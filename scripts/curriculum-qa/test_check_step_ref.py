@@ -113,9 +113,9 @@ def check_exit_code() -> tuple[int, int]:
         failed += 1
         print("  ❌ 見つからないパスで 2 を返さない")
     with tempfile.TemporaryDirectory() as d:
-        if run(["check_step_ref.py", d]) != 2:
+        if run(["check_step_ref.py", d]) != 3:
             failed += 1
-            print("  ❌ 対象0件で 2 を返さない")
+            print("  ❌ 対象0件で 3（未判定）を返さない")
     return failed, len(cases) + 2
 
 

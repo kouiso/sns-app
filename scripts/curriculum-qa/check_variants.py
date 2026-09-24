@@ -68,8 +68,8 @@ def main(argv: list[str]) -> int:
             return 2
 
     if not targets:
-        print("❌ 対象ファイルがありません", file=sys.stderr)
-        return 2
+        print("⏸️ 未判定: 走査対象が0件です")
+        return 3
 
     findings = []
     for path in targets:

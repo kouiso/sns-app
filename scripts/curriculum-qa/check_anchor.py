@@ -9,13 +9,28 @@
 判定は「`// filepath:` の値が指示語だけで終わっていないか」に絞る。実ファイル名が入って
 いれば、続きであることを添えていても通す。散文側の「上のコード」「さきほど」は語の形が
 一定せず機械では判定できないので、この検査の対象にしない。
+
+実ファイル名の判定は現行構成（Expo Router + Supabase）の `app/` `supabase/` に
+置き換えてある。前作の `src/` `prisma/` `scripts/` は、現在のリポジトリに対応する
+実体が無いため、実ファイル名としては数えない。
+
+終了コード:
+  0 = 判定でき、違反なし
+  1 = 違反あり
+  2 = 使い方の誤り・対象ファイルが無い
+  3 = 未判定。「完成版に存在しない書き込み先」の検査は完成版ルートが要る。
+      `--completed-root` が無い、またはリポジトリに完成版（app/ または supabase/）が
+      まだ無い間はこの部分検査だけを未判定とし、それ以外の違反が無ければ 3 を返す。
 """
 
 import re
 import sys
 from pathlib import Path
 
+from curriculum_blocks import REAL_PREFIXES
 from markdown_scan import fence_states
+
+NOT_JUDGED = 3
 
 FILEPATH = re.compile(r"^\s*(?:\{/\*\s*filepath:\s*(.+?)\s*\*/\}|(?://|#)\s*filepath:\s*(.+?))\s*$")
 
@@ -70,7 +85,7 @@ def find_sample_with_real_path(text: str) -> list[tuple[int, str]]:
         if not fp:
             continue
         value = filepath_value(fp)
-        if value.startswith(("src/", "prisma/", "scripts/")):
+        if value.startswith(REAL_PREFIXES):
             hits.append((i, value))
     return hits
 
@@ -78,10 +93,15 @@ def find_sample_with_real_path(text: str) -> list[tuple[int, str]]:
 def find_missing(text: str, root: Path) -> list[tuple[int, str]]:
     """完成版に存在しないファイルを書き込み先として挙げている行を返す。
 
-    実測で day30 の読み比べ用コードが `src/app/graduation/page.tsx` を名乗っていた。
-    完成版にその画面は無い。見出しに「例です」と書いても、コードを写す瞬間には
-    視界に入らないので、読者はそのパスのファイルを作りにいく。
+    実測で day30 の読み比べ用コードが、完成版に存在しない画面を名乗っていた。
+    見出しに「例です」と書いても、コードを写す瞬間には視界に入らないので、
+    読者はそのパスのファイルを作りにいく。
+
+    root は完成版のルートを呼び出し側が明示する。値の末尾の `（…）` 注記は
+    `app/(auth)` のようなルートグループと見分けがつく `_split_target` で剥がす。
     """
+    from curriculum_blocks import _split_target
+
     hits: list[tuple[int, str]] = []
     for i, line, state, _ in fence_states(text):
         if state != "inside":
@@ -89,8 +109,8 @@ def find_missing(text: str, root: Path) -> list[tuple[int, str]]:
         fp = FILEPATH.match(line)
         if not fp:
             continue
-        value = filepath_value(fp).split("（")[0].split("(")[0].strip()
-        if not value.startswith(("src/", "prisma/", "scripts/")):
+        value, _ = _split_target(filepath_value(fp))
+        if not value.startswith(REAL_PREFIXES):
             continue
         if not (root / value).exists():
             hits.append((i, value))
@@ -98,7 +118,23 @@ def find_missing(text: str, root: Path) -> list[tuple[int, str]]:
 
 
 def main(argv: list[str]) -> int:
-    args = argv[1:] or ["material/30days-curriculum"]
+    args: list[str] = []
+    completed_root: Path | None = None
+    it = iter(argv[1:])
+    for a in it:
+        if a == "--completed-root":
+            completed_root = Path(next(it, ""))
+        else:
+            args.append(a)
+    # 明示された完成版ルートがディレクトリとして存在しないなら、
+    # 呼び出し側の指定ミス。対象の有無に関わらず先に止める
+    # （対象0件で未判定に回ると、指定ミスが未判定に見えてしまう）。
+    if completed_root is not None and not completed_root.is_dir():
+        print(f"❌ 完成版ルートが見つかりません: {completed_root}", file=sys.stderr)
+        return 2
+    # 既定はリポジトリの curriculum/。cwd によらず動くようファイル位置から引く。
+    default_dir = Path(__file__).resolve().parents[2] / "curriculum"
+    args = args or [str(default_dir)]
     targets: list[Path] = []
     for a in args:
         p = Path(a)
@@ -111,11 +147,21 @@ def main(argv: list[str]) -> int:
             return 2
 
     if not targets:
-        print("❌ 対象ファイルがありません", file=sys.stderr)
-        return 2
+        # 走査対象が0件。検査を1件もしていないので緑にしない（D1 §8-3）。
+        print("⏸️ 未判定: 走査対象が0件です（教材本文がまだ無い）")
+        return NOT_JUDGED
 
-    # リポジトリの根。この検査は scripts/curriculum-qa/ に置いてある。
-    root = Path(__file__).resolve().parents[2]
+    # 完成版ルートの既定はリポジトリの根。
+    if completed_root is None:
+        repo = Path(__file__).resolve().parents[2]
+        if (repo / "app").is_dir() or (repo / "supabase").is_dir():
+            completed_root = repo
+
+    # 完成版がまだ1枚も無いルートを基準にしても実在確認はできない。
+    # app/ も supabase/ も無いときは実在確認だけを未判定とする。
+    can_judge = completed_root is not None and (
+        (completed_root / "app").is_dir() or (completed_root / "supabase").is_dir()
+    )
 
     findings: list[tuple[str, int, str]] = []
     missing: list[tuple[str, int, str]] = []
@@ -124,8 +170,9 @@ def main(argv: list[str]) -> int:
         text = path.read_text(encoding="utf-8")
         for line, value in find(text):
             findings.append((path.name, line, value))
-        for line, value in find_missing(text, root):
-            missing.append((path.name, line, value))
+        if can_judge:
+            for line, value in find_missing(text, completed_root):
+                missing.append((path.name, line, value))
         for line, value in find_sample_with_real_path(text):
             samples.append((path.name, line, value))
 
@@ -150,6 +197,10 @@ def main(argv: list[str]) -> int:
         status = 1
     if status:
         return status
+    if not can_judge:
+        print("⏸️ 未判定: 完成版ルート（app/ または supabase/）が無いため、"
+              "書き込み先の実在確認は行っていません（--completed-root で明示できます）")
+        return NOT_JUDGED
 
     print(f"✅ コードブロックの書き込み先 OK（{len(targets)} ファイル）")
     return 0

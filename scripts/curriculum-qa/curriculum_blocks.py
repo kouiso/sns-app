@@ -6,7 +6,9 @@
 道具はそのまま捨てられた。連結の規則をここ1箇所へ置いて、検査はここを呼ぶ。
 
 書き込み先の判定は `// filepath:` の値で行う。教材の取り決めは次のとおり:
-  - `src/` `prisma/` `scripts/` で始まる値 = 読者が実際に書くファイル
+  - `app/` `supabase/` で始まる値 = 読者が実際に書くファイル
+    （現行構成は Expo Router + Supabase。旧構成の `src/` `prisma/` `scripts/` は
+    前作の Next.js + Prisma レイアウトなので、実ファイルとしては数えない）
   - 「読み比べ用サンプル」「ターミナル」など = 実ファイルを持たない
   - 値の後ろの `（続き）` `（import に追加）` は注記であって、書き込み先の一部ではない
 
@@ -45,7 +47,7 @@ def has_filepath_marker(code: str) -> bool:
     return any(FILEPATH.match(line) for line in code.split("\n"))
 # 値の末尾に付く注記1つ。入れ子は取らない（注記は `（続き）` 程度の平坦な語）。
 TRAILING_NOTE = re.compile(r"^(.*?)\s*([（(][^（()）]*[）)])\s*$")
-REAL_PREFIXES = ("src/", "prisma/", "scripts/")
+REAL_PREFIXES = ("app/", "supabase/")
 # 写経対象として扱う言語。bash は同じ `# filepath:` の書式を使うが、
 # 波括弧の意味が違う（`${VAR}` や関数定義）ので構文の収支検査には載せない。
 CODE_LANGS = frozenset({"typescript", "ts", "tsx", "javascript", "js", "jsx"})
@@ -90,8 +92,8 @@ def _split_target(value: str) -> tuple[str, str]:
     """`src/x.ts（続き）` を ("src/x.ts", "（続き）") に割る。
 
     注記は必ず値の末尾に付く。末尾の括弧だけを剥がし、途中の括弧はパスの一部として
-    残す。最初の `(` で切る形だと、App Router のルートグループ
-    `src/app/(auth)/login/page.tsx` が `src/app/` へ潰れる。潰れた先には別の
+    残す。最初の `(` で切る形だと、Expo Router のルートグループ
+    `app/(auth)/login.tsx` が `app/` へ潰れる。潰れた先には別の
     ルートグループのファイルも集まるので、片方の閉じタグがもう片方の
     開きっぱなしを隠してしまう。
     """

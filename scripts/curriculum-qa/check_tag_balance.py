@@ -32,8 +32,10 @@
 再掲の影響を受けない。29周目の最重量案件（day29 の `<form>` が30日のどこでも閉じない）は
 この形で捕まる。
 
-scaffold が最初から配るファイルは対象外にする。読者が写経していない行が既に手元に
-在るので、教材のブロックだけを見ても閉じタグの有無は判定できない。
+開始状態（スターター）が最初から配るファイルは対象外にする。読者が写経していない
+行が既に手元に在るので、教材のブロックだけを見ても閉じタグの有無は判定できない。
+開始状態は `--starter` で渡す。無指定なら控除なしで全件を数える（前作の
+scaffold 配布物に依存した既定値は、現行構成には無いため廃止した）。
 """
 
 from __future__ import annotations
@@ -44,7 +46,7 @@ from collections import Counter
 from pathlib import Path
 
 from curriculum_blocks import concat_by_file, mask_code
-from sale_package import scaffold_src_paths
+from sale_package import starter_paths
 
 IDENT = re.compile(r"[A-Za-z0-9_$]")
 TAG_NAME = re.compile(r"[A-Za-z][\w.\-]*")
@@ -166,22 +168,27 @@ def scan_tags(code: str, *, jsx: bool = True) -> tuple[Counter, Counter]:
     return opened, closed
 
 
-def find_unclosed(paths: list[Path]) -> list[tuple[str, str, list[int]]]:
-    """(書き込み先, 閉じられていないタグ名, そのタグを開いている day) を返す。
+def find_unclosed(
+    paths: list[Path], *, provided: frozenset[str] = frozenset()
+) -> list[tuple[str, str, list[str]]]:
+    """(書き込み先, 閉じられていないタグ名, そのタグを開いている単位) を返す。
 
-    mask_code はブロックごとに掛ける。連結してから1回で掛けると、ある day の
-    断片に閉じていない `/*` が1つあるだけで、そこから後ろの day のコードが
-    まるごと空白になる。mask_code は文字列については行末で打ち切る安全策を
-    持つが、ブロックコメントには無い（curriculum_blocks.py の該当分岐は
-    `*/` が無ければ末尾までを潰す）。ブロック単位で掛ければ、文字列と同じく
-    ブロックの境目でマスクが止まる。
+    3番目の要素は「開いた場所」の一覧。dayNN_*.md 形式のファイルでは "dayNN" の
+    ラベル列、それ以外（章ID命名のファイル）ではファイル名そのものの列になる。
+    単位をファイルごとに分けるのは、別の章が後から開きっぱなしにしたタグで
+    手前の章の記述を偽と判定しないためである（check_false_success.py 側の
+    巻き添え防止と同じ考え方）。
 
-    day はブロック単位で数え直す。その書き込み先に触っただけの day まで挙げると、
-    `check_false_success.py` が「day10 は正しく閉じている」という記述を、
-    day29 が後から開きっぱなしにしたせいで偽と判定してしまう。
+    mask_code はブロックごとに掛ける。連結してから1回で掛けると、ある断片に
+    閉じていない `/*` が1つあるだけで、そこから後ろのコードがまるごと空白になる。
+    mask_code は文字列については行末で打ち切る安全策を持つが、ブロックコメントには
+    無い（curriculum_blocks.py の該当分岐は `*/` が無ければ末尾までを潰す）。
+    ブロック単位で掛ければ、文字列と同じくブロックの境目でマスクが止まる。
+
+    provided は開始状態が最初から配るファイルの一覧。読者が写経していない行が
+    既に手元に在るため、教材のブロックだけを見ても収支は判定できない。
     """
-    provided = scaffold_src_paths()
-    hits: list[tuple[str, str, list[int]]] = []
+    hits: list[tuple[str, str, list[str]]] = []
     for target, blocks in sorted(concat_by_file(paths).items()):
         if target in provided:
             continue
@@ -191,43 +198,65 @@ def find_unclosed(paths: list[Path]) -> list[tuple[str, str, list[int]]]:
         unclosed = [name for name in sorted(opened) if name not in closed]
         if not unclosed:
             continue
-        per_block = [(b.day, scan_tags(code, jsx=jsx)[0]) for b, code in zip(blocks, masked)]
+        per_block = [
+            ((f"day{b.day:02d}" if b.day else b.source), scan_tags(code, jsx=jsx)[0])
+            for b, code in zip(blocks, masked)
+        ]
         for name in unclosed:
-            days = sorted({day for day, op in per_block if name in op})
+            units = sorted({unit for unit, op in per_block if name in op})
             # ブロック単体では開始タグを取れない書き方（タグがブロックを跨ぐ）が
-            # 残りうる。その場合だけ、これまでどおり触った day を全部挙げる。
-            hits.append((target, name, days or sorted({b.day for b in blocks})))
+            # 残りうる。その場合だけ、触った単位を全部挙げる。
+            hits.append(
+                (target, name, units or sorted({f"day{b.day:02d}" if b.day else b.source for b in blocks}))
+            )
     return hits
 
 
-def collect(argv: list[str]) -> list[Path] | int:
-    args = argv[1:] or ["material/30days-curriculum"]
+def collect(argv_args: list[str]) -> list[Path] | int:
+    # 既定はリポジトリの curriculum/。cwd によらず動くようファイル位置から引く。
+    default_dir = Path(__file__).resolve().parents[2] / "curriculum"
+    args = argv_args or [str(default_dir)]
     targets: list[Path] = []
     for a in args:
         p = Path(a)
         if p.is_dir():
-            targets.extend(sorted(p.glob("day[0-9][0-9]_*.md")))
+            # README.md は目次で章本文ではないので対象外
+            targets.extend(sorted(f for f in p.glob("*.md") if f.name != "README.md"))
         elif p.is_file():
             targets.append(p)
         else:
             print(f"❌ 見つかりません: {a}", file=sys.stderr)
             return 2
     if not targets:
-        print("❌ 対象ファイルがありません", file=sys.stderr)
-        return 2
+        # 走査対象が0件。検査を1件もしていないので緑にしない（D1 §8-3）。
+        print("⏸️ 未判定: 走査対象が0件です")
+        return 3
     return targets
 
 
 def main(argv: list[str]) -> int:
-    targets = collect(argv)
+    args: list[str] = []
+    provided: frozenset[str] = frozenset()
+    it = iter(argv[1:])
+    for a in it:
+        if a == "--starter":
+            p = Path(next(it, ""))
+            try:
+                provided = starter_paths(p)
+            except (ValueError, OSError) as e:
+                print(f"❌ {e}", file=sys.stderr)
+                return 2
+        else:
+            args.append(a)
+    targets = collect(args)
     if isinstance(targets, int):
         return targets
 
-    findings = find_unclosed(targets)
+    findings = find_unclosed(targets, provided=provided)
     if findings:
-        print(f"❌ 閉じタグが30日のどこにも無い {len(findings)} 件")
-        for target, name, days in findings:
-            span = "day" + "・day".join(f"{d:02d}" for d in days)
+        print(f"❌ 閉じタグがどこにも無い {len(findings)} 件")
+        for target, name, units in findings:
+            span = "・".join(units)
             print(f"  {target}: <{name}> を開くが </{name}> が無い（{span}）")
         print("  読者は開いたまま保存することになります。閉じる行を書いてください。")
         return 1

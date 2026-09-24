@@ -1,13 +1,24 @@
 name: gates
 
-# 教材の機械ゲート（10_教材制作フロー.md §4）のうち、**今できる分だけ**を CI で常設する。
-#   G3 のうち文体チェック … textlint + preset-ja-technical-writing + prh辞書
-#   G5 引用ゲート        … embedmd。教材に貼ったコードが listings/ の実ファイルとズレていないか
+# 教材の機械ゲート（10_教材制作フロー.md §4）を CI で常設する。
+#   検査器の自己テスト … scripts/curriculum-qa/test_*.py を全部個別に走らせる。
+#                        検査器が壊れていても検査器自身が「緑」と言わないようにするためのもの。
+#   G3 … 文体（textlint + preset-ja-technical-writing + prh辞書）/
+#         構造（コードブロック25行・段落3文）/ 方針同期（配布語彙・不採用スタック・人物名）/
+#         開発ログの存在確認 / 開始状態混入検査
+#   G4 … material/reviews/g4/ の受領証の機械検査（D15-8）
+#   G5 … embedmd。教材に貼ったコードが listings/ の実ファイルとズレていないか
+#   配布 … EPUB 同梱物・PDF リンク・未使用画像
 #
-# ★ このジョブが緑でも「G3 と G5 を通過した」とは言えない。
-#   G3 は5検査のうち1つしか実装していない（下のステップ名に明記）。
-#   G5 も引用範囲の過不足は見ていない（道具検証の記録 §9 / §14）。
-#   必須チェックに指定するときは、この差を承知のうえで指定すること。
+# ★ 終了コード 3（未判定）は「その成果物がまだ存在しない」という意味で、
+#   FAIL ではない（D1 §8-3: 対象0件を黙って緑にしない。開始状態・EPUB・
+#   PDF・受領証・完成版アプリは現時点で未生成）。
+#   読み替えは tools/gate-step.sh 1箇所で行う: 3 → 0 + ::warning title=未判定。
+#   個別のステップに rc==3 の分岐を書かないこと（散らばると直し忘れる）。
+#
+# ★ 合否に数える走査対象は教材本文（curriculum/*.md）だけ。prototype-chapter/ は
+#   教材本文ではない使い捨てフィクスチャ（10 L140-143）なので、構造と方針同期は
+#   参考ステップで回すだけに留める。dev-log・開始状態は実章にだけ課す（D1-7）。
 #
 # ★ embedmd -d の終了コードは 1 ではなく 2 である（実測。道具検証の記録 §3）。
 #   スクリプト側で「非ゼロなら FAIL」として扱っているので、ここでは素直に呼ぶだけでよい。
@@ -31,6 +42,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # PR のベースSHAまで履歴を取る。浅い fetch だと G4 が差分の
+          # 対象章を拾えない（pr-target-chapters.sh が 2 を返す）。
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -57,16 +72,122 @@ jobs:
         # 実行環境の中だけで辻褄を合わせて通ってしまい、ズレたまま気づけなくなる。
         run: npm ci
 
-      # ★ これは G3 の全部ではない。10 §4 の G3 は5つの検査からなる。
-      #   実装済み: 文体チェック（textlint）
-      #   未実装:   構造チェック / 開始状態混入検査 / 方針同期チェック / 開発ログの存在確認
-      #   この4つは Phase 2 のゲート実装で作る。それまで、このジョブが緑でも
-      #   「G3 を通過した」とは言えない。名前を「G3」にすると通過したと読めるので付けない。
-      - name: G3のうち文体チェックのみ（残り4検査は未実装）
+      # 検査器そのものの退行テスト。検査器が壊れていると「緑」が信じられないので
+      # 一番先に置く。1本でも落ちたらそこで止める（後続の判定は意味をなさない）。
+      - name: 検査器の自己テスト（test_*.py を個別に実行）
+        run: |
+          failed=0
+          for t in scripts/curriculum-qa/test_*.py; do
+            echo "=== $t"
+            if ! python3 "$t"; then
+              echo "❌ $t が落ちました"
+              failed=1
+            fi
+          done
+          exit $failed
+
+      # G3（10 §4）の5検査。文体も対象が curriculum/*.md に変わったので
+      # 教材本文が無い間は未判定（3）を返しうる → gate-step.sh 経由。
+      - name: G3 文体チェック（textlint）
+        if: ${{ !cancelled() }}
         working-directory: prototype-chapter
-        run: npm run gate:style
+        run: tools/gate-step.sh tools/g3-style.sh
+
+      - name: G3 構造チェック（コードブロック25行・段落3文）
+        if: ${{ !cancelled() }}
+        working-directory: prototype-chapter
+        run: tools/gate-step.sh tools/g3-structure.sh
+
+      - name: G3 方針同期チェック（配布語彙・不採用スタック・人物名）
+        if: ${{ !cancelled() }}
+        working-directory: prototype-chapter
+        run: tools/gate-step.sh tools/g3-policy.sh
+
+      - name: G3 開発ログの存在確認
+        if: ${{ !cancelled() }}
+        working-directory: prototype-chapter
+        run: tools/gate-step.sh tools/g3-dev-log.sh
+
+      - name: G3 開始状態混入検査
+        if: ${{ !cancelled() }}
+        working-directory: prototype-chapter
+        run: tools/gate-step.sh tools/g3-start-state.sh
+
+      - name: G4 受領証の検査
+        if: ${{ !cancelled() }}
+        working-directory: prototype-chapter
+        run: |
+          # D15-8-2「教材PRの対象章に受領証が存在すること」。
+          # PR では差分で触れた curriculum/<章ID>.md の受領証を要求する。
+          # push では今ある受領証の検査だけ（差分の起点が無い）。
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # ベースSHAが取れないときスクリプトは 2 を返す。$() の代入は
+            # その終了コードを引き継ぐので set -e でここで止まり、
+            # 「要求すべき章を拾えなかったのに緑」にはならない。
+            targets="$(tools/pr-target-chapters.sh "${{ github.event.pull_request.base.sha }}")"
+            if [ -n "$targets" ]; then
+              mapfile -t ids <<< "$targets"
+              tools/gate-step.sh tools/g4-receipt.sh "${ids[@]}"
+            else
+              tools/gate-step.sh tools/g4-receipt.sh
+            fi
+          else
+            tools/gate-step.sh tools/g4-receipt.sh
+          fi
+
+      # 捨て試作は教材本文ではない（10 L140-143）。フィクスチャの指摘は
+      # 執筆の参考情報なので ::warning に出すだけで、ジョブは落とさない。
+      # dev-log・開始状態は実章にだけ課す検査なのでここでは回さない（D1-7）。
+      - name: 捨て試作フィクスチャへの構造・方針同期・文体（参考。合否に数えない）
+        if: ${{ !cancelled() }}
+        run: |
+          set +e
+          total=0
+          for c in check_structure check_policy_sync; do
+            echo "=== $c（フィクスチャ。合否に数えない）"
+            out=$(python3 "scripts/curriculum-qa/$c.py" prototype-chapter/chapter*.md 2>&1)
+            rc=$?
+            printf '%s\n' "$out"
+            if [ "$rc" -ge 2 ]; then
+              echo "::warning::$c が終了コード $rc（未判定/環境異常）。フィクスチャの指摘は数えられない"
+            fi
+            # 指摘行は `  <ファイル>:<行> <内容>` の形。末尾の助言行
+            # （2スペース開始だが :行番号 を持たない）は数えない。
+            n=$(printf '%s\n' "$out" | grep -cE '^  [^ ]+:[0-9]+')
+            total=$((total + n))
+          done
+          # 文体もフィクスチャには参考として回す。対照版（*-plain.md）も
+          # 含める（D17-1 で対照版は文体ゲート内に戻った）。指摘は参考。
+          fixture=()
+          for f in prototype-chapter/chapter*.md; do
+            [ -e "$f" ] || continue
+            fixture+=("$f")
+          done
+          if [ ${#fixture[@]} -gt 0 ]; then
+            echo "=== 文体（フィクスチャ。合否に数えない）"
+            prototype-chapter/tools/g3-style.sh "${fixture[@]}"
+            style_rc=$?
+            if [ $style_rc -ne 0 ]; then
+              echo "::warning::フィクスチャの文体チェックが終了コード $style_rc（参考。合否に数えない）"
+            fi
+          fi
+          echo "::warning::捨て試作フィクスチャの構造・方針同期 指摘 ${total} 件（参考。合否に数えない）"
+          exit 0
+
+      - name: 配布物の検査（EPUB 参照・PDF リンク・未使用画像）
+        if: ${{ !cancelled() }}
+        run: |
+          rc_all=0
+          for t in scripts/curriculum-qa/check_epub_reference.py \
+                   scripts/curriculum-qa/check_pdf_links.py \
+                   scripts/curriculum-qa/check_unused_image.py; do
+            echo "=== $t"
+            prototype-chapter/tools/gate-step.sh python3 "$t" || rc_all=$?
+          done
+          exit $rc_all
 
       - name: G5 引用ゲート
+        if: ${{ !cancelled() }}
         working-directory: prototype-chapter
         env:
           EMBEDMD: ${{ github.workspace }}/go/bin/embedmd
