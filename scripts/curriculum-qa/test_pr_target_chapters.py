@@ -122,6 +122,24 @@ def main() -> int:
     commit(repo, "pr")
     expect("章の削除では何も出ない", 0, "", run(repo, base))
 
+    # 章の改名は「改名先の新しいID」が出る（D1-4 の改名は想定内の操作で、
+    # 改名先にも受領証は要る）。旧IDは出さない。
+    repo = make_repo({"curriculum/old-name.md": "# 章\n"})
+    base = base_sha(repo)
+    git(repo, "mv", "curriculum/old-name.md", "curriculum/new-name.md")
+    commit(repo, "pr")
+    expect("章の改名で新IDが出る", 0, "new-name", run(repo, base))
+
+    # 改名して本文も直すPRでも同じく新IDが出る。本文は似たままにしておく:
+    # 似ていないと改名検出が外れて D+A になり、改名検出を潰す変異を
+    # このケースが見逃してしまう。
+    repo = make_repo({"curriculum/old-name.md": "# 章 v1\n" + "行\n" * 20})
+    base = base_sha(repo)
+    git(repo, "mv", "curriculum/old-name.md", "curriculum/new-name.md")
+    put(repo, "curriculum/new-name.md", "# 章 v2\n" + "行\n" * 20)
+    commit(repo, "pr")
+    expect("改名+編集でも新IDが出る", 0, "new-name", run(repo, base))
+
     # サブディレクトリの .md は章IDではない
     repo = make_repo({"curriculum/README.md": "# readme\n"})
     base = base_sha(repo)
