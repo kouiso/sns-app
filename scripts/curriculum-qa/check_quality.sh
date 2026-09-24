@@ -209,7 +209,6 @@ CORPUS_CHECKS=(
   check_step_ref
   check_tag_balance
   check_false_success
-  check_zip_reference
   check_unused_image
   check_jsx_marker
   check_ja_line_break
@@ -217,26 +216,12 @@ CORPUS_CHECKS=(
   check_terms
   check_crossref
 )
-# 検査そのものの退行テスト。Gate 4 は本体とセットでこれも走らせる。
-SELF_TESTS=(
-  test_markdown_scan
-  test_check_crossref
-  test_check_variants
-  test_check_step_time
-  test_check_anchor
-  test_check_procedure_order
-  test_check_step_ref
-  test_sale_package
-  test_check_tag_balance
-  test_check_false_success
-  test_check_zip_reference
-  test_check_unused_image
-  test_check_jsx_marker
-  test_check_ja_line_break
-  test_check_scaffold_alignment
-  test_check_why
-  test_filepath_marker
-)
+# 検査そのものの退行テスト。test_*.py を列挙するので新しい検査を足しても
+# ここを更新し忘れることがない。
+SELF_TESTS=()
+while IFS= read -r t; do
+  SELF_TESTS+=("$(basename "$t" .py)")
+done < <(find "$SCRIPT_DIR" -maxdepth 1 -name "test_*.py" | sort)
 
 run_corpus_checks() {
   local corpus_failed=0
@@ -291,6 +276,47 @@ run_corpus_checks() {
       fi
     done
   done
+
+  # リポジトリ単位の検査（G3 の残りと配布物・G4 受領証）。教材の置き場ではなく
+  # リポジトリ全体を見る検査なので corpus の有無とは無関係に1回だけ走らせる。
+  # 終了コード 3（未判定）は「成果物がまだ無い」正常な状態であり FAIL にしない。
+  echo ""
+  echo "=========================================="
+  echo "🏛️  リポジトリ単位の検査（G3 残り・配布・G4）"
+  echo "=========================================="
+  REPO_ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+  run_repo_check() {
+    local label="$1"; shift
+    local out rc
+    out="$("$@" 2>&1)"; rc=$?
+    if [ $rc -eq 3 ]; then
+      echo "⏸️  $label: 未判定（成果物がまだ無い）"
+      echo "$out" | sed 's/^/    /'
+    elif [ $rc -eq 0 ]; then
+      echo "✅ $label PASS"
+    else
+      echo "❌ $label FAIL"
+      echo "$out" | sed 's/^/    /'
+      corpus_failed=1
+    fi
+  }
+
+  CHAPTER_MDS=()
+  for f in "$REPO_ROOT_DIR"/curriculum/*.md "$REPO_ROOT_DIR"/prototype-chapter/chapter*.md; do
+    # README.md は目次・ナビ文書であり章本文ではないので対象外
+    [ -e "$f" ] && [ "$(basename "$f")" != "README.md" ] && CHAPTER_MDS+=("$f")
+  done
+  if [ ${#CHAPTER_MDS[@]} -gt 0 ]; then
+    run_repo_check "構造チェック" python3 "$SCRIPT_DIR/check_structure.py" "${CHAPTER_MDS[@]}"
+    run_repo_check "方針同期チェック" python3 "$SCRIPT_DIR/check_policy_sync.py" "${CHAPTER_MDS[@]}"
+  else
+    echo "⏸️  構造・方針同期: 対象の章がまだ無い"
+  fi
+  run_repo_check "開始状態混入検査" python3 "$SCRIPT_DIR/check_start_state.py"
+  run_repo_check "開発ログの存在確認" python3 "$SCRIPT_DIR/check_dev_log.py"
+  run_repo_check "G4 受領証" python3 "$SCRIPT_DIR/check_g4_receipt.py"
+  run_repo_check "EPUB 参照可能性" python3 "$SCRIPT_DIR/check_epub_reference.py" "${CHAPTER_MDS[@]}"
+  run_repo_check "PDF リンク" python3 "$SCRIPT_DIR/check_pdf_links.py"
 
   return $corpus_failed
 }

@@ -7,6 +7,7 @@
 
 import contextlib
 import io
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -115,23 +116,36 @@ CASES: list[tuple[str, str, list[str], list[str]]] = [
     ),
 ]
 
-# ワークフローの起動条件が、この検査の見る拡張子を全部覆っているか。
-# png だけに絞られていると、未参照の webp を足すPRでゲートが一度も走らない。
-WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/material-gate.yml"
+# ワークフローの配線。CI（gates.yml）がこの検査を呼んでいることと、
+# 起動条件が画像の変更でゲートを素通りさせないことを見る。
+# gates.yml は paths フィルタを持たない（全 push / PR で走る）ので、
+# フィルタが書かれていないこと自体もここで確認する。
+WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/gates.yml"
 
 
 def check_workflow_paths() -> tuple[int, int]:
     from check_unused_image import IMAGE_SUFFIX
 
     text = WORKFLOW.read_text(encoding="utf-8")
-    # `pull_request` と `push` で別々に書くため、両方に在ることを件数で見る。
     failed = 0
-    for suffix in sorted(IMAGE_SUFFIX):
-        got = text.count(f"- 'material/**/*{suffix}'")
-        if got < 2:
-            failed += 1
-            print(f"  ❌ material-gate.yml の起動条件に {suffix} が {got} 箇所しかない（期待 2）")
-    return failed, len(IMAGE_SUFFIX)
+    if "check_unused_image.py" not in text:
+        failed += 1
+        print("  ❌ gates.yml が check_unused_image.py を呼んでいない")
+    # `on:` 節の中に paths / paths-ignore が書かれているなら、
+    # 画像の拡張子がそのフィルタを通れるかを拡張子ごとに見る。
+    # フィルタが無い（=全部の変更で走る）ならこの部分検査は通る。
+    on_block = text.split("on:", 1)[1].split("jobs:", 1)[0] if "on:" in text and "jobs:" in text else ""
+    path_filters = [
+        line.strip().strip("'\"").lstrip("- ")
+        for line in on_block.splitlines()
+        if re.match(r"\s*-\s*['\"]", line)
+    ]
+    if "paths" in on_block or "paths-ignore" in on_block:
+        for suffix in sorted(IMAGE_SUFFIX):
+            if not any(f.endswith(suffix) or f"*{suffix}" in f for f in path_filters):
+                failed += 1
+                print(f"  ❌ gates.yml の paths フィルタに {suffix} が無い")
+    return failed, 1 + len(IMAGE_SUFFIX)
 
 
 def build(d: Path, md: str, images: list[str]) -> None:
@@ -163,9 +177,9 @@ def check_exit_code() -> tuple[int, int]:
         failed += 1
         print("  ❌ 見つからないパスで 2 を返さない")
     with tempfile.TemporaryDirectory() as d:
-        if run(["check_unused_image.py", d]) != 2:
+        if run(["check_unused_image.py", d]) != 3:
             failed += 1
-            print("  ❌ 画像が1枚も無いときに 2 を返さない")
+            print("  ❌ 画像が1枚も無いときに 3（未判定）を返さない")
     return failed, len(cases) + 2
 
 
