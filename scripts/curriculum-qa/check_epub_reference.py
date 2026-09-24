@@ -229,6 +229,11 @@ def main(argv: list[str]) -> int:
                 return 2
         elif a == "--repo-root":
             repo_root = Path(next(it, ""))
+            # 明示した完成版ルートが無いのは指定ミス（2）。無いまま進めると
+            # 照合先が全部未判定に回って、指定ミスに気づけない。
+            if not repo_root.is_dir():
+                print(f"❌ 完成版ルートが見つかりません: {repo_root}", file=sys.stderr)
+                return 2
         else:
             args.append(a)
     # 既定の対象は教材本文（curriculum/ の章）だけ。prototype-chapter/ は

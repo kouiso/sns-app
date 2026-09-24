@@ -60,21 +60,26 @@ def main() -> int:
         (starter / "package.json").write_text("{}\n", encoding="utf-8")
         (starter / "app.json").write_text("{}\n", encoding="utf-8")
 
+        # listings 無し＝照合する完成品が無いケースは、存在する空の
+        # ディレクトリで表す（存在しないパスは指定ミスとして 2 に変わった）。
+        empty_listings = root / "empty-listings"
+        empty_listings.mkdir()
+
         expect("開始状態が下地だけなら通す", 0,
-               run_main(["--starter", str(starter), str(chapter), "--listings", str(root / "none")]))
+               run_main(["--starter", str(starter), str(chapter), "--listings", str(empty_listings)]))
 
         # 読者が書くはずのファイルが開始状態に混入。
         (starter / "app").mkdir()
         (starter / "app" / "index.tsx").write_text("export default function Page() {}\n", encoding="utf-8")
         expect("書かせるファイルの混入は止める", 1,
-               run_main(["--starter", str(starter), str(chapter), "--listings", str(root / "none")]))
+               run_main(["--starter", str(starter), str(chapter), "--listings", str(empty_listings)]))
         (starter / "app" / "index.tsx").unlink()
 
         # node_modules の混入。
         (starter / "node_modules").mkdir()
         (starter / "node_modules" / "x.js").write_text("x", encoding="utf-8")
         expect("node_modules の混入は止める", 1,
-               run_main(["--starter", str(starter), str(chapter), "--listings", str(root / "none")]))
+               run_main(["--starter", str(starter), str(chapter), "--listings", str(empty_listings)]))
         (starter / "node_modules" / "x.js").unlink()
         (starter / "node_modules").rmdir()
 
@@ -96,14 +101,17 @@ def main() -> int:
         manifest = root / "starter.txt"
         manifest.write_text("package.json\napp/index.tsx\n", encoding="utf-8")
         expect("マニフェスト経由でも混入を止める", 1,
-               run_main(["--starter", str(manifest), str(chapter), "--listings", str(root / "none")]))
+               run_main(["--starter", str(manifest), str(chapter), "--listings", str(empty_listings)]))
         manifest.write_text("package.json\napp.json\n", encoding="utf-8")
         expect("マニフェスト経由で下地だけなら通す", 0,
-               run_main(["--starter", str(manifest), str(chapter), "--listings", str(root / "none")]))
+               run_main(["--starter", str(manifest), str(chapter), "--listings", str(empty_listings)]))
 
         expect("--starter 未指定は未判定(3)", 3, run_main([str(chapter)]))
         expect("指定した starter が無ければ 2", 2,
                run_main(["--starter", str(root / "absent"), str(chapter)]))
+        expect("指定した listings が無ければ 2", 2,
+               run_main(["--starter", str(starter), str(chapter),
+                         "--listings", str(root / "absent")]))
 
         # 開始状態はあるのに写経対象の章が0件 → 検査0件は緑にしない
         # （D1 §8-3）。REPO_ROOT を curriculum/ の無い一時ディレクトリに

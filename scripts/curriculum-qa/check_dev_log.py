@@ -140,8 +140,17 @@ def main(argv: list[str]) -> int:
     for a in it:
         if a == "--dev-logs":
             dev_logs = Path(next(it, ""))
+            # 明示した置き場が無いのは指定ミス（2）。既定の置き場が無いのは
+            # 「まだ書かれていない」で各章の違反（1）。混ぜない。
+            if not dev_logs.is_dir():
+                print(f"❌ 開発ログの置き場が見つかりません: {dev_logs}", file=sys.stderr)
+                return 2
         elif a == "--chapters-dir":
-            chapter_dirs = (Path(next(it, "")),)
+            cd = Path(next(it, ""))
+            if not cd.is_dir():
+                print(f"❌ 章本文の置き場が見つかりません: {cd}", file=sys.stderr)
+                return 2
+            chapter_dirs = (cd,)
         elif a == "--chapter":
             chapters.append(next(it, ""))
         else:

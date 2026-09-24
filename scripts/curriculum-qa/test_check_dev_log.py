@@ -123,6 +123,14 @@ def main() -> int:
         (logs / f"{CID}.md").write_text(ENTRY, encoding="utf-8")
         expect("中身が雛形未満なら 1", 1 == run_main(["--dev-logs", str(logs), CID]), "")
 
+        # 明示した置き場が無いのは指定ミス（2）。各章の「ログなし」
+        # 違反（1）に化けさせない。
+        absent = logs / "absent"
+        expect("存在しない --dev-logs は 2", 2 ==
+               run_main(["--dev-logs", str(absent), CID]), "")
+        expect("存在しない --chapters-dir は 2", 2 ==
+               run_main(["--dev-logs", str(logs), "--chapters-dir", str(absent), CID]), "")
+
     # 対象章が0件（curriculum/ に章が無い）は未判定。D1 §8-3「0件は
     # 黙って緑にしない」。既定の走査先はリポジトリ直下なので、
     # REPO_ROOT を空の一時ディレクトリに差し替えて試す。

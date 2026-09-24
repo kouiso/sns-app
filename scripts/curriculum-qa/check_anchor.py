@@ -126,6 +126,12 @@ def main(argv: list[str]) -> int:
             completed_root = Path(next(it, ""))
         else:
             args.append(a)
+    # 明示された完成版ルートがディレクトリとして存在しないなら、
+    # 呼び出し側の指定ミス。対象の有無に関わらず先に止める
+    # （対象0件で未判定に回ると、指定ミスが未判定に見えてしまう）。
+    if completed_root is not None and not completed_root.is_dir():
+        print(f"❌ 完成版ルートが見つかりません: {completed_root}", file=sys.stderr)
+        return 2
     # 既定はリポジトリの curriculum/。cwd によらず動くようファイル位置から引く。
     default_dir = Path(__file__).resolve().parents[2] / "curriculum"
     args = args or [str(default_dir)]
@@ -145,12 +151,7 @@ def main(argv: list[str]) -> int:
         print("⏸️ 未判定: 走査対象が0件です（教材本文がまだ無い）")
         return NOT_JUDGED
 
-    # 完成版ルートの既定はリポジトリの根。明示された完成版ルートが
-    # ディレクトリとして存在しないなら、呼び出し側の指定ミスなので止める
-    # （存在しない場所を基準に「ファイルが無い」と報告すると全部が赤になる）。
-    if completed_root is not None and not completed_root.is_dir():
-        print(f"❌ 完成版ルートが見つかりません: {completed_root}", file=sys.stderr)
-        return 2
+    # 完成版ルートの既定はリポジトリの根。
     if completed_root is None:
         repo = Path(__file__).resolve().parents[2]
         if (repo / "app").is_dir() or (repo / "supabase").is_dir():

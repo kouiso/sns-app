@@ -91,7 +91,13 @@ def main(argv: list[str]) -> int:
         if a == "--starter":
             starter_arg = next(it, "")
         elif a == "--listings":
-            listings_dirs.append(Path(next(it, "")))
+            ld = Path(next(it, ""))
+            # 明示した listings が無いのは指定ミス（2）。無いまま進めると
+            # 完成品との同内容照合が何もせず「混入なし」に見える。
+            if not ld.is_dir():
+                print(f"❌ listings が見つかりません: {ld}", file=sys.stderr)
+                return 2
+            listings_dirs.append(ld)
         else:
             targets.append(Path(a))
 

@@ -217,10 +217,21 @@ def check_exit_code() -> tuple[int, int]:
     if run(["check_anchor.py", "/no/such/path"]) != 2:
         failed += 1
         print("  ❌ 見つからないパスで 2 を返さない")
-    if run(["check_anchor.py", "--completed-root", "/no/such/path", "/tmp"]) != 2:
-        failed += 1
-        print("  ❌ 存在しない完成版ルートで 2 を返さない")
-    return failed, 5
+
+    # 指定ミスの --completed-root は、走査対象の有無に関わらず 2。
+    # 走査対象が0件でも 3（未判定）に逃がさない。対象はホストの /tmp に
+    # 頼らず自分で作る（CI の /tmp には .md が無くて検査0件に落ちた）。
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        (d / "ch.md").write_text("本文\n", encoding="utf-8")
+        if run(["check_anchor.py", "--completed-root", "/no/such/path", str(d)]) != 2:
+            failed += 1
+            print("  ❌ 対象があるのに存在しない完成版ルートで 2 を返さない")
+    with tempfile.TemporaryDirectory() as d:
+        if run(["check_anchor.py", "--completed-root", "/no/such/path", d]) != 2:
+            failed += 1
+            print("  ❌ 対象0件でも存在しない完成版ルートで 2 を返さない")
+    return failed, 6
 
 
 def main() -> int:

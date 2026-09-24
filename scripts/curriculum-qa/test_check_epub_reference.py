@@ -347,6 +347,12 @@ def check_exit_code() -> tuple[int, int]:
             failed += 1
             print("  ❌ 存在しない開始状態で 2 を返さない")
 
+        # 明示した完成版ルートが無いのも指定ミス（2）。対象0件の
+        # 未判定（3）に逃がさない。
+        if run(["check_epub_reference.py", str(corpus / "ok.md"), "--repo-root", str(root / "none")]) != 2:
+            failed += 1
+            print("  ❌ 存在しない完成版ルートで 2 を返さない")
+
     if run(["check_epub_reference.py", "/no/such/path"]) != 2:
         failed += 1
         print("  ❌ 見つからないパスで 2 を返さない")
@@ -367,7 +373,7 @@ def check_exit_code() -> tuple[int, int]:
                 print("  ❌ 既定対象0件で 3（未判定）を返さない")
         finally:
             check_epub_reference.REPO_ROOT = saved
-    return failed, 8
+    return failed, 9
 
 
 def main_test() -> int:
