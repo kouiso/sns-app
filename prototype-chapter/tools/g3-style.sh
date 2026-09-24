@@ -42,6 +42,6 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
   exit 3
 fi
 
-echo "G3 文体チェック（5検証中1つ）: ${#TARGETS[@]} 件を検査する"
+echo "G3 文体チェック（5検査中1つ）: ${#TARGETS[@]} 件を検査する"
 "$TEXTLINT" "${TARGETS[@]}"
 echo "文体チェック PASS（G3 はこのほか構造・開始状態・方針同期・開発ログの検査がある）"

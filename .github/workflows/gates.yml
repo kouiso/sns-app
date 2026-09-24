@@ -42,6 +42,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # PR のベースSHAまで履歴を取る。浅い fetch だと G4 が差分の
+          # 対象章を拾えない（pr-target-chapters.sh が 2 を返す）。
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -85,40 +89,57 @@ jobs:
       # G3（10 §4）の5検査。文体は従来どおり素通しで止める（origin/main と同じ
       #  blocking）。残りの4検査は未判定（3）がありうるので gate-step.sh 経由。
       - name: G3 文体チェック（textlint）
-        if: always()
+        if: ${{ !cancelled() }}
         working-directory: prototype-chapter
         run: npm run gate:style
 
       - name: G3 構造チェック（コードブロック25行・段落3文）
-        if: always()
+        if: ${{ !cancelled() }}
         working-directory: prototype-chapter
         run: tools/gate-step.sh tools/g3-structure.sh
 
       - name: G3 方針同期チェック（配布語彙・不採用スタック・人物名）
-        if: always()
+        if: ${{ !cancelled() }}
         working-directory: prototype-chapter
         run: tools/gate-step.sh tools/g3-policy.sh
 
       - name: G3 開発ログの存在確認
-        if: always()
+        if: ${{ !cancelled() }}
         working-directory: prototype-chapter
         run: tools/gate-step.sh tools/g3-dev-log.sh
 
       - name: G3 開始状態混入検査
-        if: always()
+        if: ${{ !cancelled() }}
         working-directory: prototype-chapter
         run: tools/gate-step.sh tools/g3-start-state.sh
 
       - name: G4 受領証の検査
-        if: always()
+        if: ${{ !cancelled() }}
         working-directory: prototype-chapter
-        run: tools/gate-step.sh tools/g4-receipt.sh
+        run: |
+          # D15-8-2「教材PRの対象章に受領証が存在すること」。
+          # PR では差分で触れた curriculum/<章ID>.md の受領証を要求する。
+          # push では今ある受領証の検査だけ（差分の起点が無い）。
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # ベースSHAが取れないときスクリプトは 2 を返す。$() の代入は
+            # その終了コードを引き継ぐので set -e でここで止まり、
+            # 「要求すべき章を拾えなかったのに緑」にはならない。
+            targets="$(tools/pr-target-chapters.sh "${{ github.event.pull_request.base.sha }}")"
+            if [ -n "$targets" ]; then
+              mapfile -t ids <<< "$targets"
+              tools/gate-step.sh tools/g4-receipt.sh "${ids[@]}"
+            else
+              tools/gate-step.sh tools/g4-receipt.sh
+            fi
+          else
+            tools/gate-step.sh tools/g4-receipt.sh
+          fi
 
       # 捨て試作は教材本文ではない（10 L140-143）。フィクスチャの指摘は
       # 執筆の参考情報なので ::warning に出すだけで、ジョブは落とさない。
       # dev-log・開始状態は実章にだけ課す検査なのでここでは回さない（D1-7）。
       - name: 捨て試作フィクスチャへの構造・方針同期（参考。合否に数えない）
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
           set +e
           total=0
@@ -139,7 +160,7 @@ jobs:
           exit 0
 
       - name: 配布物の検査（EPUB 参照・PDF リンク・未使用画像）
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
           rc_all=0
           for t in scripts/curriculum-qa/check_epub_reference.py \
@@ -151,7 +172,7 @@ jobs:
           exit $rc_all
 
       - name: G5 引用ゲート
-        if: always()
+        if: ${{ !cancelled() }}
         working-directory: prototype-chapter
         env:
           EMBEDMD: ${{ github.workspace }}/go/bin/embedmd
