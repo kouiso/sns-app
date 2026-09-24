@@ -6,8 +6,10 @@
 矛盾したままだった（13 §5）。検査対象語は `policy_sync_terms.json` に置き、
 方針改訂と同じPRで更新する。
 
-検査対象は教材本文（curriculum/*.md と prototype-chapter/chapter*.md、
-対照版 *-plain.md を含む。D17-1 で対照版にも方針同期は課される）。
+検査対象は教材本文（curriculum/*.md、README.md は目次なので除く。
+対照版 *-plain.md が curriculum/ に置かれた場合はそれも含む — D17-1 で
+対照版にも方針同期は課される）。prototype-chapter/ は教材本文ではない
+使い捨てフィクスチャ（10 L140-143）なので既定では走査しない。
 設計文書 material/ は検査対象ではない。方針の履歴や決定の経緯を書く場所
 なので、旧語彙が残っていること自体が正当である。
 
@@ -21,7 +23,8 @@
   3. 登場人物名の統一。話者ラベル（`名前「` / `名前）`）に正本の2名
      （磯貝・阿部）以外が現れたら FAIL（12 §1.1「話者ラベルの整合」）。
 
-終了コード: 0 = 違反なし、1 = 違反あり、2 = 対象・データファイルが読めない。
+終了コード: 0 = 違反なし、1 = 違反あり、2 = 使い方の誤り、
+3 = 未判定（走査対象が0件。D1 §8-3）。
 """
 
 from __future__ import annotations
@@ -34,7 +37,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TERMS = Path(__file__).resolve().parent / "policy_sync_terms.json"
 
-DEFAULT_TARGETS = ("curriculum/*.md", "prototype-chapter/chapter*.md")
+NOT_JUDGED = 3
+DEFAULT_TARGETS = ("curriculum/*.md",)
 
 # 「Webサイト」は配布形式として書かれたときだけ矛盾になる。同一行に配布を
 # 示す語が無い出現（「Webサイトを見る」等）は教材でも起きうるので止めない。
@@ -59,8 +63,15 @@ def main(argv: list[str]) -> int:
     for a in it:
         if a == "--terms":
             terms_path = Path(next(it, ""))
+            continue
+        p = Path(a)
+        if p.is_dir():
+            targets.extend(sorted(f for f in p.glob("*.md") if f.name != "README.md"))
+        elif p.is_file():
+            targets.append(p)
         else:
-            targets.append(Path(a))
+            print(f"❌ 見つかりません: {a}", file=sys.stderr)
+            return 2
 
     try:
         terms = json.loads(terms_path.read_text(encoding="utf-8"))
@@ -77,8 +88,8 @@ def main(argv: list[str]) -> int:
         # README.md は目次・ナビ文書であり章本文ではないので対象外
         targets = [t for t in targets if t.name != "README.md"]
     if not targets:
-        print("❌ 検査対象がありません", file=sys.stderr)
-        return 2
+        print("⏸️ 未判定: 走査対象が0件です（教材本文がまだ無い）")
+        return NOT_JUDGED
 
     rejected_res = [(t, _word_re(t)) for t in rejected]
     problems: list[str] = []

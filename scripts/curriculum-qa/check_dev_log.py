@@ -27,7 +27,8 @@ prototype-chapter/ の章は対象に含めない。捨て試作は教材本文�
 警告（FAIL ではない）: 詰まりがすべて ai-artifact の章は対話素材が不足
 している（10 §5）。
 
-終了コード: 0 = 違反なし、1 = 違反あり、2 = 使い方の誤り。
+終了コード: 0 = 違反なし、1 = 違反あり、2 = 使い方の誤り、
+3 = 未判定（対象の章が0件。D1 §8-3）。
 """
 
 from __future__ import annotations
@@ -38,9 +39,11 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEV_LOGS = REPO_ROOT / "dev-logs"
-SPLIT_TABLE = REPO_ROOT / "material" / "18-chapter-split-table.md"
-# 章本文の探し順。curriculum/<章ID>.md が正本、prototype-chapter は
-# chapter-<章ID>.md の命名なので両方見る。
+NOT_JUDGED = 3
+# 「価値:高」が章の対話に登場したかを見るための章本文の探し順。
+# curriculum/<章ID>.md が正本。prototype-chapter/chapter-<章ID>.md も見るのは、
+# 章が curriculum/ に移る前の段階でも警告だけは出せるようにするためで、
+# 存在確認の対象を広げる意味ではない（対象は curriculum/ のみ。10 L140-143）。
 CHAPTER_DIRS = (REPO_ROOT / "curriculum", REPO_ROOT / "prototype-chapter")
 
 TITLE = re.compile(r"^#\s*開発ログ\s*—\s*章\s*`?([a-z][a-z0-9]*(?:-[a-z0-9]+)*)`?\s*$")
@@ -59,16 +62,6 @@ REQUIRED_FIELDS = (
 )
 FRICTIONS = ("beginner", "ai-artifact", "unobserved")
 VALUES = ("高", "中", "低")
-
-
-def live_chapter_ids() -> frozenset[str]:
-    """章分割表の live 章ID 集合。表が読めなければ空集合（対象は curriculum だけになる）。"""
-    try:
-        from chapter_table import read_chapter_table
-        result = read_chapter_table(SPLIT_TABLE, REPO_ROOT)
-    except Exception:
-        return frozenset()
-    return frozenset(c["章ID"] for c in result.get("chapters", []))
 
 
 def chapter_text(chapter_id: str, dirs: tuple[Path, ...] = CHAPTER_DIRS) -> str | None:
@@ -155,20 +148,16 @@ def main(argv: list[str]) -> int:
             chapters.append(a)
 
     if not chapters:
+        # 対象は教材本文 curriculum/<章ID>.md だけ。prototype-chapter/ は
+        # 使い捨てフィクスチャ（10 L140-143）で、ここの章IDは将来の実章と
+        # 衝突しうるのでログ要求の根拠にしない（D1-7）。
         curriculum = REPO_ROOT / "curriculum"
         if curriculum.is_dir():
             chapters.extend(p.stem for p in curriculum.glob("*.md") if p.stem != "README")
-        # 捨て試作の章は chapter-<章ID>.md の命名。章ID でない chapter.md
-        # （道具検証用ドラフト）は対象にしない。-plain は対照版で、D17 により
-        # 開発ログの存在確認は適用対象外。live 章ID と一致するものだけを見る。
-        proto = REPO_ROOT / "prototype-chapter"
-        if proto.is_dir():
-            live = live_chapter_ids()
-            for p in sorted(proto.glob("chapter*.md")):
-                stem = p.stem.removesuffix("-plain").removeprefix("chapter-")
-                if stem in live:
-                    chapters.append(stem)
         chapters = sorted(set(chapters))
+    if not chapters:
+        print("⏸️ 未判定: 対象の章が0件です（教材本文がまだ無い）")
+        return NOT_JUDGED
 
     problems: list[str] = []
     warnings: list[str] = []

@@ -199,8 +199,10 @@ def collect(argv_args: list[str]) -> list[Path] | int:
             print(f"❌ 見つかりません: {a}", file=sys.stderr)
             return 2
     if not targets:
-        print("❌ 対象ファイルがありません", file=sys.stderr)
-        return 2
+        # 引数は有効だが走査対象が0件。検査を1件もしていないので
+        # 緑にしない（D1 §8-3）。
+        print("⏸️ 未判定: 走査対象が0件です")
+        return NOT_JUDGED
     return targets
 
 
@@ -229,15 +231,16 @@ def main(argv: list[str]) -> int:
             repo_root = Path(next(it, ""))
         else:
             args.append(a)
-    # 既定の対象は教材本文（curriculum/ の章と捨て試作の章）。README は目次、
-    # dev-log と道具検証の記録は本文ではないので対象にしない。
+    # 既定の対象は教材本文（curriculum/ の章）だけ。prototype-chapter/ は
+    # 使い捨てフィクスチャ（10 L140-143）なので既定には入れない。
+    # README は目次、dev-log と道具検証の記録は本文ではないので対象にしない。
     if not args:
         targets = sorted(
             p for p in (REPO_ROOT / "curriculum").glob("*.md") if p.name != "README.md"
-        ) + sorted((REPO_ROOT / "prototype-chapter").glob("chapter*.md"))
+        )
         if not targets:
-            print("❌ 対象ファイルがありません", file=sys.stderr)
-            return 2
+            print("⏸️ 未判定: 走査対象が0件です（教材本文がまだ無い）")
+            return NOT_JUDGED
     else:
         targets = collect(args)
         if isinstance(targets, int):

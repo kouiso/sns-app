@@ -13,7 +13,7 @@
     "gate:quote": "tools/g5-quote.sh",
     "gate:epub": "python3 ../scripts/curriculum-qa/check_epub_reference.py",
     "gate:pdf": "python3 ../scripts/curriculum-qa/check_pdf_links.py",
-    "gate": "npm run gate:style && npm run gate:structure && npm run gate:policy && npm run gate:dev-log && npm run gate:g4 && npm run gate:quote",
+    "gate": "tools/gate-step.sh tools/g3-style.sh && tools/gate-step.sh tools/g3-structure.sh && tools/gate-step.sh tools/g3-policy.sh && tools/gate-step.sh tools/g3-dev-log.sh && tools/gate-step.sh tools/g3-start-state.sh && tools/gate-step.sh tools/g4-receipt.sh && tools/gate-step.sh tools/g5-quote.sh",
     "snapshot": "tools/make-snapshot.sh",
     "g6": "tools/g6-run.sh",
     "gate:style:selftest": "prh/testdata/run.sh"

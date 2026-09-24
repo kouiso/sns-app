@@ -11,8 +11,14 @@ name: gates
 #   配布 … EPUB 同梱物・PDF リンク・未使用画像
 #
 # ★ 終了コード 3（未判定）は「その成果物がまだ存在しない」という意味で、
-#   FAIL ではない（開始状態・EPUB・PDF・完成版アプリは現時点で未生成）。
-#   該当ステップは 3 を 0 に読み替えるが、出力には ⏸️ をそのまま残す。
+#   FAIL ではない（D1 §8-3: 対象0件を黙って緑にしない。開始状態・EPUB・
+#   PDF・受領証・完成版アプリは現時点で未生成）。
+#   読み替えは tools/gate-step.sh 1箇所で行う: 3 → 0 + ::warning title=未判定。
+#   個別のステップに rc==3 の分岐を書かないこと（散らばると直し忘れる）。
+#
+# ★ 合否に数える走査対象は教材本文（curriculum/*.md）だけ。prototype-chapter/ は
+#   教材本文ではない使い捨てフィクスチャ（10 L140-143）なので、構造と方針同期は
+#   参考ステップで回すだけに留める。dev-log・開始状態は実章にだけ課す（D1-7）。
 #
 # ★ embedmd -d の終了コードは 1 ではなく 2 である（実測。道具検証の記録 §3）。
 #   スクリプト側で「非ゼロなら FAIL」として扱っているので、ここでは素直に呼ぶだけでよい。
@@ -76,8 +82,8 @@ jobs:
           done
           exit $failed
 
-      # G3（10 §4）の5検査。未判定（3）は成果物未生成を意味するので 0 に読み替える。
-      # 後続の検査も走らせて全部の結果を出すため、失敗しても止まらない if: always()。
+      # G3（10 §4）の5検査。文体は従来どおり素通しで止める（origin/main と同じ
+      #  blocking）。残りの4検査は未判定（3）がありうるので gate-step.sh 経由。
       - name: G3 文体チェック（textlint）
         if: always()
         working-directory: prototype-chapter
@@ -86,35 +92,53 @@ jobs:
       - name: G3 構造チェック（コードブロック25行・段落3文）
         if: always()
         working-directory: prototype-chapter
-        run: npm run gate:structure
+        run: tools/gate-step.sh tools/g3-structure.sh
 
       - name: G3 方針同期チェック（配布語彙・不採用スタック・人物名）
         if: always()
         working-directory: prototype-chapter
-        run: npm run gate:policy
+        run: tools/gate-step.sh tools/g3-policy.sh
 
       - name: G3 開発ログの存在確認
         if: always()
         working-directory: prototype-chapter
-        run: npm run gate:dev-log
+        run: tools/gate-step.sh tools/g3-dev-log.sh
 
-      - name: G3 開始状態混入検査（未判定可）
+      - name: G3 開始状態混入検査
         if: always()
         working-directory: prototype-chapter
-        run: |
-          npm run gate:start-state || rc=$?
-          if [ "${rc:-0}" -eq 3 ]; then
-            echo "⏸️ 開始状態は未作成（G0 未決項目）。未判定として扱い、FAIL にはしない"
-            exit 0
-          fi
-          exit "${rc:-0}"
+        run: tools/gate-step.sh tools/g3-start-state.sh
 
       - name: G4 受領証の検査
         if: always()
         working-directory: prototype-chapter
-        run: npm run gate:g4
+        run: tools/gate-step.sh tools/g4-receipt.sh
 
-      - name: 配布物の検査（EPUB 参照・PDF リンク・未使用画像。未判定可）
+      # 捨て試作は教材本文ではない（10 L140-143）。フィクスチャの指摘は
+      # 執筆の参考情報なので ::warning に出すだけで、ジョブは落とさない。
+      # dev-log・開始状態は実章にだけ課す検査なのでここでは回さない（D1-7）。
+      - name: 捨て試作フィクスチャへの構造・方針同期（参考。合否に数えない）
+        if: always()
+        run: |
+          set +e
+          total=0
+          for c in check_structure check_policy_sync; do
+            echo "=== $c（フィクスチャ。合否に数えない）"
+            out=$(python3 "scripts/curriculum-qa/$c.py" prototype-chapter/chapter*.md 2>&1)
+            rc=$?
+            printf '%s\n' "$out"
+            if [ "$rc" -ge 2 ]; then
+              echo "::warning::$c が終了コード $rc（未判定/環境異常）。フィクスチャの指摘は数えられない"
+            fi
+            # 指摘行は `  <ファイル>:<行> <内容>` の形。末尾の助言行
+            # （2スペース開始だが :行番号 を持たない）は数えない。
+            n=$(printf '%s\n' "$out" | grep -cE '^  [^ ]+:[0-9]+')
+            total=$((total + n))
+          done
+          echo "::warning::捨て試作フィクスチャの構造・方針同期 指摘 ${total} 件（参考。合否に数えない）"
+          exit 0
+
+      - name: 配布物の検査（EPUB 参照・PDF リンク・未使用画像）
         if: always()
         run: |
           rc_all=0
@@ -122,13 +146,7 @@ jobs:
                    scripts/curriculum-qa/check_pdf_links.py \
                    scripts/curriculum-qa/check_unused_image.py; do
             echo "=== $t"
-            python3 "$t" && continue
-            rc=$?
-            if [ "$rc" -eq 3 ]; then
-              echo "⏸️ $t: 未判定（配布物・画像がまだ無い）"
-            else
-              rc_all=$rc
-            fi
+            prototype-chapter/tools/gate-step.sh python3 "$t" || rc_all=$?
           done
           exit $rc_all
 

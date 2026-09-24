@@ -306,8 +306,9 @@ def run_main(args):
 def check_exit_code() -> tuple[int, int]:
     """main() 経由の終了コードを見る。(失敗数, 実行ケース数) を返す。
 
-    空の g4/ は「受領証がまだ無い」正常な状態なので 0、g4/ 自体が無いのは
-    環境異常なので 2、--target の受領証欠落は違反なので 1 を返すはず。
+    D1 §8-3「走査対象が0件なら非ゼロ終了」により、空の g4/ は 0 ではなく
+    3（未判定）を返す。明示した --g4-dir が無いのは使い方の誤りで 2、
+    --target の受領証欠落は違反なので 1 を返すはず。
     """
     failed = 0
     total = 0
@@ -320,11 +321,11 @@ def check_exit_code() -> tuple[int, int]:
             print(f"  ❌ {name}: 終了コード {want} を期待、実際 {got}")
 
     with tempfile.TemporaryDirectory() as d:
-        expect("空の g4/ ディレクトリは PASS", 0, run_main(["--g4-dir", d]))
+        expect("空の g4/ ディレクトリは未判定（0件は緑にしない）", 3, run_main(["--g4-dir", d]))
     with tempfile.TemporaryDirectory() as d:
         Path(d, "README.md").write_text("# 置き場\n", encoding="utf-8")
-        expect("README.md だけの g4/ も PASS", 0, run_main(["--g4-dir", d]))
-    expect("g4/ 自体が無ければ 2", 2, run_main(["--g4-dir", "/no/such/g4-dir"]))
+        expect("README.md だけの g4/ も未判定", 3, run_main(["--g4-dir", d]))
+    expect("明示した g4/ が無ければ 2", 2, run_main(["--g4-dir", "/no/such/g4-dir"]))
     with tempfile.TemporaryDirectory() as d:
         expect("--target の受領証が無ければ 1", 1,
                run_main(["--g4-dir", d, "--target", "text-post"]))

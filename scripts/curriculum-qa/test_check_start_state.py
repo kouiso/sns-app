@@ -105,6 +105,18 @@ def main() -> int:
         expect("指定した starter が無ければ 2", 2,
                run_main(["--starter", str(root / "absent"), str(chapter)]))
 
+        # 開始状態はあるのに写経対象の章が0件 → 検査0件は緑にしない
+        # （D1 §8-3）。REPO_ROOT を curriculum/ の無い一時ディレクトリに
+        # 差し替えると既定の走査対象が空になる。
+        saved = check_start_state.REPO_ROOT
+        check_start_state.REPO_ROOT = root / "empty-repo"
+        (root / "empty-repo").mkdir()
+        try:
+            expect("対象章が0件なら未判定(3)", 3,
+                   run_main(["--starter", str(starter)]))
+        finally:
+            check_start_state.REPO_ROOT = saved
+
     if failed:
         print(f"❌ check_start_state 自己テスト {failed}/{total} 失敗")
         return 1

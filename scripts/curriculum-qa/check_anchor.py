@@ -141,8 +141,9 @@ def main(argv: list[str]) -> int:
             return 2
 
     if not targets:
-        print("❌ 対象ファイルがありません", file=sys.stderr)
-        return 2
+        # 走査対象が0件。検査を1件もしていないので緑にしない（D1 §8-3）。
+        print("⏸️ 未判定: 走査対象が0件です（教材本文がまだ無い）")
+        return NOT_JUDGED
 
     # 完成版ルートの既定はリポジトリの根。明示された完成版ルートが
     # ディレクトリとして存在しないなら、呼び出し側の指定ミスなので止める

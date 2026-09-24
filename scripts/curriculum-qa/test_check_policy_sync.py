@@ -70,6 +70,17 @@ def main() -> int:
         expect("検査語ファイルが無ければ 2", 2,
                run_main(["--terms", str(Path(d) / "absent.json"), str(f)]))
 
+        # ディレクトリ引数は中の *.md（README 以外）を走査する。
+        (Path(d) / "chapter-bad.md").write_text(
+            "昔は Prisma で書いていた", encoding="utf-8")
+        expect("ディレクトリ内の違反も拾う", 1, run_main([str(d)]))
+
+        expect("存在しないパスは 2", 2, run_main([str(Path(d) / "absent.md")]))
+
+    # 走査対象が0件なら未判定。D1 §8-3「0件は黙って緑にしない」。
+    with tempfile.TemporaryDirectory() as d:
+        expect("対象0件なら未判定(3)", 3, run_main([str(d)]))
+
     if failed:
         print(f"❌ check_policy_sync 自己テスト {failed}/{total} 失敗")
         return 1

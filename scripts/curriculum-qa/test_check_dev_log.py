@@ -123,6 +123,17 @@ def main() -> int:
         (logs / f"{CID}.md").write_text(ENTRY, encoding="utf-8")
         expect("中身が雛形未満なら 1", 1 == run_main(["--dev-logs", str(logs), CID]), "")
 
+    # 対象章が0件（curriculum/ に章が無い）は未判定。D1 §8-3「0件は
+    # 黙って緑にしない」。既定の走査先はリポジトリ直下なので、
+    # REPO_ROOT を空の一時ディレクトリに差し替えて試す。
+    with tempfile.TemporaryDirectory() as d:
+        saved = check_dev_log.REPO_ROOT
+        check_dev_log.REPO_ROOT = Path(d)
+        try:
+            expect("対象章が0件なら未判定(3)", 3 == run_main([]), "")
+        finally:
+            check_dev_log.REPO_ROOT = saved
+
     if failed:
         print(f"❌ check_dev_log 自己テスト {failed}/{total} 失敗")
         return 1

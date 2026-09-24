@@ -220,15 +220,17 @@ def collect(argv_args: list[str]) -> list[Path] | int:
     for a in args:
         p = Path(a)
         if p.is_dir():
-            targets.extend(sorted(p.glob("*.md")))
+            # README.md は目次で章本文ではないので対象外
+            targets.extend(sorted(f for f in p.glob("*.md") if f.name != "README.md"))
         elif p.is_file():
             targets.append(p)
         else:
             print(f"❌ 見つかりません: {a}", file=sys.stderr)
             return 2
     if not targets:
-        print("❌ 対象ファイルがありません", file=sys.stderr)
-        return 2
+        # 走査対象が0件。検査を1件もしていないので緑にしない（D1 §8-3）。
+        print("⏸️ 未判定: 走査対象が0件です")
+        return 3
     return targets
 
 

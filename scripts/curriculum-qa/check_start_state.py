@@ -35,9 +35,13 @@ from sale_package import starter_paths
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-# 教材の走査対象。対照版（*-plain.md）は章単位の検査を二重に課さない決まり
-# （D17-1）だが、写経ブロックがあれば同じ混入を起こすので通常版と同じく見る。
-DEFAULT_TARGETS = ("curriculum/*.md", "prototype-chapter/chapter*.md")
+# 教材の走査対象は教材本文（curriculum/*.md）だけ。prototype-chapter/ は
+# 使い捨てフィクスチャ（10 L140-143）なので既定では走査しない。
+# 対照版（*-plain.md）は章単位の検査を二重に課さない決まり（D17-1）だが、
+# 写経ブロックがあれば同じ混入を起こすので通常版と同じく見る。
+DEFAULT_TARGETS = ("curriculum/*.md",)
+
+NOT_JUDGED = 3
 
 # 開始状態に含めてはいけない作業物。旧チェック（check-sale-package.sh）でも
 # 止めていた依存物と版管理物で、Expo 構成でも同じ理由で混入させない。
@@ -92,8 +96,8 @@ def main(argv: list[str]) -> int:
             targets.append(Path(a))
 
     if starter_arg is None:
-        print("⏸ 未判定: 開始状態（--starter）が指定されていません。開始状態は G0 の未決項目です")
-        return 3
+        print("⏸️ 未判定: 開始状態（--starter）が指定されていません。開始状態は G0 の未決項目です")
+        return NOT_JUDGED
 
     try:
         provided = starter_paths(Path(starter_arg))
@@ -109,6 +113,11 @@ def main(argv: list[str]) -> int:
             targets.extend(sorted(REPO_ROOT.glob(pat)))
         # README.md は目次・ナビ文書であり章本文ではないので対象外
         targets = [t for t in targets if t.name != "README.md"]
+    if not targets:
+        # 開始状態はあるのに写経対象の章が0件 → 何も検査していないので
+        # 「混入なし」とは言えない（D1 §8-3）。
+        print("⏸️ 未判定: 走査対象の章が0件です（教材本文がまだ無い）")
+        return NOT_JUDGED
     if not listings_dirs:
         for cand in (REPO_ROOT / "listings", REPO_ROOT / "prototype-chapter" / "listings"):
             if cand.is_dir():

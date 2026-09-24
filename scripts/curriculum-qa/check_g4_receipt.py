@@ -25,10 +25,11 @@
      回数の外へ抜ける抜け道になる）
 
 終了コード:
-  0 = 判定でき、違反なし（g4/ が空でも、--target の指定が無ければ
-      「まだ受領証が無い」は正常なので 0）
+  0 = 判定でき、違反なし
   1 = 違反あり（未知の章ID・必須受領証の欠落・未記入欄・記録の矛盾）
-  2 = 使い方の誤り・章分割表や g4/ が読めない
+  2 = 使い方の誤り（章分割表が読めない・明示した --g4-dir が無い）
+  3 = 未判定（g4/ が無い・空で走査対象が0件。D1 §8-3「0件は黙って
+      緑にしない」）
 """
 
 from __future__ import annotations
@@ -43,6 +44,7 @@ from markdown_scan import fence_states
 REPO_ROOT = Path(__file__).resolve().parents[2]
 G4_DIR = REPO_ROOT / "material" / "reviews" / "g4"
 TABLE = REPO_ROOT / "material" / "18-chapter-split-table.md"
+NOT_JUDGED = 3
 
 # 合否を数える観点はこの3つだけ（10:208-209 / D15-3）。退屈だった箇所は
 # §5 で聞いて記録するが、PASS/FAIL を付けず合否に数えない。
@@ -404,12 +406,14 @@ def check_g4_dir(g4_dir: Path, live_ids: set[str], target: str | None = None) ->
 
 def main(argv: list[str]) -> int:
     g4_dir = G4_DIR
+    g4_dir_given = False
     table = TABLE
     targets: list[str] = []
     it = iter(argv[1:])
     for a in it:
         if a == "--g4-dir":
             g4_dir = Path(next(it, ""))
+            g4_dir_given = True
         elif a == "--table":
             table = Path(next(it, ""))
         elif a == "--target":
@@ -429,11 +433,20 @@ def main(argv: list[str]) -> int:
         return 2
 
     if not g4_dir.is_dir():
-        print(f"❌ 受領証の置き場がありません: {g4_dir}", file=sys.stderr)
-        return 2
+        # 既定の置き場が無いのは「受領証がまだ作られていない」＝未判定。
+        # 明示された --g4-dir が無いのは使い方の誤り。
+        if g4_dir_given:
+            print(f"❌ 受領証の置き場がありません: {g4_dir}", file=sys.stderr)
+            return 2
+        print("⏸️ 未判定: 受領証の置き場がまだありません（material/reviews/g4/）")
+        return NOT_JUDGED
 
     problems: list[tuple[str, int, str]] = []
     receipts = sorted(p for p in g4_dir.glob("*.md") if p.name != "README.md")
+    if not receipts and not targets:
+        # 走査対象が0件。D1 §8-3「0件は黙って緑にしない」。
+        print("⏸️ 未判定: 受領証がまだありません（material/reviews/g4/）")
+        return NOT_JUDGED
     for path in receipts:
         chapter_id = path.stem
         if chapter_id not in live_ids:
@@ -451,10 +464,7 @@ def main(argv: list[str]) -> int:
             where = f"{name}:{line}" if line else name
             print(f"  {where} {msg}")
         return 1
-    if receipts:
-        print(f"✅ G4 受領証 OK（{len(receipts)} 件）")
-    else:
-        print("✅ G4 受領証 OK（受領証はまだ無い）")
+    print(f"✅ G4 受領証 OK（{len(receipts)} 件）")
     return 0
 
 

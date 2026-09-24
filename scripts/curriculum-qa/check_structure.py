@@ -7,14 +7,16 @@ Phase 2 のゲート実装時に検知テストと共に固定）」。長いコ
 写経中に全体を見失わせ、長い段落は技術書として読みにくい。前作の実績から
 来た上限なので、確定値が決まるまで初期値を緩めてはいけない。
 
-対象は curriculum/*.md と prototype-chapter/chapter*.md の両方で、対照版の
-*-plain.md も含む（D17-1: 対照版には文体・構造・方針同期の3検査を課す。
-比較の相手が構造違反の文章では、読み比べの前に勝敗が決まってしまう）。
+既定の対象は教材本文（curriculum/*.md、README.md は目次なので除く）。
+prototype-chapter/ は教材本文ではない使い捨てフィクスチャ（10 L140-143）
+なので既定では走査しない。フィクスチャを見たいときはファイルを明示して
+渡す（CI の参考ステップがそうしている）。
 
 判定は文字どおり行う。セリフの中の句点も1文と数え、箇条書き・表・見出しは
 それぞれ独立した段落として数える。
 
-終了コード: 0=PASS（検査した）、1=FAIL（違反あり）、2=使い方/対象なし。
+終了コード: 0=PASS（検査した）、1=FAIL（違反あり）、2=使い方の誤り、
+3=未判定（走査対象が0件。D1 §8-3「0件は黙って緑にしない」）。
 """
 
 from __future__ import annotations
@@ -43,6 +45,29 @@ SENTENCE_END = "。！？!?"
 # 段落を止めてしまう。括弧そのものは文を始めないので、判定の前に落とす。
 TRAIL_CLOSERS = "」』）)］]〉》”\"'"
 
+# 発話・引用を閉じる括弧。句点の直後にこれが来て、さらに同じ行に本文が
+# 続くなら、その句点は括弧の中の文を終えたのであって段落の文を終えていない。
+QUOTE_CLOSERS = "」』"
+
+NOT_JUDGED = 3
+
+
+def _counts_as_sentence_end(joined: str, i: int) -> bool:
+    """joined の i 文字目の文末記号が、段落の文を終えるものかを返す。
+
+    `「これは例です。」と言った。` の `す。」` は引用内の句点で、外側の文は
+    `と言った。` まで続く。句点の直後に `」`/`』` が来て、同じ行にまだ本文が
+    続く場合は文末と数えない。一方 `磯貝「A。B。C。D」` のように括弧が行末で
+    閉じる場合は、内側の句点はそのまま文末になる（セリフの中の文は数える）。
+    """
+    j = i + 1
+    while j < len(joined) and joined[j] in QUOTE_CLOSERS:
+        j += 1
+    if j == i + 1:
+        return True
+    rest = joined[j:].split("\n", 1)[0]
+    return not rest.strip()
+
 
 def find_long_code_blocks(text: str) -> list[tuple[int, int]]:
     """上限を超えるコードブロックを (開始フェンスの行番号, 中身の行数) で返す。
@@ -62,7 +87,9 @@ def find_long_paragraphs(text: str) -> list[tuple[int, int]]:
     """上限を超える段落を (最初の行番号, 文数) で返す。行番号は1始まり。
 
     日本語の本文は語の途中でも折り返すので、段落は1行ずつ見ずに繋げてから
-    数える（sep=""）。繋がないと、折り返しで割れた1文を2文と数えてしまう。
+    数える。繋がないと、折り返しで割れた1文を2文と数えてしまう。繋ぐときは
+    改行を残す（sep="\n"）。`。` の直後が `」`/`』` かつ同じ行に続きがあるかを
+    見る判定（_counts_as_sentence_end）が行境界を必要とするため。
     インラインコードは数える前に塗りつぶす。`「。」` の中の句点まで地の文の
     文数に足されると、読者に見えている文数と判定がずれる。
 
@@ -72,8 +99,12 @@ def find_long_paragraphs(text: str) -> list[tuple[int, int]]:
     """
     hits: list[tuple[int, int]] = []
     for para in paragraphs(text):
-        joined = mask_inline_code(paragraph_text(para, sep=""))
-        marks = sum(1 for ch in joined if ch in SENTENCE_END)
+        joined = mask_inline_code(paragraph_text(para, sep="\n"))
+        marks = sum(
+            1
+            for i, ch in enumerate(joined)
+            if ch in SENTENCE_END and _counts_as_sentence_end(joined, i)
+        )
         # 末尾が文末記号なら記号の数がそのまま文数。そうでなければ、
         # 最後の記号の後ろに続く文（記号が無ければ段落全体）を足す。
         tail = joined.rstrip().rstrip(TRAIL_CLOSERS).rstrip()
@@ -84,15 +115,15 @@ def find_long_paragraphs(text: str) -> list[tuple[int, int]]:
 
 
 def main(argv: list[str]) -> int:
-    # 引数なしの既定は教材本文（curriculum/ の章と捨て試作の章）。cwd に
-    # よらず動くよう、リポジトリの根はこのファイルの位置から引く。
+    # 引数なしの既定は教材本文（curriculum/ の章）。捨て試作は教材本文では
+    # ない（10 L140-143）ので既定には入れない。cwd によらず動くよう、
+    # リポジトリの根はこのファイルの位置から引く。
     # README は目次、dev-log と道具検証の記録は本文ではないので対象にしない。
     repo = Path(__file__).resolve().parents[2]
     args = argv[1:]
     targets: list[Path] = []
     if not args:
         targets.extend(sorted(f for f in (repo / "curriculum").glob("*.md") if f.name != "README.md"))
-        targets.extend(sorted((repo / "prototype-chapter").glob("chapter*.md")))
     for a in args:
         p = Path(a)
         if p.is_dir():
@@ -105,8 +136,8 @@ def main(argv: list[str]) -> int:
             return 2
 
     if not targets:
-        print("❌ 対象ファイルがありません", file=sys.stderr)
-        return 2
+        print("⏸️ 未判定: 走査対象が0件です（教材本文がまだ無い）")
+        return NOT_JUDGED
 
     findings: list[tuple[str, int, str]] = []
     for path in targets:

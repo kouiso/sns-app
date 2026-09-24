@@ -351,10 +351,23 @@ def check_exit_code() -> tuple[int, int]:
         failed += 1
         print("  ❌ 見つからないパスで 2 を返さない")
     with tempfile.TemporaryDirectory() as d:
-        if run(["check_epub_reference.py", d]) != 2:
+        if run(["check_epub_reference.py", d]) != 3:
             failed += 1
-            print("  ❌ 対象0件で 2 を返さない")
-    return failed, 7
+            print("  ❌ 対象0件で 3（未判定）を返さない")
+
+    # 引数なしの既定走査でも curriculum/ が空なら未判定（D1 §8-3）。
+    # REPO_ROOT を curriculum/ の無い一時ディレクトリへ差し替える。
+    import check_epub_reference
+    with tempfile.TemporaryDirectory() as d:
+        saved = check_epub_reference.REPO_ROOT
+        check_epub_reference.REPO_ROOT = Path(d)
+        try:
+            if run(["check_epub_reference.py"]) != 3:
+                failed += 1
+                print("  ❌ 既定対象0件で 3（未判定）を返さない")
+        finally:
+            check_epub_reference.REPO_ROOT = saved
+    return failed, 8
 
 
 def main_test() -> int:
