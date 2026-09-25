@@ -16,7 +16,7 @@
 ## プロジェクトを作る
 
 ```bash
-npx create-expo-app@latest my-sns --template blank-typescript
+npx create-expo-app@latest my-sns --template blank-typescript@sdk-54
 cd my-sns
 npm install
 ```
