@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "bt54",
-    "slug": "bt54",
+    "name": "expo-first-screen",
+    "slug": "expo-first-screen",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
