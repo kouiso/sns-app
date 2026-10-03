@@ -120,6 +120,13 @@ jobs:
           node --check prototype-chapter/auth-return-trial/local_adapter.mjs
           node --test prototype-chapter/auth-return-trial/test_auth_return.mjs
 
+      - name: SDK57 Auth app candidate tests and typecheck（NON-FORMAL）
+        working-directory: prototype-chapter/candidates/auth-sdk57
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run test:auth
+          npm run typecheck
+
       # 既存の試作2章とG6対照版の回帰検査。curriculum/*.md の正式G3や
       # 凍結済みsnapshotの承認には代用しない。
       - name: G3 試作2章＋対照版の5検査（NON-FORMAL）
