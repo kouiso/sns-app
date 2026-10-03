@@ -258,8 +258,8 @@ def main(argv: list[str]) -> int:
         print(f"❌ {e}", file=sys.stderr)
         return 2
     if not targets:
-        print(f"❌ dayファイルが見つかりません: {root}", file=sys.stderr)
-        return 2
+        print(f"⏸️ 未判定: dayファイルが見つかりません: {root}")
+        return 3
 
     # 参照する側は目次・付録も読む。参照される側は day のみ。
     sources = (

@@ -22,6 +22,7 @@ from typing import Iterator
 
 from check_tag_balance import collect, find_unclosed
 from curriculum_blocks import day_number, iter_blocks
+from sale_package import starter_paths
 from markdown_scan import mask_inline_code, paragraph_line, paragraph_text, paragraphs
 
 # 28周目に corpus 全体から抽出した言い回しを、語幹でまとめ直したもの。
@@ -48,26 +49,34 @@ def _claims_in(text: str) -> Iterator[re.Match[str]]:
     return (m for m in CLAIM.finditer(text) if not NEGATED.match(text, m.end()))
 
 
-def find_claims(paths: list[Path]) -> list[tuple[str, int, str, str]]:
-    """(ファイル名, 行番号, 開いたままのタグ, 該当行) を返す。"""
-    unclosed = find_unclosed(paths)
+def find_claims(
+    paths: list[Path], *, provided: frozenset[str] = frozenset()
+) -> list[tuple[str, int, str, str]]:
+    """(ファイル名, 行番号, 開いたままのタグ, 該当行) を返す。
+
+    provided は開始状態が最初から配るファイルの一覧。`check_tag_balance` と同じ
+    控除をここにも通さないと、配布済みファイルの収支ずれを理由に完了宣言を弾く。
+    """
+    unclosed = find_unclosed(paths, provided=provided)
     if not unclosed:
         return []
-    # 構造が閉じていない書き込み先を、その日ごとに引けるようにする。
-    broken: dict[int, list[str]] = {}
-    for target, name, days in unclosed:
-        for d in days:
-            broken.setdefault(d, []).append(f"{target} の <{name}>")
+    # 構造が閉じていない書き込み先を、その単位（dayNN またはファイル名）ごとに
+    # 引けるようにする。find_unclosed の3番目の要素はこのキーと揃えてある。
+    broken: dict[str, list[str]] = {}
+    for target, name, units in unclosed:
+        for u in units:
+            broken.setdefault(u, []).append(f"{target} の <{name}>")
 
     hits: list[tuple[str, int, str, str]] = []
     for path in paths:
         day = day_number(path.name)
-        if day not in broken:
+        unit = f"day{day:02d}" if day else path.name
+        if unit not in broken:
             continue
         text = path.read_text(encoding="utf-8")
-        # その日が実際に触っている書き込み先だけを理由として挙げる。
+        # その単位が実際に触っている書き込み先だけを理由として挙げる。
         touched = {b.target for b in iter_blocks(text, path.name)}
-        reasons = [r for r in broken[day] if r.split(" の <")[0] in touched]
+        reasons = [r for r in broken[unit] if r.split(" の <")[0] in touched]
         if not reasons:
             continue
         # 段落へまとめてから照合する。`保存すればエラーが` の次の行に
@@ -87,11 +96,24 @@ def find_claims(paths: list[Path]) -> list[tuple[str, int, str, str]]:
 
 
 def main(argv: list[str]) -> int:
-    targets = collect(argv)
+    args: list[str] = []
+    provided: frozenset[str] = frozenset()
+    it = iter(argv[1:])
+    for a in it:
+        if a == "--starter":
+            p = Path(next(it, ""))
+            try:
+                provided = starter_paths(p)
+            except (ValueError, OSError) as e:
+                print(f"❌ {e}", file=sys.stderr)
+                return 2
+        else:
+            args.append(a)
+    targets = collect(args)
     if isinstance(targets, int):
         return targets
 
-    findings = find_claims(targets)
+    findings = find_claims(targets, provided=provided)
     if findings:
         print(f"❌ 閉じていない構造を残したまま完了を宣言している {len(findings)} 件")
         for name, lineno, reason, line in findings:

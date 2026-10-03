@@ -89,8 +89,8 @@ def main(argv: list[str]) -> int:
         + sorted(root.glob("appendix_*.md"))
     )
     if not files:
-        print(f"❌ 教材ファイルが見つかりません: {root}", file=sys.stderr)
-        return 2
+        print(f"⏸️ 未判定: 教材ファイルが見つかりません: {root}")
+        return 3
 
     # 正規化した鍵 → 実際の表記 → 出現回数
     groups: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))

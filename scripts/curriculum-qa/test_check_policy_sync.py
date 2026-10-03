@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""check_policy_sync.py の退行テスト。
+
+止めるもの（不採用スタック名・旧配布語彙・規定外の話者）と、止めては
+いけないもの（現行の PDF/EPUB、配布と関係ない Webサイト、磯貝・阿部の
+話者ラベル）の両方を置く。片方だけでは全部を止める検査でも全部を通す
+検査でも緑になってしまう。
+"""
+
+import contextlib
+import io
+import re
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+
+import check_policy_sync  # noqa: E402
+
+CLEAN = """# 章
+
+阿部「この画面はどうやって出すんですか」
+
+磯貝「Expo が表示します。端末で見えます」
+
+本は PDF と EPUB で配ります。
+"""
+
+CASES = [
+    ("素直な本文は通す", CLEAN, 0),
+    ("不採用スタック名 Prisma は止める", CLEAN + "\nORM には Prisma を使います。\n", 1),
+    ("小文字の prisma も止める", CLEAN + "\n```bash\nnpm i prisma\n```\n", 1),
+    ("不採用スタック名 NestJS は止める", CLEAN + "\nNestJS でAPIを作ります。\n", 1),
+    ("ZIP 配布の記述は止める", CLEAN + "\n教材は ZIP で配布します。\n", 1),
+    ("webpub の記述は止める", CLEAN + "\nwebpub でも読めます。\n", 1),
+    ("配布文脈の Webサイト は止める", CLEAN + "\nWebサイト で配布します。\n", 1),
+    ("配布と無関係の Webサイト は通す", CLEAN + "\nWebサイト を見て確認します。\n", 0),
+    ("規定外の話者ラベルは止める", CLEAN + "\n田中「これは何ですか」\n", 1),
+    ("話者ラベルの括弧形も見る", CLEAN + "\n佐藤）質問があります。\n", 1),
+    ("磯貝・阿部は通す", CLEAN + "\n磯貝）次へ進みます。\n阿部）はい。\n", 0),
+    # 話者ラベルの誤認対策。行頭がひらがな混じりだったり、`「` が文の
+    # 途中で引用を開くだけだったり、`）` で終わる節見出しは話者ではない。
+    ("手続き文の引用は話者にしない", CLEAN + "\n次に「保存」を押します。\n", 0),
+    ("漢字語＋行中の引用は話者にしない", CLEAN + "\n画面の「設定」を開きます。\n設定「値」を入れます。\n", 0),
+    ("漢字語＋行中の引用は話者にしない2", CLEAN + "\n画面「設定」を開きます。\n", 0),
+    ("）で終わる節見出しは話者にしない", CLEAN + "\n手順）\n", 0),
+    ("規定外の話者（）形・本文つき）は止める", CLEAN + "\n田中）これはだめです\n", 1),
+    # 長音符（ー）と踊り字（々）は名の字種に含める。含めないと規定外の
+    # 話者が話者と認識されず素通りする。
+    ("長音符を含む規定外の話者は止める", CLEAN + "\nユーザー「これは何ですか」\n", 1),
+    ("踊り字を含む規定外の話者は止める", CLEAN + "\n佐々木「質問があります」\n", 1),
+    # 発話が次の行へ続く話者（行内で `」` が閉じない）も話者。規定外なら止める。
+    ("行またぎの発話の規定外話者は止める",
+     CLEAN + "\n田中「こんにちは、\n今日は保存を試します。」\n", 1),
+    ("行またぎの発話でも磯貝は通す",
+     CLEAN + "\n磯貝「こんにちは、\n今日は保存を試します。」\n", 0),
+    ("PDF と EPUB の記述は通す", CLEAN + "\nPDF が正本で EPUB も出ます。\n", 0),
+]
+
+
+def run_main(args):
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        return check_policy_sync.main(["check_policy_sync.py", *args])
+
+
+def main() -> int:
+    failed = 0
+    total = 0
+
+    def expect(name, want, got):
+        nonlocal failed, total
+        total += 1
+        if got != want:
+            failed += 1
+            print(f"  ❌ {name}: 終了コード {want} を期待、実際 {got}")
+
+    for name, body, want in CASES:
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "chapter-x.md"
+            f.write_text(body, encoding="utf-8")
+            expect(name, want, run_main([str(f)]))
+
+    with tempfile.TemporaryDirectory() as d:
+        f = Path(d) / "chapter-x.md"
+        f.write_text(CLEAN, encoding="utf-8")
+        expect("検査語ファイルが無ければ 2", 2,
+               run_main(["--terms", str(Path(d) / "absent.json"), str(f)]))
+
+        # ディレクトリ引数は中の *.md（README 以外）を走査する。
+        (Path(d) / "chapter-bad.md").write_text(
+            "昔は Prisma で書いていた", encoding="utf-8")
+        expect("ディレクトリ内の違反も拾う", 1, run_main([str(d)]))
+
+        expect("存在しないパスは 2", 2, run_main([str(Path(d) / "absent.md")]))
+
+    # 走査対象が0件なら未判定。D1 §8-3「0件は黙って緑にしない」。
+    with tempfile.TemporaryDirectory() as d:
+        expect("対象0件なら未判定(3)", 3, run_main([str(d)]))
+
+    # 話者検出の回帰計: フィクスチャ（prototype-chapter/chapter*.md）では、
+    # 旧の緩い正規表現が見つけた「正本の登場人物」の行を、新しい正規表現も
+    # 1行も落とさないこと（行またぎの発話の取りこぼし防止）。旧側の誤検出
+    # （話者でない行）は数えない。
+    fixture = sorted(
+        (Path(__file__).parent.parent.parent / "prototype-chapter").glob("chapter*.md"))
+    if fixture:
+        old_pat = re.compile(r"^(.{2,8})[「）]")
+        old_cast = 0
+        lost: list[str] = []
+        for fp in fixture:
+            for ln, line in enumerate(fp.read_text(encoding="utf-8").splitlines(), 1):
+                mo = old_pat.match(line)
+                if not mo:
+                    continue
+                if mo.group(1) in ("磯貝", "阿部"):
+                    old_cast += 1
+                    mn = check_policy_sync.SPEAKER.match(line)
+                    if not (mn and mn.group(1) == mo.group(1)):
+                        lost.append(f"{fp.name}:{ln}")
+        expect("フィクスチャの正本話者を新正規表現も全件拾う",
+               old_cast, old_cast - len(lost))
+        if lost:
+            print(f"     取りこぼし: {', '.join(lost[:5])}")
+        expect("フィクスチャに正本話者の行がある（空振り防止）", True, old_cast > 0)
+
+    if failed:
+        print(f"❌ check_policy_sync 自己テスト {failed}/{total} 失敗")
+        return 1
+    print(f"✅ check_policy_sync 自己テスト {total}/{total} 合格")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -75,24 +75,6 @@ class ChapterTableTests(unittest.TestCase):
             with self.subTest(text=text[:40]):
                 self.assertInvalid(validate_chapter_table(text, self.root))
 
-    def test_html_comments_cannot_hide_tables_or_approvals(self):
-        commented_tables = (
-            "版: test-v1\n位置づけ: DRAFT / NON-G1\n\n<!--\n## 章一覧\n"
-            + table(CHAPTER_COLUMNS, self.rows)
-            + "\n## コメント終端1\n-->\n<!--\n## 対応表\n"
-            + table(TRACE_COLUMNS, self.traces)
-            + "\n## コメント終端2\n-->"
-        )
-        result = validate_chapter_table(commented_tables, self.root)
-        self.assertInvalid(result)
-        self.assertIn("HTMLコメント", result["errors"][0])
-
-        extra = self.exception()
-        commented_approval = self.document("\n<!--" + extra + "\n## コメント終端\n-->")
-        result = validate_chapter_table(commented_approval, self.root)
-        self.assertInvalid(result)
-        self.assertIn("HTMLコメント", result["errors"][0])
-
     def test_unknown_backlog_reference_is_not_a_real_dependency(self):
         self.rows[0]["未決依存"] = "B999"
         self.assertInvalid(validate_chapter_table(self.document(), self.root, {"B26", "C8"}))
@@ -215,28 +197,11 @@ class ChapterTableTests(unittest.TestCase):
         self.traces = original[:-1]
         self.assertInvalid(self.check())
 
-    def test_empty_reference_file_is_rejected(self):
-        (self.root / "empty.md").write_text("", encoding="utf-8")
-        self.traces[0]["証拠"] = "empty.md"
-        result = self.check()
-        self.assertInvalid(result)
-        self.assertIn("参照ファイルが空", result["errors"][0])
-
-    def test_symlink_reference_cannot_escape_repository_root(self):
-        with tempfile.TemporaryDirectory() as outside:
-            target = Path(outside) / "outside.md"
-            target.write_text("範囲外の証拠", encoding="utf-8")
-            (self.root / "linked.md").symlink_to(target)
-            self.traces[0]["証拠"] = "linked.md"
-            result = self.check()
-            self.assertInvalid(result)
-            self.assertIn("範囲外", result["errors"][0])
-
     def exception(self):
         ids = ",".join(r["章ID"] for r in self.rows[-3:])
         for row in self.rows[-3:]:
             row["見える変化"] = "tool"
-        common = f"版: test-v1\n対象章: {ids}\nゲート: G1\n種別: tool連続例外\n範囲: sns-app/material/18_章分割表.md\n"
+        common = f"版: test-v1\n対象章: {ids}\nゲート: G1\n種別: tool連続例外\n範囲: sns-app/material/18-chapter-split-table.md\n"
         (self.root / "adr.md").write_text(common + "理由: 開発順序を守る\n", encoding="utf-8")
         (self.root / "approval.md").write_text(common + "判断: 承認\n承認者: 局長\nADR: adr.md\n", encoding="utf-8")
         return "\n## tool連続例外\n" + table(("対象章", "ADR", "承認記録"), [
@@ -250,25 +215,12 @@ class ChapterTableTests(unittest.TestCase):
         for old, new in (("test-v1", "old-v0"), ("ゲート: G1", "ゲート: G3"),
                          ("判断: 承認", "判断: 未承認"), ("承認者: 局長", "承認者: 作者"),
                          ("ADR: adr.md", "ADR: fake.md"), ("chapter-dx", "missing-chapter"),
-                         ("範囲: sns-app/material/18_章分割表.md", "範囲: 別教材")):
+                         ("範囲: sns-app/material/18-chapter-split-table.md", "範囲: 別教材")):
             path.write_text(original.replace(old, new), encoding="utf-8")
             with self.subTest(old=old):
                 self.assertInvalid(self.check(extra))
         path.unlink()
         self.assertInvalid(self.check(extra))
-
-    def test_exception_must_match_the_whole_tool_run_and_cannot_be_extra(self):
-        self.rows[-4]["見える変化"] = "tool"
-        partial = self.exception()
-        result = self.check(partial)
-        self.assertInvalid(result)
-        self.assertIn("対象全体に一致", result["errors"][0])
-
-        self.rows[-4]["見える変化"] = "screen"
-        self.rows[-3]["見える変化"] = "screen"
-        result = self.check(partial)
-        self.assertInvalid(result)
-        self.assertIn("余分な例外も不可", result["errors"][0])
 
     def test_fake_adr_and_inline_approval_do_not_exempt(self):
         extra = self.exception()

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""18_章分割表.md の共通読み取り。下書きの構造検査でありG1承認ではない。
+"""18-chapter-split-table.md の共通読み取り。下書きの構造検査でありG1承認ではない。
 
 CLIは構造有効なら0、不正なら1、読み取り不能なら2。未決が残る正しい下書きも0。
 呼び出し側は declaredGateInputsComplete を正式ゲート判定に流用しないこと。
-書式と責務は material/decisions/20260919-章表の下書き検査.md を参照。
+書式と責務は material/decisions/20260919-chapter-table-draft-check.md を参照。
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ STATES = {"未着手", "実装済", "教材ドラフト", "完了", "tombstone"}
 ID = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*")
 BACKLOG_ID = re.compile(r"[BC][1-9][0-9]*")
 FRS = {f"FR{i}" for i in range(1, 16)}
-SCOPE = "sns-app/material/18_章分割表.md"
+SCOPE = "sns-app/material/18-chapter-split-table.md"
 
 
 class ChapterTableResult(TypedDict):
@@ -305,7 +305,7 @@ def read_chapter_table(path: Path, root: Path) -> ChapterTableResult:
 def main() -> int:
     root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("path", nargs="?", type=Path, default=root / "material/18_章分割表.md")
+    parser.add_argument("path", nargs="?", type=Path, default=root / "material/18-chapter-split-table.md")
     args = parser.parse_args()
     try:
         result = read_chapter_table(args.path, root)

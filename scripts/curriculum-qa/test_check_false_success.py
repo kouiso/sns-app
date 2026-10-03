@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from check_false_success import find_claims, main  # noqa: E402
 
-TARGET = "src/app/foo/page.tsx"
+TARGET = "app/foo/page.tsx"
 
 
 def block(body: str, target: str = TARGET) -> str:
@@ -123,6 +123,23 @@ CASES: list[tuple[str, dict[str, str], list[tuple[str, int]]]] = [
 ]
 
 
+def check_provided() -> int:
+    """開始状態が配るファイルの収支ずれは、完了宣言を疑う理由にしない。
+
+    読者が写経していない行の収支は教材だけからは分からないので、
+    `provided` に在るファイルは控除される（check_tag_balance 側と同じ控除）。
+    """
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "day29_x.md"
+        p.write_text(
+            block("  <form>") + "\nエラーが出なくなります。\n", encoding="utf-8"
+        )
+        if find_claims([p], provided=frozenset({TARGET})):
+            print("  ❌ 開始状態が配るファイルの収支ずれで完了宣言を止めた")
+            return 1
+    return 0
+
+
 def check_exit_code() -> tuple[int, int]:
     def run(args: list[str]) -> int:
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -158,9 +175,10 @@ def main_test() -> int:
         if sorted(got) != sorted(expected):
             failed += 1
             print(f"  ❌ {name}: 期待 {expected} / 実際 {got}")
+    failed += check_provided()
     exit_failed, exit_total = check_exit_code()
     failed += exit_failed
-    total = len(CASES) + exit_total
+    total = len(CASES) + 1 + exit_total
     if failed:
         print(f"❌ check_false_success 自己テスト {failed}/{total} 失敗")
         return 1

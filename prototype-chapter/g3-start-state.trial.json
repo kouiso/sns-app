@@ -37,7 +37,7 @@
           },
           {
             "path": "app.json",
-            "sha256": "fbde05e86276ce6fb77baa4495bd7f37097aa7d9367565539ce36a738dd8dba1"
+            "sha256": "8c84324e2e1650a62a2b592a2e0b36668ec37965b02ae63dcfd12cdee9cd5be4"
           },
           {
             "path": "index.ts",
@@ -45,11 +45,11 @@
           },
           {
             "path": "package-lock.json",
-            "sha256": "ceaef42805134421829a322d114e5b12d46c6c450d2a4d8de2ee246bb357131d"
+            "sha256": "154262bbfe05bd38e8cc0078b84b8df4ca3cb9485db09339299774c9d6c094fb"
           },
           {
             "path": "package.json",
-            "sha256": "fa499830a8bf57bf29aadeab3261371684046ef496761b2add2e8271a511bc32"
+            "sha256": "64fbd5e4692ed08fd0deb2d17cb98d4d86ca12d8e107cea2bb5743109e7d8ce7"
           },
           {
             "path": "tsconfig.json",

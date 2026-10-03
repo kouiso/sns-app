@@ -1,0 +1,22 @@
+{
+  "observedUtc": "2026-09-19T13:37:53.165397+00:00",
+  "hostOS": "26.1",
+  "node": "v22.22.2",
+  "npm": "10.9.7",
+  "deviceSerialSha256": "0370ebf821af458f5946b89e0b54fb5b8cb4e5dcb42488740a281f9a33b3e8b8",
+  "adbDevice": "[physical-android]         device usb:1-0 product:cheetah model:Pixel_7_Pro device:cheetah transport_id:2",
+  "ro.product.model": "Pixel 7 Pro",
+  "ro.build.version.release": "17",
+  "ro.build.version.sdk": "37",
+  "ro.kernel.qemu": "",
+  "expoGoPackage": [
+    "versionCode=444 minSdk=24 targetSdk=36",
+    "versionName=57.0.9"
+  ],
+  "reverseMappings": [
+    "UsbFfs tcp:64049 tcp:64049",
+    "UsbFfs tcp:8093 tcp:8093"
+  ],
+  "apkSource": "https://github.com/expo/expo-go-releases/releases/download/Expo-Go-57.0.9/Expo-Go-57.0.9.apk",
+  "apkSha256": "14c18828a3d04e43922245920bd941b978fd1c7a5aec88a0188032f0bb4972ce"
+}

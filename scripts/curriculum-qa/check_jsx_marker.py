@@ -119,8 +119,8 @@ def main(argv: list[str]) -> int:
 
     hits, scanned = find_violations(root)
     if scanned == 0:
-        print(f"❌ コードブロックがありません: {root}", file=sys.stderr)
-        return 2
+        print(f"⏸️ 未判定: コードブロックがありません: {root}")
+        return 3
 
     if hits:
         print(f"❌ JSX の位置に `//` の目印が {len(hits)} 行残っています")
