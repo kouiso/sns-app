@@ -35,7 +35,7 @@ function makeAdapter() {
     async getUser() { return readUser(bearer); },
   };
   return { handle: createAuthReturnHandler({ redirectTo, auth }),
-           facts: () => ({ auth_mutations: calls, server_user_reads: validations }) };
+           facts: () => ({ set_session_calls: calls, server_user_reads: validations }) };
 }
 
 const confirmedURL = new URL(fixture.confirmed);
@@ -63,7 +63,7 @@ const reused = makeAdapter();
 const rejectedUsed = await reused.handle(fixture.reused);
 check('reused_email_link_rejected_before_session_mutation',
       rejectedUsed.ok === false && rejectedUsed.code === 'provider_error' &&
-      reused.facts().auth_mutations === 0, reused.facts());
+      reused.facts().set_session_calls === 0, reused.facts());
 
 for (const [name, value] of [
   ['recovery_link_requires_purpose_proof', fixture.recovery],
@@ -78,7 +78,7 @@ for (const [name, value] of [
   const adapter = makeAdapter();
   const rejected = await adapter.handle(value);
   check(name, rejected.ok === false && rejected.code === 'recovery_purpose_unverified' &&
-        adapter.facts().auth_mutations === 0, adapter.facts());
+        adapter.facts().set_session_calls === 0, adapter.facts());
 }
 
 const target = new URL(fixture.confirmed);
@@ -86,16 +86,21 @@ target.hostname = 'example.invalid';
 const wrong = makeAdapter();
 const wrongResult = await wrong.handle(target.href);
 check('wrong_callback_target_no_auth_mutation', wrongResult.ok === false &&
-      wrongResult.code === 'redirect_mismatch' && wrong.facts().auth_mutations === 0, wrong.facts());
+      wrongResult.code === 'redirect_mismatch' && wrong.facts().set_session_calls === 0, wrong.facts());
 
 const output = { scope: 'REST_ADAPTER_NOT_SDK_OR_APP', checks };
 // Fail before stdout if any opaque credential or mail link would be serialized.
 const serialized = JSON.stringify(output);
-for (const sensitive of [fixture.confirmed, fixture.reused, fixture.recovery,
-                        ...new URLSearchParams(confirmedURL.hash.slice(1))
-                          .getAll('access_token'),
-                        ...new URLSearchParams(confirmedURL.hash.slice(1))
-                          .getAll('refresh_token')]) {
-  if (sensitive && serialized.includes(sensitive)) throw new Error('redaction_failure');
+for (const callback of [fixture.confirmed, fixture.reused, fixture.recovery]) {
+  const url = new URL(callback);
+  const sensitiveValues = [callback];
+  for (const component of [url.search.slice(1), url.hash.slice(1)]) {
+    const parameters = new URLSearchParams(component);
+    sensitiveValues.push(...parameters.getAll('access_token'),
+                         ...parameters.getAll('refresh_token'));
+  }
+  for (const sensitive of sensitiveValues) {
+    if (sensitive && serialized.includes(sensitive)) throw new Error('redaction_failure');
+  }
 }
 process.stdout.write(serialized + '\n');
