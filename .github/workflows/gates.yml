@@ -182,6 +182,7 @@ jobs:
               subprocess.run([str(dependencies / '.bin/tsc'), '--noEmit', '--project', str(root / 'tsconfig.json')], check=True)
               subprocess.run(['node', 'prototype-chapter/tools/verify_d4_hookup.cjs', str(root / 'App.tsx'), str(dependencies / 'typescript')], check=True)
           subprocess.run(['node', 'prototype-chapter/tools/test_verify_d4_hookup.cjs', str(dependencies / 'typescript')], check=True)
+          subprocess.run(['node', 'prototype-chapter/tools/test_verify_d4_origin.cjs', str(dependencies / 'typescript')], check=True)
           print(receipt)
           PY
           bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-runtime/chapter-build.md
