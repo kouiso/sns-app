@@ -157,6 +157,8 @@ jobs:
 
       - name: D4 declared input, controller lease and chapter build（NON-FORMAL）
         run: |
+          export D4_TEST_DEPENDENCIES="$GITHUB_WORKSPACE/prototype-chapter/candidates/auth-sdk57/node_modules"
+          export D4_TEST_TARGETS="$(python3 -c 'import json,os; print(json.dumps([os.environ["D4_TEST_DEPENDENCIES"]]))')"
           python3 -m unittest discover -s prototype-chapter/tools -p 'test_d4_*.py' -v
           python3 -m unittest discover -s prototype-chapter/tools -p 'test_verify_d4_chapter_build.py' -v
           PYTHONPATH=prototype-chapter/tools python3 - <<'PY'
