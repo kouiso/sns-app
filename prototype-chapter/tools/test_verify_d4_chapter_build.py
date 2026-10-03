@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import tempfile
 import unittest
@@ -71,6 +72,22 @@ class ChapterBuildTests(unittest.TestCase):
                 reconstruct_from_chapter(self.root)
         finally:
             path.unlink()
+
+    def test_special_node_and_empty_target_directory_are_rejected(self):
+        fifo = self.root / "start" / "unexpected"
+        try:
+            os.mkfifo(fifo)
+            with self.assertRaises(BuildVerificationError):
+                reconstruct_from_chapter(self.root)
+        finally:
+            fifo.unlink()
+        directory = self.root / "start" / "components"
+        try:
+            directory.mkdir()
+            with self.assertRaises(BuildVerificationError):
+                reconstruct_from_chapter(self.root)
+        finally:
+            directory.rmdir()
 
     def test_unmounted_ui_and_false_formal_claim_are_rejected(self):
         self.assert_rejected_change("chapter-build.md", lambda b: b.replace(

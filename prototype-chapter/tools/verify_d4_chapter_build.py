@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import stat
 from pathlib import Path
 
 from g6_broker import _read_regular, _safe_path, snapshot_digest
@@ -69,11 +70,16 @@ def reconstruct_from_chapter(candidate: Path) -> tuple[dict[str, bytes], dict[st
             raise BuildVerificationError("start file changed")
         files[name] = content
     actual_paths = set()
+    expected_directories = {str(parent) for name in files for parent in Path(name).parents if str(parent) != "."}
     for path in start.rglob("*"):
         if path.is_symlink():
             raise BuildVerificationError("symlink in start")
-        if path.is_file():
-            actual_paths.add(str(path.relative_to(start)))
+        relative = str(path.relative_to(start))
+        mode = path.lstat().st_mode
+        if stat.S_ISREG(mode):
+            actual_paths.add(relative)
+        elif not stat.S_ISDIR(mode) or relative not in expected_directories:
+            raise BuildVerificationError("undeclared directory or special start node")
     if actual_paths != set(files) or snapshot_digest(sorted(files.items())) != EXPECTED_START_SHA256:
         raise BuildVerificationError("start inventory or digest changed")
     original_app = files["App.tsx"].decode()

@@ -16,6 +16,7 @@ import os
 import pwd
 import re
 import stat
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -29,6 +30,7 @@ RUN_ID_PATTERN = re.compile(r"^[0-9a-f]{16,64}$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _T = TypeVar("_T")
 _ACTIVE_DESCRIPTORS: set[int] = set()
+_FORK_GUARD = threading.Lock()
 
 
 def _close_inherited_descriptors() -> None:
@@ -39,10 +41,23 @@ def _close_inherited_descriptors() -> None:
         except OSError:
             pass
     _ACTIVE_DESCRIPTORS.clear()
+    _FORK_GUARD.release()
+
+
+def _prepare_for_fork() -> None:
+    _FORK_GUARD.acquire()
+
+
+def _resume_after_fork() -> None:
+    _FORK_GUARD.release()
 
 
 if hasattr(os, "register_at_fork"):
-    os.register_at_fork(after_in_child=_close_inherited_descriptors)
+    os.register_at_fork(
+        before=_prepare_for_fork,
+        after_in_parent=_resume_after_fork,
+        after_in_child=_close_inherited_descriptors,
+    )
 
 
 class LeaseError(Exception):
@@ -178,26 +193,28 @@ class D4UILease:
         flags = os.O_RDWR | os.O_CREAT
         if hasattr(os, "O_NOFOLLOW"):
             flags |= os.O_NOFOLLOW
+        descriptor: int | None = None
         try:
-            descriptor = os.open(path, flags, 0o600)
-        except OSError as exc:
-            raise LeaseError("lease_file_rejected") from exc
-        os.set_inheritable(descriptor, False)
-        try:
-            details = os.fstat(descriptor)
-            path_details = path.lstat()
-            if (
-                not stat.S_ISREG(details.st_mode)
-                or details.st_uid != os.getuid()
-                or stat.S_IMODE(details.st_mode) != 0o600
-                or (details.st_dev, details.st_ino) != (path_details.st_dev, path_details.st_ino)
-            ):
-                raise LeaseError("lease_file_rejected")
-            try:
-                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError as exc:
-                raise LeaseError("lease_unavailable") from exc
-            _ACTIVE_DESCRIPTORS.add(descriptor)
+            with _FORK_GUARD:
+                try:
+                    descriptor = os.open(path, flags, 0o600)
+                except OSError as exc:
+                    raise LeaseError("lease_file_rejected") from exc
+                os.set_inheritable(descriptor, False)
+                details = os.fstat(descriptor)
+                path_details = path.lstat()
+                if (
+                    not stat.S_ISREG(details.st_mode)
+                    or details.st_uid != os.getuid()
+                    or stat.S_IMODE(details.st_mode) != 0o600
+                    or (details.st_dev, details.st_ino) != (path_details.st_dev, path_details.st_ino)
+                ):
+                    raise LeaseError("lease_file_rejected")
+                try:
+                    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError as exc:
+                    raise LeaseError("lease_unavailable") from exc
+                _ACTIVE_DESCRIPTORS.add(descriptor)
             self._descriptor = descriptor
             self._owner_pid = os.getpid()
             self._deadline = time.monotonic() + self._lease_seconds
@@ -205,14 +222,18 @@ class D4UILease:
             self._write_metadata()
             return self
         except Exception:
-            if self._descriptor is not None:
-                _ACTIVE_DESCRIPTORS.discard(self._descriptor)
-                try:
-                    fcntl.flock(self._descriptor, fcntl.LOCK_UN)
-                except OSError:
-                    pass
+            self._state = "failed"
+            if descriptor is not None:
+                with _FORK_GUARD:
+                    try:
+                        fcntl.flock(descriptor, fcntl.LOCK_UN)
+                    except OSError:
+                        pass
+                    try:
+                        os.close(descriptor)
+                    finally:
+                        _ACTIVE_DESCRIPTORS.discard(descriptor)
                 self._descriptor = None
-            os.close(descriptor)
             raise
 
     def _validate_binding(
@@ -249,9 +270,14 @@ class D4UILease:
 
     def renew(self, lease_seconds: float, **binding: str) -> float:
         self.check(**binding)
-        self._lease_seconds = self._validate_duration(lease_seconds)
+        new_duration = self._validate_duration(lease_seconds)
+        self._lease_seconds = new_duration
         self._deadline = time.monotonic() + self._lease_seconds
-        self._write_metadata()
+        try:
+            self._write_metadata()
+        except Exception:
+            self._state = "expired"
+            raise
         return self.check(**binding)
 
     def dispatch(self, operation: Callable[..., _T], *args: Any, binding: dict[str, str], **kwargs: Any) -> _T:
@@ -269,7 +295,6 @@ class D4UILease:
         if self._owner_pid != os.getpid():
             raise LeaseError("foreign_lease_process")
         descriptor = self._descriptor
-        _ACTIVE_DESCRIPTORS.discard(descriptor)
         self._descriptor = None
         self._state = "released"
         self._deadline = None
@@ -277,10 +302,14 @@ class D4UILease:
             os.ftruncate(descriptor, 0)
             os.fsync(descriptor)
         finally:
-            try:
-                fcntl.flock(descriptor, fcntl.LOCK_UN)
-            finally:
-                os.close(descriptor)
+            with _FORK_GUARD:
+                try:
+                    fcntl.flock(descriptor, fcntl.LOCK_UN)
+                finally:
+                    try:
+                        os.close(descriptor)
+                    finally:
+                        _ACTIVE_DESCRIPTORS.discard(descriptor)
 
     def __enter__(self) -> "D4UILease":
         return self.acquire()

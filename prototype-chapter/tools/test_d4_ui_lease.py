@@ -5,8 +5,10 @@ import multiprocessing
 import os
 import stat
 import tempfile
+import threading
 import time
 import unittest
+import warnings
 from pathlib import Path
 from unittest import mock
 
@@ -39,6 +41,151 @@ def acquire_then_exit(directory: str, connection: object) -> None:
 
 
 class D4UILeaseTests(unittest.TestCase):
+    def test_fork_during_release_fsync_cannot_inherit_untracked_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            status_read, status_write = os.pipe()
+            control_read, control_write = os.pipe()
+            controller_pid = os.fork()
+            if controller_pid == 0:
+                os.close(status_read)
+                os.close(control_write)
+                release_gap = threading.Event()
+                lease = d4_ui_lease.D4UILease(
+                    **binding("a"), lease_seconds=30, _test_directory=Path(temporary)
+                ).acquire()
+                target_descriptor = lease._descriptor
+                real_fsync = d4_ui_lease.os.fsync
+
+                def paused_fsync(descriptor: int) -> None:
+                    real_fsync(descriptor)
+                    if descriptor == target_descriptor:
+                        release_gap.set()
+                        threading.Event().wait(10)
+
+                d4_ui_lease.os.fsync = paused_fsync
+                releasing = threading.Thread(target=lease.release)
+                releasing.start()
+                if not release_gap.wait(10):
+                    os._exit(81)
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore",
+                        message=r"This process .* is multi-threaded, use of fork\(\) may lead to deadlocks",
+                        category=DeprecationWarning,
+                    )
+                    keeper_pid = os.fork()
+                if keeper_pid == 0:
+                    os.write(status_write, b"K")
+                    os.read(control_read, 1)
+                    os.write(status_write, b"X")
+                    os._exit(0)
+                os.write(status_write, b"P")
+                os._exit(23)
+
+            os.close(status_write)
+            os.close(control_read)
+            try:
+                markers = os.read(status_read, 2)
+                while len(markers) < 2:
+                    markers += os.read(status_read, 2 - len(markers))
+                self.assertEqual(set(markers), {ord("K"), ord("P")})
+                waited_pid, wait_status = os.waitpid(controller_pid, 0)
+                self.assertEqual(waited_pid, controller_pid)
+                self.assertEqual(os.waitstatus_to_exitcode(wait_status), 23)
+                with d4_ui_lease.D4UILease(
+                    **binding("d"), lease_seconds=30, _test_directory=Path(temporary)
+                ) as lease:
+                    self.assertGreater(lease.check(**binding("d")), 0)
+            finally:
+                os.write(control_write, b"x")
+                os.close(control_write)
+            self.assertEqual(os.read(status_read, 1), b"X")
+            os.close(status_read)
+
+    def test_concurrent_fork_cannot_inherit_unregistered_acquisition_fd(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            status_read, status_write = os.pipe()
+            control_read, control_write = os.pipe()
+            controller_pid = os.fork()
+            if controller_pid == 0:
+                os.close(status_read)
+                os.close(control_write)
+                acquired_gap = threading.Event()
+                resume_acquire = threading.Event()
+                fork_started = threading.Event()
+                fork_returned = threading.Event()
+                real_flock = d4_ui_lease.fcntl.flock
+                holder = []
+
+                def paused_flock(descriptor: int, operation: int) -> None:
+                    real_flock(descriptor, operation)
+                    if operation == (d4_ui_lease.fcntl.LOCK_EX | d4_ui_lease.fcntl.LOCK_NB):
+                        acquired_gap.set()
+                        if not resume_acquire.wait(10):
+                            os._exit(71)
+
+                d4_ui_lease.fcntl.flock = paused_flock
+
+                def acquire_in_window() -> None:
+                    holder.append(d4_ui_lease.D4UILease(
+                        **binding("a"), lease_seconds=30, _test_directory=Path(temporary)
+                    ).acquire())
+
+                def fork_keeper() -> None:
+                    fork_started.set()
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings(
+                            "ignore",
+                            message=r"This process .* is multi-threaded, use of fork\(\) may lead to deadlocks",
+                            category=DeprecationWarning,
+                        )
+                        keeper_pid = os.fork()
+                    if keeper_pid == 0:
+                        os.write(status_write, b"K")
+                        os.read(control_read, 1)
+                        os.write(status_write, b"X")
+                        os._exit(0)
+                    fork_returned.set()
+
+                acquisition = threading.Thread(target=acquire_in_window)
+                acquisition.start()
+                if not acquired_gap.wait(10):
+                    os._exit(72)
+                forking = threading.Thread(target=fork_keeper)
+                forking.start()
+                if not fork_started.wait(10):
+                    os._exit(73)
+                time.sleep(0.05)
+                if fork_returned.is_set():
+                    os._exit(74)
+                resume_acquire.set()
+                acquisition.join(10)
+                forking.join(10)
+                if acquisition.is_alive() or forking.is_alive() or len(holder) != 1:
+                    os._exit(75)
+                os.write(status_write, b"P")
+                os._exit(23)
+
+            os.close(status_write)
+            os.close(control_read)
+            try:
+                markers = os.read(status_read, 2)
+                while len(markers) < 2:
+                    markers += os.read(status_read, 2 - len(markers))
+                self.assertEqual(set(markers), {ord("K"), ord("P")})
+                waited_pid, wait_status = os.waitpid(controller_pid, 0)
+                self.assertEqual(waited_pid, controller_pid)
+                self.assertEqual(os.waitstatus_to_exitcode(wait_status), 23)
+                with d4_ui_lease.D4UILease(
+                    **binding("d"), lease_seconds=30, _test_directory=Path(temporary)
+                ) as lease:
+                    self.assertGreater(lease.check(**binding("d")), 0)
+            finally:
+                os.write(control_write, b"x")
+                os.close(control_write)
+            self.assertEqual(os.read(status_read, 1), b"X")
+            os.close(status_read)
+
     def test_fork_child_does_not_keep_lock_after_parent_abnormal_exit(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             status_read, status_write = os.pipe()
@@ -166,6 +313,22 @@ class D4UILeaseTests(unittest.TestCase):
                 lease.release()
             with self.assertRaisesRegex(d4_ui_lease.LeaseError, "lease_reused"):
                 lease.acquire()
+
+    def test_renew_metadata_failure_expires_lease(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            current = binding("a")
+            with d4_ui_lease.D4UILease(
+                **current, lease_seconds=30, _test_directory=Path(temporary)
+            ) as lease:
+                with mock.patch.object(
+                    lease,
+                    "_write_metadata",
+                    side_effect=d4_ui_lease.LeaseError("lease_metadata_rejected"),
+                ):
+                    with self.assertRaisesRegex(d4_ui_lease.LeaseError, "lease_metadata_rejected"):
+                        lease.renew(60, **current)
+                with self.assertRaisesRegex(d4_ui_lease.LeaseError, "lease_expired"):
+                    lease.check(**current)
 
     def test_abnormal_process_exit_releases_kernel_lock(self) -> None:
         context = multiprocessing.get_context("spawn")

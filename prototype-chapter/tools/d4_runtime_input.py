@@ -87,17 +87,17 @@ def _closed(value: object, fields: frozenset[str], label: str) -> dict[str, Any]
 
 
 def _reject_control_characters(value: object) -> None:
-    if isinstance(value, str):
-        if _CONTROL_CHARACTERS.search(value):
-            raise RuntimeInputError("control characters are forbidden")
-        return
-    if isinstance(value, dict):
-        for key, item in value.items():
-            _reject_control_characters(key)
-            _reject_control_characters(item)
-    elif isinstance(value, list):
-        for item in value:
-            _reject_control_characters(item)
+    pending = [value]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, str):
+            if _CONTROL_CHARACTERS.search(item):
+                raise RuntimeInputError("control characters are forbidden")
+        elif isinstance(item, dict):
+            pending.extend(item.keys())
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
 
 
 def _string(value: object, label: str) -> str:
@@ -142,6 +142,8 @@ def _split_url(value: object, label: str):
     result = _string(value, label)
     if any(character.isspace() for character in result):
         raise RuntimeInputError(f"{label} must not contain whitespace")
+    if "?" in result or "#" in result:
+        raise RuntimeInputError(f"{label} contains a forbidden URL component")
     try:
         parsed = urlsplit(result)
         _ = parsed.port
@@ -195,7 +197,9 @@ def _decode_jwt_payload(value: str) -> dict[str, Any]:
             object_pairs_hook=_unique_object,
             parse_constant=_reject_constant,
         )
-    except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except RuntimeInputError:
+        raise
+    except (ValueError, UnicodeDecodeError, RecursionError) as exc:
         raise RuntimeInputError("legacy public key has an invalid JWT payload") from exc
     if not isinstance(payload, dict):
         raise RuntimeInputError("legacy public key has an invalid JWT payload")
@@ -224,9 +228,12 @@ def _post_ids(value: object) -> tuple[tuple[str, str], str]:
     if len(parts) != 2:
         raise RuntimeInputError("exactly two post IDs are required")
     try:
-        normalized = tuple(str(uuid.UUID(part)) for part in parts)
+        parsed = tuple(uuid.UUID(part) for part in parts)
     except (ValueError, AttributeError) as exc:
         raise RuntimeInputError("post IDs must be UUIDs") from exc
+    if any(identifier.version not in range(1, 6) or identifier.variant != uuid.RFC_4122 for identifier in parsed):
+        raise RuntimeInputError("post IDs must use RFC 4122 UUID versions 1-5")
+    normalized = tuple(str(identifier) for identifier in parsed)
     if len(set(normalized)) != 2 or result != ",".join(normalized):
         raise RuntimeInputError("post IDs must be distinct canonical UUIDs")
     return (normalized[0], normalized[1]), result
@@ -242,8 +249,12 @@ def _validate_binding(binding: TrustedBinding) -> tuple[dict[str, str], str]:
     url = _supabase_url(binding.supabase_url)
     key, key_kind = _public_key(binding.publishable_key)
     callback = _return_base(binding.auth_return_base, lan_host)
-    if not isinstance(binding.post_ids, tuple) or len(binding.post_ids) != 2:
-        raise RuntimeInputError("trusted binding must contain exactly two post IDs")
+    if (
+        not isinstance(binding.post_ids, tuple)
+        or len(binding.post_ids) != 2
+        or not all(isinstance(identifier, str) for identifier in binding.post_ids)
+    ):
+        raise RuntimeInputError("trusted binding must contain exactly two string post IDs")
     post_ids, post_value = _post_ids(",".join(binding.post_ids))
     expected = {
         "EXPO_PUBLIC_SUPABASE_URL": url,
@@ -285,7 +296,9 @@ def load_declared_public_runtime_input(
             object_pairs_hook=_unique_object,
             parse_constant=_reject_constant,
         )
-    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+    except RuntimeInputError:
+        raise
+    except (ValueError, UnicodeDecodeError, RecursionError) as exc:
         raise RuntimeInputError("runtime input must be strict JSON") from exc
     _reject_control_characters(parsed)
     top = _closed(parsed, _TOP_FIELDS, "runtime input")

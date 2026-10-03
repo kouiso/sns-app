@@ -178,6 +178,28 @@ class RuntimeInputTests(unittest.TestCase):
                 value["public"][field] = invalid
                 self.rejected(value)
 
+    def test_empty_query_and_fragment_delimiters_are_rejected_when_binding_matches(self) -> None:
+        cases = (
+            ("EXPO_PUBLIC_SUPABASE_URL", "http://192.168.11.11:8094?", "supabase_url"),
+            ("EXPO_PUBLIC_SUPABASE_URL", "http://192.168.11.11:8094#", "supabase_url"),
+            (
+                "EXPO_PUBLIC_AUTH_RETURN_BASE",
+                "exp://192.168.11.11:8093/--/auth/return?",
+                "auth_return_base",
+            ),
+            (
+                "EXPO_PUBLIC_AUTH_RETURN_BASE",
+                "exp://192.168.11.11:8093/--/auth/return#",
+                "auth_return_base",
+            ),
+        )
+        for field, invalid, binding_field in cases:
+            with self.subTest(field=field, invalid=invalid):
+                value = json.loads(json.dumps(self.value))
+                value["public"][field] = invalid
+                with self.assertRaises(RuntimeInputError):
+                    self.load(value, replace(self.binding, **{binding_field: invalid}))
+
     def test_controls_and_internal_whitespace_are_rejected_even_when_binding_matches(self) -> None:
         cases = (
             (
@@ -231,6 +253,30 @@ class RuntimeInputTests(unittest.TestCase):
                 value["public"]["EXPO_PUBLIC_RLS_TRIAL_POST_IDS"] = post_ids
                 self.rejected(value)
 
+    def test_post_ids_match_component_uuid_version_and_variant_contract(self) -> None:
+        invalid_first_ids = (
+            "00000000-0000-0000-0000-000000000000",
+            "11111111-1111-7111-8111-111111111111",
+            "11111111-1111-4111-7111-111111111111",
+        )
+        for first_id in invalid_first_ids:
+            with self.subTest(first_id=first_id):
+                post_ids = (first_id, self.post_ids[1])
+                value = json.loads(json.dumps(self.value))
+                value["public"]["EXPO_PUBLIC_RLS_TRIAL_POST_IDS"] = ",".join(post_ids)
+                with self.assertRaises(RuntimeInputError):
+                    self.load(value, replace(self.binding, post_ids=post_ids))
+
+    def test_parser_resource_failures_are_normalized(self) -> None:
+        deeply_nested = "[" * 5000 + "0" + "]" * 5000
+        with self.assertRaises(RuntimeInputError):
+            load_declared_public_runtime_input(deeply_nested, self.binding)
+
+        raw = json.dumps(self.value)
+        huge_integer = raw.replace('"version": 1', '"version": ' + "9" * 5000, 1)
+        with self.assertRaises(RuntimeInputError):
+            load_declared_public_runtime_input(huge_integer, self.binding)
+
     def test_bool_zero_wrong_types_and_hash_drift_are_rejected(self) -> None:
         for version in (True, 0, "1"):
             value = json.loads(json.dumps(self.value))
@@ -249,6 +295,8 @@ class RuntimeInputTests(unittest.TestCase):
             self.load(binding=replace(self.binding, post_ids=(self.post_ids[0], self.post_ids[0])))
         with self.assertRaises(RuntimeInputError):
             self.load(binding=replace(self.binding, chapter_sha256="bad"))
+        with self.assertRaisesRegex(RuntimeInputError, "exactly two string post IDs"):
+            self.load(binding=replace(self.binding, post_ids=(self.post_ids[0], 7)))  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":
