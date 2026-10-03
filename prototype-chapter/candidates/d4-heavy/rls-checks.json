@@ -1,0 +1,2925 @@
+{
+  "status": "DRAFT_FULL_RLS_ACCEPTANCE_MATRIX_NOT_FORMAL_START",
+  "matrix_id": "d4_heavy_rls_denial_check_220",
+  "source_requirement": {
+    "chapter_id": "rls-denial-check",
+    "row_id": 220,
+    "required_frs": [
+      "FR1",
+      "FR2",
+      "FR3",
+      "FR5",
+      "FR6",
+      "FR7",
+      "FR8",
+      "FR9"
+    ],
+    "required_relations": [
+      "owner_success",
+      "other_denial",
+      "independent_db_or_object_state",
+      "zero_rows_distinguished_from_request_error"
+    ],
+    "required_resources": [
+      "users",
+      "posts",
+      "post_media",
+      "likes",
+      "follows",
+      "notifications",
+      "storage.objects:post-media",
+      "storage.objects:profile-avatars",
+      "storage.objects:profile-headers"
+    ]
+  },
+  "evidence_boundary": {
+    "native_sdk_receipt": "69 actual @supabase/supabase-js 2.117.2 checks on a frozen local nine-table candidate",
+    "candidate_evidence_is_acceptance_pass": false,
+    "formal_start": false,
+    "hosted_project_measured": false,
+    "storage_measured": false,
+    "realtime_measured": false,
+    "full_predecessor_sns_measured": false,
+    "actual_full_sns_ui_counts_measured": false,
+    "notes": [
+      "CANDIDATE_EVIDENCE_ONLY records observed candidate behavior and must not be read as PASS.",
+      "Every missing implementation, unresolved rule, Storage/Realtime path, and absent UI count remains NOT_READY.",
+      "Explicit Data API grants and RLS are separate acceptance layers; both must be verified on the eventual target."
+    ]
+  },
+  "provenance_sources": [
+    {
+      "file": null,
+      "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+      "source_id": "original",
+      "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+    },
+    {
+      "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+      "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+      "source_id": "migration_base"
+    },
+    {
+      "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003081350_d4_remove_unneeded_parent_definer.sql",
+      "sha256": "5684db307ec7f1cf873032465fa9cbb9f7f14dd264effbbd509792a51c2795c4",
+      "source_id": "migration_parent"
+    },
+    {
+      "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003081937_d4_align_notification_update_visibility.sql",
+      "sha256": "b493ec015eaf4f98a1ddb453ceb839caa232ee17b6043cfe3b7cc0cef5f75f7b",
+      "source_id": "migration_notification"
+    },
+    {
+      "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+      "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+      "source_id": "measure_sdk"
+    },
+    {
+      "file": null,
+      "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+      "source_id": "sdk69",
+      "unpublished_reason": "private material evidence; retained by source_id and sha256"
+    },
+    {
+      "file": "prototype-chapter/candidates/d4-rls/README.md",
+      "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+      "source_id": "readme"
+    }
+  ],
+  "cases": [
+    {
+      "id": "cross_anon_users_select_denied",
+      "fr": [
+        "FR1",
+        "FR2",
+        "FR3",
+        "FR5",
+        "FR6",
+        "FR7",
+        "FR8",
+        "FR9"
+      ],
+      "resource": "users",
+      "actor_relation": "anonymous",
+      "action": "SELECT any row",
+      "allowed_columns": [],
+      "expected_response_category": "HTTP_401_OR_403_SQLSTATE_42501_NULL_DATA",
+      "independent_db_or_object_evidence": {
+        "kind": "catalog_and_sdk",
+        "assertion": "no row returned and anon has no table privilege"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "anon_select_users_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "cross_anon_posts_select_denied",
+      "fr": [
+        "FR1",
+        "FR2",
+        "FR3",
+        "FR5",
+        "FR6",
+        "FR7",
+        "FR8",
+        "FR9"
+      ],
+      "resource": "posts",
+      "actor_relation": "anonymous",
+      "action": "SELECT any row",
+      "allowed_columns": [],
+      "expected_response_category": "HTTP_401_OR_403_SQLSTATE_42501_NULL_DATA",
+      "independent_db_or_object_evidence": {
+        "kind": "catalog_and_sdk",
+        "assertion": "no row returned and anon has no table privilege"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "anon_select_posts_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "cross_anon_post_media_select_denied",
+      "fr": [
+        "FR1",
+        "FR2",
+        "FR3",
+        "FR5",
+        "FR6",
+        "FR7",
+        "FR8",
+        "FR9"
+      ],
+      "resource": "post_media",
+      "actor_relation": "anonymous",
+      "action": "SELECT any row",
+      "allowed_columns": [],
+      "expected_response_category": "HTTP_401_OR_403_SQLSTATE_42501_NULL_DATA",
+      "independent_db_or_object_evidence": {
+        "kind": "catalog_and_sdk",
+        "assertion": "no row returned and anon has no table privilege"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "anon_select_post_media_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "cross_anon_likes_select_denied",
+      "fr": [
+        "FR1",
+        "FR2",
+        "FR3",
+        "FR5",
+        "FR6",
+        "FR7",
+        "FR8",
+        "FR9"
+      ],
+      "resource": "likes",
+      "actor_relation": "anonymous",
+      "action": "SELECT any row",
+      "allowed_columns": [],
+      "expected_response_category": "HTTP_401_OR_403_SQLSTATE_42501_NULL_DATA",
+      "independent_db_or_object_evidence": {
+        "kind": "catalog_and_sdk",
+        "assertion": "no row returned and anon has no table privilege"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "anon_select_likes_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "cross_anon_follows_select_denied",
+      "fr": [
+        "FR1",
+        "FR2",
+        "FR3",
+        "FR5",
+        "FR6",
+        "FR7",
+        "FR8",
+        "FR9"
+      ],
+      "resource": "follows",
+      "actor_relation": "anonymous",
+      "action": "SELECT any row",
+      "allowed_columns": [],
+      "expected_response_category": "HTTP_401_OR_403_SQLSTATE_42501_NULL_DATA",
+      "independent_db_or_object_evidence": {
+        "kind": "catalog_and_sdk",
+        "assertion": "no row returned and anon has no table privilege"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "anon_select_follows_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "cross_anon_notifications_select_denied",
+      "fr": [
+        "FR1",
+        "FR2",
+        "FR3",
+        "FR5",
+        "FR6",
+        "FR7",
+        "FR8",
+        "FR9"
+      ],
+      "resource": "notifications",
+      "actor_relation": "anonymous",
+      "action": "SELECT any row",
+      "allowed_columns": [],
+      "expected_response_category": "HTTP_401_OR_403_SQLSTATE_42501_NULL_DATA",
+      "independent_db_or_object_evidence": {
+        "kind": "catalog_and_sdk",
+        "assertion": "no row returned and anon has no table privilege"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "anon_select_notifications_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr1_users_signup_trigger_profile_row",
+      "fr": [
+        "FR1"
+      ],
+      "resource": "users",
+      "actor_relation": "new confirmed user",
+      "action": "Auth signup causes profile trigger insert",
+      "allowed_columns": [
+        "id"
+      ],
+      "expected_response_category": "SDK_SIGNUP_SUCCESS_AND_ADMIN_ROW_EXISTS",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row",
+        "assertion": "exact new auth id has one public.users row"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "auth_owner_signup_profile_triggered",
+        "auth_other_signup_profile_triggered"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr1_users_client_insert_denied",
+      "fr": [
+        "FR1"
+      ],
+      "resource": "users",
+      "actor_relation": "authenticated ordinary user",
+      "action": "INSERT a public.users row",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "HTTP_403_SQLSTATE_42501_OR_EXPLICIT_PRIVILEGE_DENIAL",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_absence",
+        "assertion": "attempted id absent"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Catalog minimums exist, but no dedicated ordinary-user SDK INSERT attempt and DB absence observation are recorded.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr1_users_other_select_requirement",
+      "fr": [
+        "FR1"
+      ],
+      "resource": "users",
+      "actor_relation": "authenticated A reading B",
+      "action": "SELECT B profile",
+      "allowed_columns": [],
+      "expected_response_category": "ZERO_ROWS_OR_REQUIREMENT_DECISION",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_control_plus_sdk",
+        "assertion": "B exists while A receives zero rows"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Original FR1 row asks for other-user SELECT denial, while the candidate users_select_authenticated policy allows authenticated SELECT for profile display. Requirement conflict is unresolved.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr2_users_owner_username_update",
+      "fr": [
+        "FR2"
+      ],
+      "resource": "users",
+      "actor_relation": "owner A",
+      "action": "UPDATE own profile",
+      "allowed_columns": [
+        "username"
+      ],
+      "expected_response_category": "HTTP_200_ONE_ROW",
+      "independent_db_or_object_evidence": {
+        "kind": "missing_admin_column_read",
+        "assertion": "admin reads the exact submitted username from A and confirms B unchanged"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [
+        "profile_owner_update_one"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ],
+      "notes": "The migration grants username, display_name, bio, avatar_url, and header_url; this case only attempted username.",
+      "not_ready_reason": "SDK69 observed HTTP 200 with one returned id for username UPDATE, but measure_sdk.mjs passed db_state_ok=true without an independent admin read of the stored username; row 220 requires independent DB confirmation."
+    },
+    {
+      "id": "fr2_users_owner_remaining_allowed_columns",
+      "fr": [
+        "FR2"
+      ],
+      "resource": "users",
+      "actor_relation": "owner A",
+      "action": "UPDATE each remaining own profile field",
+      "allowed_columns": [
+        "display_name",
+        "bio",
+        "avatar_url",
+        "header_url"
+      ],
+      "expected_response_category": "HTTP_200_ONE_ROW_PER_COLUMN",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_exact_columns",
+        "assertion": "each submitted value is stored only on A; URL values later resolve to accepted owned Storage objects"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "SDK69 only attempted username; the other granted fields lack individual SDK plus independent DB evidence, and avatar/header object consistency is absent.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr2_users_other_update_hidden",
+      "fr": [
+        "FR2"
+      ],
+      "resource": "users",
+      "actor_relation": "A targeting B",
+      "action": "UPDATE B profile",
+      "allowed_columns": [
+        "username",
+        "display_name",
+        "bio",
+        "avatar_url",
+        "header_url"
+      ],
+      "expected_response_category": "HTTP_200_ZERO_ROWS",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_column_unchanged",
+        "assertion": "B bio remains null"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "profile_other_update_zero"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr2_users_forbidden_identity_update",
+      "fr": [
+        "FR2"
+      ],
+      "resource": "users",
+      "actor_relation": "owner A",
+      "action": "UPDATE own id",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "HTTP_403_SQLSTATE_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_identity_set",
+        "assertion": "A and B ids remain present and unchanged"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "profile_id_update_forbidden"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr2_profile_avatar_storage_owner_upload",
+      "fr": [
+        "FR2"
+      ],
+      "resource": "storage.objects:profile-avatars",
+      "actor_relation": "owner A",
+      "action": "UPLOAD own avatar object",
+      "allowed_columns": [
+        "bucket_id",
+        "name",
+        "owner_id",
+        "metadata"
+      ],
+      "expected_response_category": "STORAGE_UPLOAD_SUCCESS",
+      "independent_db_or_object_evidence": {
+        "kind": "storage_object_and_profile_url",
+        "assertion": "object exists under A-owned path and users.avatar_url references it"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "No bucket, storage.objects policy, object upload, or URL-to-object evidence exists.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr2_profile_avatar_storage_other_write_denied",
+      "fr": [
+        "FR2"
+      ],
+      "resource": "storage.objects:profile-avatars",
+      "actor_relation": "A targeting B path",
+      "action": "INSERT/UPDATE/DELETE B avatar object",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "STORAGE_403_OR_RLS_DENIAL",
+      "independent_db_or_object_evidence": {
+        "kind": "storage_object_unchanged",
+        "assertion": "B object bytes/hash and metadata unchanged"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Storage is explicitly unimplemented and unmeasured.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr2_profile_header_storage_owner_and_other",
+      "fr": [
+        "FR2"
+      ],
+      "resource": "storage.objects:profile-headers",
+      "actor_relation": "owner and cross-user",
+      "action": "UPLOAD/REPLACE own header; reject B-path write",
+      "allowed_columns": [
+        "bucket_id",
+        "name",
+        "owner_id",
+        "metadata"
+      ],
+      "expected_response_category": "OWNER_SUCCESS_OTHER_DENIED",
+      "independent_db_or_object_evidence": {
+        "kind": "storage_object_pair",
+        "assertion": "own object created/replaced and B object unchanged; users.header_url consistent"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Header bucket/policies and actual object evidence are absent.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_posts_owner_insert",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "posts",
+      "actor_relation": "owner A",
+      "action": "INSERT own text post",
+      "allowed_columns": [
+        "id",
+        "author_id",
+        "body",
+        "reply_to_post_id",
+        "repost_of_post_id"
+      ],
+      "expected_response_category": "HTTP_201_ONE_ROW",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row",
+        "assertion": "post exists with A author and submitted body"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "posts_owner_insert"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_posts_forged_author_denied",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "posts",
+      "actor_relation": "A claiming B",
+      "action": "INSERT forged-author post",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "HTTP_403_SQLSTATE_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_absence",
+        "assertion": "attempted post id absent"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "posts_forged_author_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_posts_body_boundaries",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "posts",
+      "actor_relation": "owner A",
+      "action": "INSERT body at empty, 1, 280, and 281 character boundaries",
+      "allowed_columns": [
+        "body"
+      ],
+      "expected_response_category": "EMPTY_RULE_DECIDED_1_AND_280_SUCCESS_281_CONSTRAINT_ERROR",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_exact_body_or_absence",
+        "assertion": "accepted lengths stored exactly and rejected id absent"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "SDK69 measured a normal body and NULL allowed, but not required 280/281 boundaries; empty-post rule remains explicitly undecided.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_posts_direct_update_denied",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "posts",
+      "actor_relation": "owner A",
+      "action": "direct UPDATE existing post",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "HTTP_403_SQLSTATE_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row_unchanged",
+        "assertion": "body and deleted_at unchanged"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "posts_arbitrary_update_privilege_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_posts_physical_delete_denied",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "posts",
+      "actor_relation": "owner A",
+      "action": "physical DELETE own post",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "HTTP_403_SQLSTATE_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row_preserved",
+        "assertion": "physical row remains active"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "posts_physical_delete_privilege_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_posts_soft_delete_owner_other",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "posts",
+      "actor_relation": "B then owner A",
+      "action": "RPC soft_delete_post on A post",
+      "allowed_columns": [
+        "deleted_at via RPC only"
+      ],
+      "expected_response_category": "OTHER_BOOLEAN_FALSE_OWNER_BOOLEAN_TRUE",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_logical_delete",
+        "assertion": "B attempt leaves active; A sets deleted_at; repeat false; row physically remains"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "soft_delete_rpc_other_false",
+        "soft_delete_rpc_owner_true",
+        "soft_delete_rpc_repeat_false",
+        "soft_deleted_post_physically_preserved"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_post_media_owner_insert_other_mutation_denied",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "post_media",
+      "actor_relation": "post owner A versus B",
+      "action": "INSERT media row; B UPDATE/DELETE same row",
+      "allowed_columns": [
+        "id",
+        "post_id",
+        "url",
+        "order"
+      ],
+      "expected_response_category": "OWNER_201_ONE_ROW_OTHER_200_ZERO_ROWS",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row",
+        "assertion": "media row exists with original URL and survives B operations"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "media_owner_active_insert",
+        "media_other_update_zero",
+        "media_other_delete_zero"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_post_media_deleted_parent_boundary",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "post_media",
+      "actor_relation": "post owner A",
+      "action": "INSERT on deleted post then SELECT prior media",
+      "allowed_columns": [
+        "id",
+        "post_id",
+        "url",
+        "order"
+      ],
+      "expected_response_category": "INSERT_403_42501_AND_SELECT_ZERO_ROWS",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_absence_and_preservation",
+        "assertion": "new media absent; prior media physically remains but SDK-hidden"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "media_dead_parent_insert_denied",
+        "post_media_hidden_after_parent_delete_admin_preserved"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_post_media_cardinality_format_size",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "post_media",
+      "actor_relation": "post owner A",
+      "action": "attach 0 through 4 images; reject fifth, bad format, oversize",
+      "allowed_columns": [
+        "id",
+        "post_id",
+        "url",
+        "order"
+      ],
+      "expected_response_category": "VALID_SET_SUCCESS_INVALID_SET_REJECTED",
+      "independent_db_or_object_evidence": {
+        "kind": "db_and_object_cardinality",
+        "assertion": "0-4 exact contiguous order and no DB/object residue for rejected inputs"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Candidate has no max-four/order constraint and SDK69 used one synthetic URL only.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_post_media_storage_owner_upload",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "storage.objects:post-media",
+      "actor_relation": "post owner A",
+      "action": "UPLOAD object then INSERT post_media",
+      "allowed_columns": [
+        "bucket_id",
+        "name",
+        "owner_id",
+        "metadata"
+      ],
+      "expected_response_category": "OBJECT_UPLOAD_AND_DB_INSERT_SUCCESS",
+      "independent_db_or_object_evidence": {
+        "kind": "object_plus_db",
+        "assertion": "object hash/metadata exists and post_media.url points to it"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "post-media bucket/policies and real object operations are absent.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_post_media_storage_other_write_denied",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "storage.objects:post-media",
+      "actor_relation": "B targeting A post path",
+      "action": "INSERT/UPDATE/DELETE object",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "STORAGE_403_OR_RLS_DENIAL",
+      "independent_db_or_object_evidence": {
+        "kind": "storage_object_unchanged",
+        "assertion": "A object exists with identical hash/metadata"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Storage boundary is explicitly not measured.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_post_media_partial_failure_orphan_cleanup",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "post_media + storage.objects:post-media",
+      "actor_relation": "owner A with induced mid-upload failure",
+      "action": "multi-object upload and DB write",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "CONTROLLED_FAILURE_WITH_NO_ORPHANS",
+      "independent_db_or_object_evidence": {
+        "kind": "db_object_set_equality",
+        "assertion": "no unreferenced objects and no dangling post_media rows"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "No upload workflow or failure compensation implementation/evidence exists.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr5_reply_active_parent_allowed",
+      "fr": [
+        "FR5"
+      ],
+      "resource": "posts.reply_to_post_id",
+      "actor_relation": "A replying to active post",
+      "action": "INSERT reply",
+      "allowed_columns": [
+        "id",
+        "author_id",
+        "body",
+        "reply_to_post_id"
+      ],
+      "expected_response_category": "HTTP_201_ONE_ROW",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row",
+        "assertion": "reply exists and reply_to_post_id equals active parent"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "posts_active_reply_allowed"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003081350_d4_remove_unneeded_parent_definer.sql",
+          "sha256": "5684db307ec7f1cf873032465fa9cbb9f7f14dd264effbbd509792a51c2795c4",
+          "source_id": "migration_parent"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr5_reply_deleted_parent_denied",
+      "fr": [
+        "FR5"
+      ],
+      "resource": "posts.reply_to_post_id",
+      "actor_relation": "A replying to deleted post",
+      "action": "INSERT reply",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "HTTP_403_SQLSTATE_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_absence",
+        "assertion": "attempted reply id absent"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "posts_dead_reply_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003081350_d4_remove_unneeded_parent_definer.sql",
+          "sha256": "5684db307ec7f1cf873032465fa9cbb9f7f14dd264effbbd509792a51c2795c4",
+          "source_id": "migration_parent"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr5_reply_full_behavior_and_ui_count",
+      "fr": [
+        "FR5"
+      ],
+      "resource": "posts + post detail UI",
+      "actor_relation": "owner/other users",
+      "action": "create reply, order thread, render and update reply count",
+      "allowed_columns": [
+        "reply_to_post_id"
+      ],
+      "expected_response_category": "DB_SUCCESS_AND_UI_COUNT_PLUS_ONE",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row_plus_ui",
+        "assertion": "correct parent-child ordering and visible count changes exactly once"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Candidate SDK proves insert boundary only; predecessor full SNS reply UI/order/count execution is absent.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr6_repost_active_parent_allowed",
+      "fr": [
+        "FR6"
+      ],
+      "resource": "posts.repost_of_post_id",
+      "actor_relation": "A reposting active post",
+      "action": "INSERT repost",
+      "allowed_columns": [
+        "id",
+        "author_id",
+        "body",
+        "repost_of_post_id"
+      ],
+      "expected_response_category": "HTTP_201_ONE_ROW",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row",
+        "assertion": "repost exists and repost_of_post_id equals active parent"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "posts_active_repost_allowed"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003081350_d4_remove_unneeded_parent_definer.sql",
+          "sha256": "5684db307ec7f1cf873032465fa9cbb9f7f14dd264effbbd509792a51c2795c4",
+          "source_id": "migration_parent"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr6_repost_deleted_parent_denied",
+      "fr": [
+        "FR6"
+      ],
+      "resource": "posts.repost_of_post_id",
+      "actor_relation": "A reposting deleted post",
+      "action": "INSERT repost",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "HTTP_403_SQLSTATE_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_absence",
+        "assertion": "attempted repost id absent"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "posts_dead_repost_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003081350_d4_remove_unneeded_parent_definer.sql",
+          "sha256": "5684db307ec7f1cf873032465fa9cbb9f7f14dd264effbbd509792a51c2795c4",
+          "source_id": "migration_parent"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr6_reply_repost_exclusivity_and_quote_rules",
+      "fr": [
+        "FR5",
+        "FR6"
+      ],
+      "resource": "posts",
+      "actor_relation": "owner A",
+      "action": "attempt simultaneous reply_to_post_id and repost_of_post_id; quoted/blank variants",
+      "allowed_columns": [
+        "body",
+        "reply_to_post_id",
+        "repost_of_post_id"
+      ],
+      "expected_response_category": "FORMAL_RULE_SPECIFIC_SUCCESS_OR_CONSTRAINT_REJECTION",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_exact_row_or_absence",
+        "assertion": "outcome matches approved mutual-exclusion and quote-body rules"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Simultaneous reply/repost and quote/blank rules are explicitly undecided.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr6_repost_ui_count",
+      "fr": [
+        "FR6"
+      ],
+      "resource": "posts + post detail UI",
+      "actor_relation": "owner/other users",
+      "action": "repost then undo/render count",
+      "allowed_columns": [
+        "repost_of_post_id"
+      ],
+      "expected_response_category": "DB_SUCCESS_AND_UI_COUNT_PLUS_ONE",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row_plus_ui",
+        "assertion": "visible repost state and count match DB"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "No predecessor full SNS repost UI/count execution is recorded.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr7_likes_owner_insert_and_forgery_denied",
+      "fr": [
+        "FR7"
+      ],
+      "resource": "likes",
+      "actor_relation": "B liking A post; A claims B",
+      "action": "INSERT own like and forged like",
+      "allowed_columns": [
+        "user_id",
+        "post_id",
+        "created_at"
+      ],
+      "expected_response_category": "OWN_201_ONE_ROW_FORGED_403_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row_pair",
+        "assertion": "own like exists; forged composite key absent"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "likes_owner_active_insert",
+        "likes_forged_user_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr7_likes_other_delete_zero",
+      "fr": [
+        "FR7"
+      ],
+      "resource": "likes",
+      "actor_relation": "A deleting B like",
+      "action": "DELETE B like",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "HTTP_200_ZERO_ROWS",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row_preserved",
+        "assertion": "B like remains"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "likes_other_delete_zero"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr7_likes_deleted_parent_boundary",
+      "fr": [
+        "FR7"
+      ],
+      "resource": "likes",
+      "actor_relation": "user on deleted post",
+      "action": "INSERT/SELECT/DELETE like",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "INSERT_403_AND_SELECT_DELETE_ZERO_ROWS",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_absence_and_preservation",
+        "assertion": "new like absent; old like physically preserved and hidden"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "likes_dead_parent_insert_denied",
+        "likes_hidden_after_parent_delete_admin_preserved",
+        "likes_owner_delete_after_parent_deleted_zero_preserved"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr7_likes_owner_delete_and_duplicate",
+      "fr": [
+        "FR7"
+      ],
+      "resource": "likes",
+      "actor_relation": "like owner",
+      "action": "DELETE active like; repeat INSERT same composite key",
+      "allowed_columns": [
+        "user_id",
+        "post_id"
+      ],
+      "expected_response_category": "DELETE_ONE_ROW_AND_DUPLICATE_CONSTRAINT_ERROR",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_composite_key",
+        "assertion": "delete removes exact own row; duplicate creates no second row"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "SDK69 does not perform owner DELETE on an active post or duplicate-like insertion.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr7_likes_actual_ui_count",
+      "fr": [
+        "FR7"
+      ],
+      "resource": "post detail UI",
+      "actor_relation": "two authenticated users",
+      "action": "like/unlike from UI",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "VISIBLE_COUNT_PLUS_ONE_THEN_MINUS_ONE",
+      "independent_db_or_object_evidence": {
+        "kind": "ui_plus_admin_count",
+        "assertion": "rendered count equals DB count after each action"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "No actual predecessor full SNS like count UI measurement exists.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr8_follows_owner_insert_and_forgery_denied",
+      "fr": [
+        "FR8"
+      ],
+      "resource": "follows",
+      "actor_relation": "B follows A; A claims B",
+      "action": "INSERT own follow and forged follow",
+      "allowed_columns": [
+        "follower_id",
+        "followee_id",
+        "created_at"
+      ],
+      "expected_response_category": "OWN_201_ONE_ROW_FORGED_403_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row_pair",
+        "assertion": "own follow exists; forged pair absent"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "follows_owner_insert",
+        "follows_forged_follower_denied"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr8_follows_other_delete_zero",
+      "fr": [
+        "FR8"
+      ],
+      "resource": "follows",
+      "actor_relation": "A deleting B follow",
+      "action": "DELETE B relationship",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "HTTP_200_ZERO_ROWS",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row_preserved",
+        "assertion": "B-to-A relationship remains"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "follows_other_delete_zero"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr8_follows_owner_delete_and_duplicate",
+      "fr": [
+        "FR8"
+      ],
+      "resource": "follows",
+      "actor_relation": "follower owner",
+      "action": "DELETE own active relationship; duplicate INSERT",
+      "allowed_columns": [
+        "follower_id",
+        "followee_id"
+      ],
+      "expected_response_category": "DELETE_ONE_ROW_AND_DUPLICATE_CONSTRAINT_ERROR",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_composite_key",
+        "assertion": "own delete removes exact row; duplicate creates no second row"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "SDK69 does not perform owner DELETE or duplicate follow insertion.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr8_follows_self_follow_rule",
+      "fr": [
+        "FR8"
+      ],
+      "resource": "follows",
+      "actor_relation": "A targeting A",
+      "action": "INSERT self-follow",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "APPROVED_RULE_REJECTION",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_absence",
+        "assertion": "self-follow pair absent"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Original requires a self-follow case; candidate has no CHECK and the rule is explicitly undecided.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr8_follows_actual_ui_lists_counts",
+      "fr": [
+        "FR8"
+      ],
+      "resource": "profile/following/followers UI",
+      "actor_relation": "two authenticated users",
+      "action": "follow/unfollow and inspect both lists/counts",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "LIST_MEMBERSHIP_AND_COUNTS_CHANGE_ONCE",
+      "independent_db_or_object_evidence": {
+        "kind": "ui_plus_admin_relationship",
+        "assertion": "both rendered lists/counts match DB before and after"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "No predecessor full SNS follow list/count UI execution exists.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr9_notifications_recipient_select_other_hidden",
+      "fr": [
+        "FR9"
+      ],
+      "resource": "notifications",
+      "actor_relation": "recipient B versus actor/nonrecipient A",
+      "action": "SELECT seeded notifications",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "RECIPIENT_200_ROWS_OTHER_200_ZERO_ROWS",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_seed_control",
+        "assertion": "two physical rows exist while only recipient sees them"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "notifications_recipient_select_two",
+        "notifications_other_select_zero"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr9_notifications_read_at_owner_only",
+      "fr": [
+        "FR9"
+      ],
+      "resource": "notifications",
+      "actor_relation": "recipient B versus A",
+      "action": "UPDATE read_at",
+      "allowed_columns": [
+        "read_at"
+      ],
+      "expected_response_category": "RECIPIENT_200_ONE_ROW_OTHER_200_ZERO_ROWS",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_column_before_after",
+        "assertion": "recipient changes read_at; other attempt leaves it unchanged"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "notifications_recipient_read_at_update_one",
+        "notifications_other_read_update_zero"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr9_notifications_forbidden_columns_and_insert",
+      "fr": [
+        "FR9"
+      ],
+      "resource": "notifications",
+      "actor_relation": "recipient/client",
+      "action": "UPDATE actor_id; client INSERT",
+      "allowed_columns": [
+        "read_at only"
+      ],
+      "expected_response_category": "HTTP_403_SQLSTATE_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_unchanged_or_absent",
+        "assertion": "actor_id unchanged and attempted notification id absent"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "notifications_non_read_column_update_denied",
+        "notifications_client_insert_revoked"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr9_notifications_deleted_post_hidden",
+      "fr": [
+        "FR9"
+      ],
+      "resource": "notifications",
+      "actor_relation": "recipient B",
+      "action": "SELECT/read UPDATE after related post deletion",
+      "allowed_columns": [
+        "read_at if notification remains visible"
+      ],
+      "expected_response_category": "SELECT_ZERO_FOR_POST_NOTIFICATION_AND_FOLLOW_VISIBLE",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_rows_preserved_columns_unchanged",
+        "assertion": "post and follow notification rows remain; hidden post read_at unchanged"
+      },
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
+      "native_sdk69_labels": [
+        "notifications_post_hidden_follow_visible_after_delete",
+        "notifications_hidden_post_read_update_zero_unchanged",
+        "notifications_no_filter_no_returning_hidden_unchanged"
+      ],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003081937_d4_align_notification_update_visibility.sql",
+          "sha256": "b493ec015eaf4f98a1ddb453ceb839caa232ee17b6043cfe3b7cc0cef5f75f7b",
+          "source_id": "migration_notification"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr9_notifications_generation_four_types",
+      "fr": [
+        "FR9"
+      ],
+      "resource": "notifications",
+      "actor_relation": "like/reply/follow/repost actors",
+      "action": "perform each source action and generate notification",
+      "allowed_columns": [
+        "server-controlled columns"
+      ],
+      "expected_response_category": "SERVER_GENERATES_EXACTLY_ONE_PER_ACTION",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_causality",
+        "assertion": "four physical rows have correct recipient actor type post and no duplicates"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "SDK69 uses admin seed only; notification generation triggers/functions are explicitly absent.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr9_notifications_realtime_and_reconnect",
+      "fr": [
+        "FR9"
+      ],
+      "resource": "Realtime notifications",
+      "actor_relation": "recipient B",
+      "action": "subscribe, receive, disconnect, reconnect and reconcile",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "ONE_LIVE_EVENT_AND_NO_MISSING_OR_DUPLICATE_AFTER_RECONNECT",
+      "independent_db_or_object_evidence": {
+        "kind": "realtime_event_plus_db",
+        "assertion": "event ids and final DB set agree"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Realtime is explicitly not implemented or measured.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr9_notifications_actual_ui_unread_count",
+      "fr": [
+        "FR9"
+      ],
+      "resource": "notifications UI",
+      "actor_relation": "recipient B",
+      "action": "receive/open/mark read notification",
+      "allowed_columns": [
+        "read_at"
+      ],
+      "expected_response_category": "VISIBLE_UNREAD_COUNT_PLUS_ONE_THEN_MINUS_ONE",
+      "independent_db_or_object_evidence": {
+        "kind": "ui_plus_admin_read_at",
+        "assertion": "rendered unread count and row state agree"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "No actual predecessor full SNS notification UI/count evidence exists.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr1_unconfirmed_user_write_rejected",
+      "fr": [
+        "FR1"
+      ],
+      "resource": "users/posts",
+      "actor_relation": "unconfirmed signed-up user",
+      "action": "attempt profile/post write before email confirmation",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "AUTH_OR_RLS_REJECTION_THEN_CONFIRMED_USER_SUCCESS",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_before_after",
+        "assertion": "no pre-confirm write; corresponding post-confirm allowed row exists"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "SDK69 creates users and confirms them through local Mailpit but never attempts a write while still unconfirmed.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/measure_sdk.mjs",
+          "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e",
+          "source_id": "measure_sdk"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr2_users_username_duplicate",
+      "fr": [
+        "FR2"
+      ],
+      "resource": "users",
+      "actor_relation": "owner A choosing B username",
+      "action": "UPDATE own username to existing unique value",
+      "allowed_columns": [
+        "username"
+      ],
+      "expected_response_category": "UNIQUE_CONSTRAINT_ERROR",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_two_profiles",
+        "assertion": "both usernames remain unchanged and unique"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Unique schema exists, but no actual duplicate username response/DB measurement is recorded.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_posts_authenticated_read_visibility",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "posts",
+      "actor_relation": "authenticated B reading A post",
+      "action": "SELECT active post then logically deleted post",
+      "allowed_columns": [],
+      "expected_response_category": "ACTIVE_ONE_ROW_DELETED_ZERO_ROWS",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_control_plus_sdk",
+        "assertion": "physical post exists in both states; SDK visibility changes from one to zero"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "The policy and related-child observations imply behavior, but no dedicated active/deleted posts SELECT pair is in SDK69.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_post_media_owner_update_delete",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "post_media",
+      "actor_relation": "post owner A",
+      "action": "UPDATE then DELETE own active-parent media row",
+      "allowed_columns": [
+        "post_id",
+        "url",
+        "order"
+      ],
+      "expected_response_category": "UPDATE_ONE_ROW_THEN_DELETE_ONE_ROW",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_before_after",
+        "assertion": "new values stored then exact media row absent"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "SDK69 measures owner INSERT and other-user UPDATE/DELETE only, not owner UPDATE/DELETE.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr3_post_media_storage_read_boundary",
+      "fr": [
+        "FR3"
+      ],
+      "resource": "storage.objects:post-media",
+      "actor_relation": "authenticated owner/other/anonymous",
+      "action": "DOWNLOAD or signed/public URL read according to approved bucket privacy",
+      "allowed_columns": [],
+      "expected_response_category": "APPROVED_READER_SUCCESS_ALL_OTHERS_DENIED",
+      "independent_db_or_object_evidence": {
+        "kind": "object_bytes_hash",
+        "assertion": "allowed download hash matches upload; denied actors receive no bytes"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Bucket privacy, read policy, and URL delivery mode are unspecified and unmeasured.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr2_profile_storage_read_boundary",
+      "fr": [
+        "FR2"
+      ],
+      "resource": "storage.objects:profile-avatars/profile-headers",
+      "actor_relation": "authenticated owner/other/anonymous",
+      "action": "read profile image objects according to approved visibility",
+      "allowed_columns": [],
+      "expected_response_category": "APPROVED_READER_SUCCESS_ALL_OTHERS_DENIED",
+      "independent_db_or_object_evidence": {
+        "kind": "object_bytes_hash",
+        "assertion": "allowed object bytes match; denied actors receive no bytes"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Profile image visibility and signed/public URL rules are not implemented or measured.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr8_follows_authenticated_list_select",
+      "fr": [
+        "FR8"
+      ],
+      "resource": "follows",
+      "actor_relation": "authenticated A/B",
+      "action": "SELECT following and follower relations",
+      "allowed_columns": [],
+      "expected_response_category": "HTTP_200_EXACT_RELATION_SET",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_set_equality",
+        "assertion": "SDK relationship set equals independent DB set"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "Candidate grants authenticated SELECT, but SDK69 does not measure the following/follower list query.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr9_notifications_delete_denied",
+      "fr": [
+        "FR9"
+      ],
+      "resource": "notifications",
+      "actor_relation": "recipient B",
+      "action": "DELETE own notification",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "HTTP_403_SQLSTATE_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_row_preserved",
+        "assertion": "notification row and fields remain unchanged"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "DELETE privilege is revoked by schema, but no actual recipient SDK DELETE attempt is recorded.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "row220_predecessor_full_sns_available",
+      "fr": [
+        "FR1",
+        "FR2",
+        "FR3",
+        "FR5",
+        "FR6",
+        "FR7",
+        "FR8",
+        "FR9"
+      ],
+      "resource": "predecessor full SNS",
+      "actor_relation": "human learner and two ordinary users",
+      "action": "execute every preceding Part B operation from real screens",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "ALL_PREDECESSOR_FLOWS_IMPLEMENTED_AND_REACHABLE",
+      "independent_db_or_object_evidence": {
+        "kind": "inventory_and_ui_routes",
+        "assertion": "all referenced screens/actions exist and are independently runnable"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "The public candidate is an RLS trial slice, not the complete predecessor SNS required by original row 220.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "row220_actual_ui_counts_and_zero_vs_error",
+      "fr": [
+        "FR1",
+        "FR2",
+        "FR3",
+        "FR5",
+        "FR6",
+        "FR7",
+        "FR8",
+        "FR9"
+      ],
+      "resource": "post detail/profile/notifications UI",
+      "actor_relation": "human observer",
+      "action": "distinguish successful zero-row RLS outcomes from syntax/network errors and verify counts",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "UI_STATE_MATCHES_RESPONSE_CATEGORY_AND_DB",
+      "independent_db_or_object_evidence": {
+        "kind": "ui_network_db_triple",
+        "assertion": "response status/body, rendered state/count, and independent DB state agree for every case"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "not_ready_reason": "SDK69 distinguishes response categories and DB state but supplies no actual full-SNS UI count evidence.",
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/README.md",
+          "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
+          "source_id": "readme"
+        },
+        {
+          "file": null,
+          "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
+          "source_id": "sdk69",
+          "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        }
+      ]
+    },
+    {
+      "id": "fr2_users_forbidden_timestamps_update",
+      "fr": [
+        "FR2"
+      ],
+      "resource": "users",
+      "actor_relation": "owner A",
+      "action": "UPDATE own created_at and updated_at in separate requests",
+      "allowed_columns": [
+        "none"
+      ],
+      "expected_response_category": "HTTP_403_SQLSTATE_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_column_snapshot",
+        "assertion": "owned profile created_at and updated_at unchanged after each ordinary forbidden-column request"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        }
+      ],
+      "not_ready_reason": "ordinary forbidden-column response and independent target-column before/after state have not both been measured"
+    },
+    {
+      "id": "fr9_notifications_forbidden_type_update",
+      "fr": [
+        "FR9"
+      ],
+      "resource": "notifications",
+      "actor_relation": "recipient/client",
+      "action": "UPDATE own notification type with a different valid enum value",
+      "allowed_columns": [
+        "read_at only"
+      ],
+      "expected_response_category": "HTTP_403_SQLSTATE_42501",
+      "independent_db_or_object_evidence": {
+        "kind": "admin_column_snapshot",
+        "assertion": "owned notification type unchanged after ordinary forbidden-column request"
+      },
+      "current_status": "NOT_READY",
+      "native_sdk69_labels": [],
+      "provenance": [
+        {
+          "file": null,
+          "sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+          "source_id": "original",
+          "unpublished_reason": "private original curriculum contract; available to owner by source_id and sha256, not a public file dependency"
+        },
+        {
+          "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+          "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
+          "source_id": "migration_base"
+        }
+      ],
+      "not_ready_reason": "ordinary forbidden-column response and independent target-column before/after state have not both been measured"
+    }
+  ],
+  "summary": {
+    "total_cases": 64,
+    "CANDIDATE_EVIDENCE_ONLY": 29,
+    "NOT_READY": 35,
+    "accepted_cases": 0,
+    "blocking_rule": "Formal row 220 acceptance requires every case to have approved requirements, implemented production paths, actual actor operations, and independent DB/object/UI evidence; this draft does not satisfy that rule."
+  }
+}

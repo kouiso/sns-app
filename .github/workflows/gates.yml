@@ -188,6 +188,40 @@ jobs:
           bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-runtime/chapter-build.md
           bash prototype-chapter/tools/g3-style.sh prototype-chapter/candidates/d4-runtime/chapter-build.md
 
+      - name: Full RLS chapter draft checks (not formal G3/G6)
+        run: |
+          bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-heavy/chapter-rls-denial-check.md prototype-chapter/candidates/d4-heavy/answers.md
+          bash prototype-chapter/tools/g3-style.sh prototype-chapter/candidates/d4-heavy/chapter-rls-denial-check.md prototype-chapter/candidates/d4-heavy/answers.md
+          bash prototype-chapter/tools/g3-policy.sh prototype-chapter/candidates/d4-heavy/chapter-rls-denial-check.md prototype-chapter/candidates/d4-heavy/answers.md
+          python3 - <<'PY'
+          import hashlib, json, re
+          from collections import Counter
+          from pathlib import Path
+          base = Path('prototype-chapter/candidates/d4-heavy')
+          matrix = json.loads((base / 'rls-checks.json').read_text())
+          cases = matrix['cases']
+          assert len({case['id'] for case in cases}) == len(cases)
+          counts = Counter(case['current_status'] for case in cases)
+          assert set(counts) <= {'CANDIDATE_EVIDENCE_ONLY', 'NOT_READY'}
+          assert matrix['summary']['total_cases'] == len(cases)
+          assert matrix['summary']['accepted_cases'] == 0
+          assert all(matrix['summary'][key] == value for key, value in counts.items())
+          sources = {source['source_id']: source for source in matrix['provenance_sources']}
+          assert len(sources) == len(matrix['provenance_sources'])
+          for source in sources.values():
+              assert re.fullmatch(r'[0-9a-f]{64}', source['sha256'])
+              if source['file'] is None:
+                  assert source['unpublished_reason']
+              else:
+                  path = Path(source['file'])
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert source['sha256'] == hashlib.sha256(path.read_bytes()).hexdigest()
+          for case in cases:
+              assert all(ref == sources[ref['source_id']] for ref in case['provenance'])
+          assert (base / 'assets/full-sns-map.svg').is_file()
+          print('draft matrix:', len(cases), dict(counts), 'accepted: 0')
+          PY
+
       # 既存の試作2章とG6対照版の回帰検査。curriculum/*.md の正式G3や
       # 凍結済みsnapshotの承認には代用しない。
       - name: G3 試作2章＋対照版の5検査（NON-FORMAL）
