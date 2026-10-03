@@ -28,8 +28,7 @@
       "follows",
       "notifications",
       "storage.objects:post-media",
-      "storage.objects:profile-avatars",
-      "storage.objects:profile-headers"
+      "storage.objects:avatars"
     ]
   },
   "evidence_boundary": {
@@ -45,7 +44,8 @@
       "CANDIDATE_EVIDENCE_ONLY records observed candidate behavior and must not be read as PASS.",
       "Every missing implementation, unresolved rule, Storage/Realtime path, and absent UI count remains NOT_READY.",
       "Explicit Data API grants and RLS are separate acceptance layers; both must be verified on the eventual target.",
-      "profile_sdk6 adds local candidate-only timestamp UPDATE denials and independent unchanged columns; it does not establish a full predecessor, UI proof, or formal acceptance."
+      "profile_sdk6 adds local candidate-only timestamp UPDATE denials and independent unchanged columns; it does not establish a full predecessor, UI proof, or formal acceptance.",
+      "The original Storage contract uses one avatars bucket for avatar/header and a separate post-media bucket. Usage labels are not new bucket names. Standalone owned Storage trials are not measured full-predecessor Storage evidence."
     ]
   },
   "provenance_sources": [
@@ -91,6 +91,12 @@
       "sha256": "c3f60f8e2e491f923faab0ea6c1462c48ebda91516d5d3c69d5e993c127c8854",
       "source_id": "profile_sdk6",
       "unpublished_reason": "private owned-account local SDK receipt; retained by source_id and sha256, not a public file dependency"
+    },
+    {
+      "file": null,
+      "sha256": "c801ca63b2f559de8a1a7d496cf973153bc2c34519948ceabd3342ba8f274e7a",
+      "source_id": "original_api_storage",
+      "unpublished_reason": "private original Storage API contract; retained by source_id and sha256, not a public file dependency"
     }
   ],
   "cases": [
@@ -714,7 +720,7 @@
       "fr": [
         "FR2"
       ],
-      "resource": "storage.objects:profile-avatars",
+      "resource": "storage.objects:avatars",
       "actor_relation": "owner A",
       "action": "UPLOAD own avatar object",
       "allowed_columns": [
@@ -730,7 +736,7 @@
       },
       "current_status": "NOT_READY",
       "native_sdk69_labels": [],
-      "not_ready_reason": "No bucket, storage.objects policy, object upload, or URL-to-object evidence exists.",
+      "not_ready_reason": "The frozen full predecessor has no avatars bucket/policy/UI-to-URL proof. Separate owned local Storage probes do not establish this start contract; U12/U21/U19/B21/B66 remain unresolved.",
       "provenance": [
         {
           "file": null,
@@ -748,7 +754,16 @@
           "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
           "source_id": "sdk69",
           "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        },
+        {
+          "file": null,
+          "sha256": "c801ca63b2f559de8a1a7d496cf973153bc2c34519948ceabd3342ba8f274e7a",
+          "source_id": "original_api_storage",
+          "unpublished_reason": "private original Storage API contract; retained by source_id and sha256, not a public file dependency"
         }
+      ],
+      "storage_usage": [
+        "avatar"
       ]
     },
     {
@@ -756,20 +771,20 @@
       "fr": [
         "FR2"
       ],
-      "resource": "storage.objects:profile-avatars",
+      "resource": "storage.objects:avatars",
       "actor_relation": "A targeting B path",
       "action": "INSERT/UPDATE/DELETE B avatar object",
       "allowed_columns": [
         "none"
       ],
-      "expected_response_category": "STORAGE_403_OR_RLS_DENIAL",
+      "expected_response_category": "STORAGE_403_OR_404_OR_SUCCESS_EMPTY_ARRAY_WITH_UNCHANGED_TARGET",
       "independent_db_or_object_evidence": {
         "kind": "storage_object_unchanged",
         "assertion": "B object bytes/hash and metadata unchanged"
       },
       "current_status": "NOT_READY",
       "native_sdk69_labels": [],
-      "not_ready_reason": "Storage is explicitly unimplemented and unmeasured.",
+      "not_ready_reason": "The frozen full predecessor has no avatars bucket/policy/UI-to-URL proof. Separate owned local Storage probes do not establish this start contract; U12/U21/U19/B21/B66 remain unresolved.",
       "provenance": [
         {
           "file": null,
@@ -787,7 +802,16 @@
           "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
           "source_id": "sdk69",
           "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        },
+        {
+          "file": null,
+          "sha256": "c801ca63b2f559de8a1a7d496cf973153bc2c34519948ceabd3342ba8f274e7a",
+          "source_id": "original_api_storage",
+          "unpublished_reason": "private original Storage API contract; retained by source_id and sha256, not a public file dependency"
         }
+      ],
+      "storage_usage": [
+        "avatar"
       ]
     },
     {
@@ -795,7 +819,7 @@
       "fr": [
         "FR2"
       ],
-      "resource": "storage.objects:profile-headers",
+      "resource": "storage.objects:avatars",
       "actor_relation": "owner and cross-user",
       "action": "UPLOAD/REPLACE own header; reject B-path write",
       "allowed_columns": [
@@ -811,7 +835,7 @@
       },
       "current_status": "NOT_READY",
       "native_sdk69_labels": [],
-      "not_ready_reason": "Header bucket/policies and actual object evidence are absent.",
+      "not_ready_reason": "The frozen full predecessor has no avatars bucket/policy/UI-to-URL proof. Separate owned local Storage probes do not establish this start contract; U12/U21/U19/B21/B66 remain unresolved.",
       "provenance": [
         {
           "file": null,
@@ -829,7 +853,16 @@
           "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
           "source_id": "sdk69",
           "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        },
+        {
+          "file": null,
+          "sha256": "c801ca63b2f559de8a1a7d496cf973153bc2c34519948ceabd3342ba8f274e7a",
+          "source_id": "original_api_storage",
+          "unpublished_reason": "private original Storage API contract; retained by source_id and sha256, not a public file dependency"
         }
+      ],
+      "storage_usage": [
+        "header"
       ]
     },
     {
@@ -2655,7 +2688,7 @@
       "fr": [
         "FR2"
       ],
-      "resource": "storage.objects:profile-avatars/profile-headers",
+      "resource": "storage.objects:avatars",
       "actor_relation": "authenticated owner/other/anonymous",
       "action": "read profile image objects according to approved visibility",
       "allowed_columns": [],
@@ -2666,7 +2699,7 @@
       },
       "current_status": "NOT_READY",
       "native_sdk69_labels": [],
-      "not_ready_reason": "Profile image visibility and signed/public URL rules are not implemented or measured.",
+      "not_ready_reason": "The frozen full predecessor has no avatars bucket/policy/UI-to-URL proof. Separate owned local Storage probes do not establish this start contract; U12/U21/U19/B21/B66 remain unresolved.",
       "provenance": [
         {
           "file": null,
@@ -2684,7 +2717,17 @@
           "sha256": "6894ee755f389ebd357c442d105c0400368a111a1d3b1789550dd941d3951a93",
           "source_id": "sdk69",
           "unpublished_reason": "private material evidence; retained by source_id and sha256"
+        },
+        {
+          "file": null,
+          "sha256": "c801ca63b2f559de8a1a7d496cf973153bc2c34519948ceabd3342ba8f274e7a",
+          "source_id": "original_api_storage",
+          "unpublished_reason": "private original Storage API contract; retained by source_id and sha256, not a public file dependency"
         }
+      ],
+      "storage_usage": [
+        "avatar",
+        "header"
       ]
     },
     {
