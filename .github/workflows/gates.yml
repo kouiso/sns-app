@@ -222,6 +222,16 @@ jobs:
           print('draft matrix:', len(cases), dict(counts), 'accepted: 0')
           PY
 
+      - name: Profile predecessor slice checks (not full SNS or G6)
+        run: |
+          cmp prototype-chapter/candidates/auth-sdk57/package.json prototype-chapter/candidates/d4-predecessor/package.json
+          cmp prototype-chapter/candidates/auth-sdk57/package-lock.json prototype-chapter/candidates/d4-predecessor/package-lock.json
+          cmp prototype-chapter/candidates/auth-sdk57/lib/auth-return.mjs prototype-chapter/candidates/d4-predecessor/lib/auth-return.mjs
+          ln -s ../auth-sdk57/node_modules prototype-chapter/candidates/d4-predecessor/node_modules
+          node --check prototype-chapter/candidates/d4-predecessor/lib/profile-flow.mjs
+          node --test prototype-chapter/candidates/d4-predecessor/test-auth-return.mjs prototype-chapter/candidates/d4-predecessor/test-profile-flow.mjs
+          prototype-chapter/candidates/auth-sdk57/node_modules/.bin/tsc --noEmit --project prototype-chapter/candidates/d4-predecessor/tsconfig.json
+
       # 既存の試作2章とG6対照版の回帰検査。curriculum/*.md の正式G3や
       # 凍結済みsnapshotの承認には代用しない。
       - name: G3 試作2章＋対照版の5検査（NON-FORMAL）

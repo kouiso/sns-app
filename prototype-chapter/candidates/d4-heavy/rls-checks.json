@@ -44,7 +44,8 @@
     "notes": [
       "CANDIDATE_EVIDENCE_ONLY records observed candidate behavior and must not be read as PASS.",
       "Every missing implementation, unresolved rule, Storage/Realtime path, and absent UI count remains NOT_READY.",
-      "Explicit Data API grants and RLS are separate acceptance layers; both must be verified on the eventual target."
+      "Explicit Data API grants and RLS are separate acceptance layers; both must be verified on the eventual target.",
+      "profile_sdk6 adds local candidate-only timestamp UPDATE denials and independent unchanged columns; it does not establish a full predecessor, UI proof, or formal acceptance."
     ]
   },
   "provenance_sources": [
@@ -84,6 +85,12 @@
       "file": "prototype-chapter/candidates/d4-rls/README.md",
       "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9",
       "source_id": "readme"
+    },
+    {
+      "file": null,
+      "sha256": "c3f60f8e2e491f923faab0ea6c1462c48ebda91516d5d3c69d5e993c127c8854",
+      "source_id": "profile_sdk6",
+      "unpublished_reason": "private owned-account local SDK receipt; retained by source_id and sha256, not a public file dependency"
     }
   ],
   "cases": [
@@ -2864,7 +2871,7 @@
         "kind": "admin_column_snapshot",
         "assertion": "owned profile created_at and updated_at unchanged after each ordinary forbidden-column request"
       },
-      "current_status": "NOT_READY",
+      "current_status": "CANDIDATE_EVIDENCE_ONLY",
       "native_sdk69_labels": [],
       "provenance": [
         {
@@ -2877,9 +2884,18 @@
           "file": "prototype-chapter/candidates/d4-rls/supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
           "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4",
           "source_id": "migration_base"
+        },
+        {
+          "file": null,
+          "sha256": "c3f60f8e2e491f923faab0ea6c1462c48ebda91516d5d3c69d5e993c127c8854",
+          "source_id": "profile_sdk6",
+          "unpublished_reason": "private owned-account local SDK receipt; retained by source_id and sha256, not a public file dependency"
         }
       ],
-      "not_ready_reason": "ordinary forbidden-column response and independent target-column before/after state have not both been measured"
+      "native_profile_sdk_checks": [
+        "created_at_rejected_42501",
+        "updated_at_rejected_42501"
+      ]
     },
     {
       "id": "fr9_notifications_forbidden_type_update",
@@ -2917,8 +2933,8 @@
   ],
   "summary": {
     "total_cases": 64,
-    "CANDIDATE_EVIDENCE_ONLY": 29,
-    "NOT_READY": 35,
+    "CANDIDATE_EVIDENCE_ONLY": 30,
+    "NOT_READY": 34,
     "accepted_cases": 0,
     "blocking_rule": "Formal row 220 acceptance requires every case to have approved requirements, implemented production paths, actual actor operations, and independent DB/object/UI evidence; this draft does not satisfy that rule."
   }
