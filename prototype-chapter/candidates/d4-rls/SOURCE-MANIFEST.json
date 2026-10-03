@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "scope": "NON_FORMAL_D4_PUBLIC_SOURCE_ONLY",
+  "formal_start_frozen": false,
+  "formal_D4_pass": false,
+  "formal_G6_pass": false,
+  "private_fixture_manifest_included": false,
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "699afc1f53ead8458f5e1c3b22702242f0a1c20c88aa025a79a5fbc26f35dab9"
+    },
+    {
+      "path": "START-CONTRACT.md",
+      "sha256": "e493e603256c742cf316db1f41268ee48f500f0b6fe01eafd914a9c0797390af"
+    },
+    {
+      "path": "app/.gitignore",
+      "sha256": "1881c001e12124438c66b1a18d3a7a445bfc8b812eba059cb58322d3b15d210b"
+    },
+    {
+      "path": "app/App.tsx",
+      "sha256": "a6a3f0f7bddc989d47cda970c98406f41f65270b9ad795cabecf16c122644904"
+    },
+    {
+      "path": "app/LICENSE",
+      "sha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4"
+    },
+    {
+      "path": "app/README.md",
+      "sha256": "fe90bbb32d9950d86d1d43c5720f3c7a2608bf67a3de585cd6cea5c44c1c3a52"
+    },
+    {
+      "path": "app/app.json",
+      "sha256": "df140513c93f2e8a1de76a39b4873d48f90d6c5d02b576417dfe17c0663ec235"
+    },
+    {
+      "path": "app/assets/android-icon-background.png",
+      "sha256": "fb139c2dee362ebf2070e23b96da6fc0d43f8492de38b8af1fd7223e19b5861d"
+    },
+    {
+      "path": "app/assets/android-icon-foreground.png",
+      "sha256": "9e3d0315a33c6799de601dd34cd8bf8cc3a8d16f3bf75592baec2ceb7240b391"
+    },
+    {
+      "path": "app/assets/android-icon-monochrome.png",
+      "sha256": "6371fc2c12e33ad2215a86c281db3d682a81bebe7c957a842c13b8bf00cceb83"
+    },
+    {
+      "path": "app/assets/favicon.png",
+      "sha256": "a4e030697a7571b3e95d31860e4da55d2f98e5e861e2b55e414f45a8556828ba"
+    },
+    {
+      "path": "app/assets/icon.png",
+      "sha256": "119462bb78eb240a65c869fc067ee599639b3cb5a41953f25c07b17d2a8c7e0f"
+    },
+    {
+      "path": "app/assets/splash-icon.png",
+      "sha256": "5f4c0a732b6325bf4071d9124d2ae67e037cb24fcc9c482ef82bea742109a3b8"
+    },
+    {
+      "path": "app/components/RlsTrial.tsx",
+      "sha256": "bb545fb408b491fea9b20bd0a345f91eb1a4596893e23faacdee9ef7ed904961"
+    },
+    {
+      "path": "app/index.ts",
+      "sha256": "5c157f4d44972d9c84415e1e4bda595b3abcd8cf733f8a9cd20935bec3eccc42"
+    },
+    {
+      "path": "app/lib/auth-return.d.ts",
+      "sha256": "603228cac4fad96536a899d072ae3cc576522e348362b6db96bec41770bc8294"
+    },
+    {
+      "path": "app/lib/auth-return.mjs",
+      "sha256": "aed7c2c4bb4ff3f1edbe2660afc519f91ccb4a1c5cc9b18551f97fed5f851af3"
+    },
+    {
+      "path": "app/lib/supabase.ts",
+      "sha256": "60ace0c65618fd07a5eedac811b504e01650b62d1037328ffd8abff9ea626b7e"
+    },
+    {
+      "path": "app/package-lock.json",
+      "sha256": "58eecbeea31f7381d5999a69f5107af2b6fb2c8c37685a0eff8e85eeed381035"
+    },
+    {
+      "path": "app/package.json",
+      "sha256": "8b961dc2f432ec1f4c53420ca8ef751d6e4e1813ac015ab934306ede87fe4bb0"
+    },
+    {
+      "path": "app/test-auth-return.mjs",
+      "sha256": "b0b13ae0af5d8610a5b4b1399fe7363c4efea3ac5e41a765bee3aee006d7a620"
+    },
+    {
+      "path": "app/tsconfig.json",
+      "sha256": "712583ff9cdb4b4e4f9b000a4a56d68db8dc1921cbfbc36d490a3a9f2be3dd72"
+    },
+    {
+      "path": "chapter.md",
+      "sha256": "7167d59e6c81767bd04171e6742d0f11a015429257b0640780e7df577e03511f"
+    },
+    {
+      "path": "inherited-auth-source.json",
+      "sha256": "ac239f3faf6376163d265e3f3881b6109831086af0828ac2eeaaacfe55edc604"
+    },
+    {
+      "path": "measure_sdk.mjs",
+      "sha256": "32cfc8dc2e8f7f2563b914a7c069ba1b9f143a54c3977552d00e72468fe7eb5e"
+    },
+    {
+      "path": "migrate_owned_manifest.py",
+      "sha256": "b1729e765c987f38a65ceeb0647a278cfd82b37459788a99598836b28a12c3e1"
+    },
+    {
+      "path": "plain.md",
+      "sha256": "3413aba53cf6ad920fd04970807b1638801dcb7b2c66067b0a42c03bd5bd2995"
+    },
+    {
+      "path": "reconcile_owned.py",
+      "sha256": "c54ab6a94e221e8dd00df512431f75ac22f93eae54ef5621e745cd384d6dc85e"
+    },
+    {
+      "path": "reset_owned.py",
+      "sha256": "6d01cba56da854ccb43ba747a74c1e5b70024004ec09f93f7c29a4de53c8e517"
+    },
+    {
+      "path": "supabase/migrations/20261003080326_d4_predecessor_candidate.sql",
+      "sha256": "e4667d31b9beff022b56a030ef4f0c26f924224c1170b2285bdda823d2c109b4"
+    },
+    {
+      "path": "supabase/migrations/20261003081350_d4_remove_unneeded_parent_definer.sql",
+      "sha256": "5684db307ec7f1cf873032465fa9cbb9f7f14dd264effbbd509792a51c2795c4"
+    },
+    {
+      "path": "supabase/migrations/20261003081937_d4_align_notification_update_visibility.sql",
+      "sha256": "b493ec015eaf4f98a1ddb453ceb839caa232ee17b6043cfe3b7cc0cef5f75f7b"
+    },
+    {
+      "path": "test_migrate_owned.py",
+      "sha256": "9a78f10161491403bd554050f342bf1f381812caf6f027df51b8da41af9bb358"
+    },
+    {
+      "path": "test_reconcile_owned.py",
+      "sha256": "b6d4e0d3bd31f12bfbd2969d40b666d0bb49264ec5ee8212d3ab4ba0ffb43e74"
+    },
+    {
+      "path": "test_reset_owned.py",
+      "sha256": "350c0f4282a98a8c3787ab959f6bcdf4913581ebe723536fea0b20271f78cb92"
+    }
+  ]
+}

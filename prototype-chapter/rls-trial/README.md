@@ -22,6 +22,25 @@ docker exec -i supabase_db_sns-trio-local psql -U postgres -d postgres -v ON_ERR
 python3 prototype-chapter/rls-trial/measure.py --cli /tmp/sns-trio-supabase-cli/supabase --output /tmp/local-auth-rls-new-run.json
 ```
 
+固定した `@supabase/supabase-js` 2.117.2 でM1の返却形式を比較するときは、専用CLIの
+状態JSONを標準入力だけで渡す。出力先は毎回新しいパスにする。
+
+```sh
+/tmp/sns-trio-supabase-cli/supabase status --workdir /tmp/sns-trio-local -o json \
+  | node prototype-chapter/rls-trial/measure_sdk.mjs --output /tmp/local-rls-sdk-m1-new-run.json
+```
+
+`measure_sdk.mjs` は本人・他人のUPDATEを、デフォルト、`select('id')`、`count: 'exact'`、
+両方指定の4形式で測る。DELETEポリシーなしのDELETE、所有者偽装INSERT、直接の論理削除、
+限定RPCも同じ実SDKから実行し、各操作の直後に管理接続でDB状態を別途照合する。
+CLI設定中のservice keyは参照せず、合成メール、パスワード、ユーザー/行ID、token hash、JWT、
+URL、キーは出力しない。実行前にlegacy anon JWTのroleを確認し、確認後の通常ユーザーJWTも
+`authenticated` roleであることを検査する。SDK通信は15秒で打ち切り、最後に各SDKクライアントの
+ローカルセッションだけを破棄する。この後片付けは発行済みaccess JWTの失効を証明しない。
+既知の資格情報・ID・tokenがレポート文字列に残っていないことも書き込み直前に検査する。
+この結果の範囲は `NON_FORMAL_M1_CANDIDATE` であり、DB13全体、
+D4の執筆工数、正式なマイグレーション/API契約を証明しない。
+
 出力は未使用のパスを指定する。過去の証拠は上書きしない。合成ユーザー3人を各実行で作り、
 キー・JWT・メールアドレス・確認/再設定リンクはメモリ内だけで扱う。
 結果はHTTP状態、エラーコード、件数、真偽値、ソース/導入関数本体のハッシュで記録する。

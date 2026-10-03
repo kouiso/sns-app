@@ -127,6 +127,34 @@ jobs:
           npm run test:auth
           npm run typecheck
 
+      - name: D4 predecessor candidate safety and shared-toolchain typecheck（NON-FORMAL）
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, subprocess
+          from pathlib import Path
+          base = Path('prototype-chapter/candidates/d4-rls')
+          manifest = json.loads((base / 'SOURCE-MANIFEST.json').read_text())
+          assert manifest['scope'] == 'NON_FORMAL_D4_PUBLIC_SOURCE_ONLY'
+          tracked = subprocess.check_output(['git', 'ls-files', '--', str(base)], text=True).splitlines()
+          expected = {str(Path(path).relative_to(base)) for path in tracked} - {'SOURCE-MANIFEST.json'}
+          listed = [entry['path'] for entry in manifest['files']]
+          assert len(listed) == len(set(listed)) and set(listed) == expected
+          for entry in manifest['files']:
+              path = base / entry['path']
+              assert path.is_file() and not path.is_symlink()
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == entry['sha256'], entry['path']
+          print('D4 public source manifest matched')
+          PY
+          node --check prototype-chapter/rls-trial/measure_sdk.mjs
+          node --check prototype-chapter/candidates/d4-rls/measure_sdk.mjs
+          python3 -m unittest discover -s prototype-chapter/candidates/d4-rls -p 'test_*owned.py' -v
+          cmp prototype-chapter/candidates/auth-sdk57/package.json prototype-chapter/candidates/d4-rls/app/package.json
+          cmp prototype-chapter/candidates/auth-sdk57/package-lock.json prototype-chapter/candidates/d4-rls/app/package-lock.json
+          ln -s ../../auth-sdk57/node_modules prototype-chapter/candidates/d4-rls/app/node_modules
+          prototype-chapter/candidates/auth-sdk57/node_modules/.bin/tsc --noEmit --project prototype-chapter/candidates/d4-rls/app/tsconfig.json
+          bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-rls/chapter.md prototype-chapter/candidates/d4-rls/plain.md
+          bash prototype-chapter/tools/g3-style.sh prototype-chapter/candidates/d4-rls/chapter.md
+
       # 既存の試作2章とG6対照版の回帰検査。curriculum/*.md の正式G3や
       # 凍結済みsnapshotの承認には代用しない。
       - name: G3 試作2章＋対照版の5検査（NON-FORMAL）
