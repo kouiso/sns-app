@@ -11,7 +11,7 @@ G6_HIGH_VALUE_CLASSIFICATION: complete
 - 2026-07-27、制作担当がiOSシミュレータで別プロジェクトとのURL入口競合を観測した。別アプリを削除せず、試作用シミュレータを再起動して残っていた選択画面を解消した。これは制作環境固有として教材へ載せない判断だった。出典: `prototype-chapter/dev-log.md` F8。
   - G6_HIGH_VALUE: 対象外
   - 分類根拠: 環境固有とする出典の判断を2026-10-03に確認した。
-- 物理AndroidとiOSでは、`expo-first-screen`の一時コピーを編集し、再起動や手動reloadなしで表示が変わることを観測した。出典: `material/decisions/20260919-試作環境と既存QAの確認.md` §8・§11。
+- 物理AndroidではSDK57の`expo-first-screen`一時コピーを編集し、再起動や手動reloadなしで表示が変わることを観測した。出典: `material/decisions/20260919-prototype-env-and-qa-check.md` §8。SDK54へ統合した現在版の端末成功を示す記録ではない。iOSの別実測はこのPRの証拠範囲に含めない。
   - G6_HIGH_VALUE: 対象外
   - 分類根拠: 成功の表示確認であり、詰まりの観測ではないと2026-10-03に編集者判断した。
 

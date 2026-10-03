@@ -90,6 +90,7 @@ jobs:
         run: |
           python3 -m unittest discover -s prototype-chapter/tools -p 'test_g3_checks.py'
           python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_support.py'
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_broker.py'
 
       # 既存の試作2章とG6対照版の回帰検査。curriculum/*.md の正式G3や
       # 凍結済みsnapshotの承認には代用しない。
