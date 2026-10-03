@@ -22,6 +22,19 @@ npm --version
 両方とも版の番号が出ることを確認します。
 これらの導入時間は、初心者の実測値がまだありません。
 
+
+### Expo Go と教材の版を合わせる
+
+この試作のプロジェクトは Expo SDK 54 です。Expo Go は、同じ SDK に対応する版でなければ開けません。
+
+Expo Go 57.0.9 を使う iPhone では、このプロジェクトを開けません。Wi-Fi を変えたり `--tunnel` を使ったりしても、版の不一致は直りません。
+
+Android 実機は、[SDK 54 用の Expo Go](https://expo.dev/go) を選んで用意します。iPhone の起動手順は、この試作には含めません。
+
+この版で端末を開く手順を書いているのは、対応する Expo Go を用意できた Android 実機です。iPhone 実機の追加準備と、macOS 専用の iOS Simulator の起動手順はまだ含めていません。iPhone や Simulator を使う場合は、この試作には起動手順が足りません。
+
+対応する起動アプリを用意できていなければ、ここで実機手順を止めます。SDK の番号だけを書き換えて進めないでください。[版の確認と端末別の公式手順](https://docs.expo.dev/troubleshooting/expo-go-version-mismatch/)を参照します。
+
 ## 試作用プロジェクトを用意する
 
 このリポジトリの `prototype-chapter` で、検証済み lockfile を含む clean snapshot を作ります。版が動く `create-expo-app@latest` は、この試作の再現入口には使いません。
@@ -97,9 +110,11 @@ const styles = StyleSheet.create({
 npx expo start --port 8090
 ```
 
-パソコンと端末を同じ Wi-Fi に接続します。ログインを求められた場合は、パソコン側と Expo Go で同じ Expo アカウントを使います。
+前節で SDK 54 対応を確認した Expo Go を使い、パソコンと端末を同じ Wi-Fi に接続します。ログインを求められた場合は、パソコン側と Expo Go で同じ Expo アカウントを使います。
 
-iPhone では Expo Go にローカルネットワーク接続を許可し、カメラで QR コードを読みます。Android では Expo Go の **Scan QR code** から読みます。これは Expo 公式案内に基づく手順であり、今回この章の手順としては未実測です。
+「Project is incompatible with this version of Expo Go」と出たら、前節の版を確認します。Wi-Fi や `--tunnel` の切替では直りません。
+
+Android 実機の Expo Go で **Scan QR code** を開き、QR コードを読みます。これは Expo 公式案内に基づく手順であり、今回この章の手順としては未実測です。
 
 同じ Wi-Fi で届かない場合は `npx expo start --tunnel` を試します。Android の USB 接続は補助手段であり、この章の成功条件には含めません。
 
@@ -138,9 +153,11 @@ git log -1 --oneline
 
 ## この章でできたこと
 
+対応する実機で画面を表示できたら、次の項目がこの章の成果です。起動アプリを用意できずに止まった場合は、表示確認を完了したことにはしません。
+
 - lockfile から試作用プロジェクトを再現した
 - `View` と `Text` で最初の画面を書いた
 - `App.tsx` だけを Git に保存した
-- iOS と Android で異なる QR の読み方を確認した
+- Android 実機の Expo Go で QR を読み、画面を表示した
 
 次の章では、保存した文字や色が実機へすぐ届くことを確かめます。

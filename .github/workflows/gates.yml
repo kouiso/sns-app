@@ -90,6 +90,7 @@ jobs:
         run: |
           python3 -m unittest discover -s prototype-chapter/tools -p 'test_g3_checks.py'
           python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_support.py'
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_objective.py' -v
 
       - name: G6 broker schema tests and available OS probe（NON-FORMAL）
         run: |

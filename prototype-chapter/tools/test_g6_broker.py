@@ -9,6 +9,7 @@ from typing import Any
 from unittest.mock import patch
 
 from g6_broker import BrokerError, execute_manifest, snapshot_digest
+from g6_objective import validate_broker_receipt_schema
 
 
 def sha(data: bytes) -> str:
@@ -89,6 +90,11 @@ class BrokerTests(unittest.TestCase):
     def test_real_bwrap_executes_fixed_operations_and_binds_hashes(self) -> None:
         receipt: dict[str, Any] = self.execute()
         trace = receipt["trace"]
+        receipt_path = self.base / "fresh-broker-receipt.json"
+        receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+        consumed_trace, consumed_hash = validate_broker_receipt_schema(receipt_path)
+        self.assertEqual(trace, consumed_trace)
+        self.assertEqual(receipt["trace_sha256"], consumed_hash)
         self.assertEqual(7, len(trace["preflight"]))
         self.assertTrue(all(trace["preflight"].values()))
         self.assertEqual("G6_BROKER_PROBE_COMPONENT_NON_FORMAL", trace["scope"])
