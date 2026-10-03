@@ -13,7 +13,7 @@ from pathlib import Path
 
 from g6_broker import BrokerError, _read_regular, _safe_path, snapshot_digest
 
-EXPECTED_CHAPTER_SHA256 = "f6501fba01f182f7a6785654ab672d83bee807d9f044aed884a288759c1d467c"
+EXPECTED_CHAPTER_SHA256 = "93145b45bf929d867bbcee35b022d83e521510f9b54c4f31f0400f24fa340d37"
 EXPECTED_AUTH_APP_SHA256 = "31a1deb465120c77dbd1fcd0f38ab0b21b3adf35e1474f0801a5492b21617b20"
 EXPECTED_START_SHA256 = "9d6d508750d8341faf5a3ac7cd05434ba1c181ef127d8dbfa932b3e28fff99d5"
 EXPECTED_FINAL_SHA256 = "681aea8e3273ff1197cc51136e7db6f819711b0178773cd328201ded50f37024"
@@ -96,23 +96,39 @@ def _reconstruct_from_chapter(candidate: Path) -> tuple[dict[str, bytes], dict[s
     component = "".join(text for _, text in blocks).encode()
     if hashlib.sha256(component).hexdigest() != EXPECTED_COMPONENT_SHA256:
         raise BuildVerificationError("disclosed component changed")
-    try:
-        hookup = chapter.split("## サインイン後の画面につなぐ\n", 1)[1].split("## 型の検査", 1)[0]
-    except IndexError as exc:
-        raise BuildVerificationError("hookup section missing") from exc
+    hookup_start = "## サインイン後の画面につなぐ\n"
+    hookup_end = "## 型を検査する\n"
+    if chapter.count(hookup_start) != 1 or chapter.count(hookup_end) != 1:
+        raise BuildVerificationError("hookup section headings missing or duplicated")
+    start_offset = chapter.index(hookup_start) + len(hookup_start)
+    end_offset = chapter.index(hookup_end)
+    if start_offset > end_offset:
+        raise BuildVerificationError("hookup section headings reordered")
+    hookup = chapter[start_offset:end_offset]
     snippets = re.findall(r"^```tsx\n(.*?)^```", hookup, re.M | re.S)
     if len(snippets) != 3:
         raise BuildVerificationError("hookup requires import, old, new snippets")
     import_text, old, new = (snippet.rstrip("\n") for snippet in snippets)
     if import_text != "import { RlsTrial } from './components/RlsTrial';":
         raise BuildVerificationError("unreviewed import")
-    expected_old = '<Text style={styles.body}>メール確認済みのセッションです。SNS のプロフィール機能は次の実装範囲です。</Text>'
-    expected_new = 'userId\n  ? <RlsTrial key={userId} client={client} userId={userId} />\n  : <Text style={styles.body}>ログイン状態をもう一度確認してください。</Text>'
+    expected_old = (
+        "          ) : (\n"
+        "            <Text style={styles.body}>メール確認済みのセッションです。"
+        "SNS のプロフィール機能は次の実装範囲です。</Text>\n"
+        "          )}"
+    )
+    expected_new = (
+        "          ) : (\n"
+        "            userId\n"
+        "              ? <RlsTrial key={userId} client={client} userId={userId} />\n"
+        "              : <Text style={styles.body}>ログイン状態をもう一度確認してください。</Text>\n"
+        "          )}"
+    )
     if old != expected_old or new != expected_new:
         raise BuildVerificationError("unreviewed UI hookup")
     if original_app.count(old) != 1:
-        raise BuildVerificationError("replacement must match one predecessor line")
-    changed = import_text + "\n" + original_app.replace(old, new.replace("\n", "\n            "), 1)
+        raise BuildVerificationError("replacement must match one predecessor context")
+    changed = import_text + "\n" + original_app.replace(old, new, 1)
     result = dict(files)
     result["App.tsx"] = changed.encode()
     result["components/RlsTrial.tsx"] = component
