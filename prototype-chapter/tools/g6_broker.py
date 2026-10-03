@@ -526,6 +526,10 @@ def execute_manifest(
                 raise BrokerError(f"unsupported fixed operation kind: {operation.kind}")
             action_trace.append(record)
         artifact_files = _artifact_files(workspace)
+        artifact_directories = sorted(
+            path.relative_to(workspace).as_posix()
+            for path in workspace.rglob("*") if path.is_dir()
+        )
         trace = {
             "schema": "g6-broker-trace-v1",
             "scope": "G6_BROKER_PROBE_COMPONENT_NON_FORMAL",
@@ -533,12 +537,19 @@ def execute_manifest(
                 "formal_g6_exec": False,
                 "knowledge_isolation": False,
                 "ui_validated": False,
+                "a0_chapter_execution": False,
+                "model_mcp_connected": False,
             },
             "artifact_id": manifest["artifact_id"],
             "manifest_sha256": _sha256(manifest_raw),
             "chapter_sha256": _sha256(chapter_bytes),
             "start_snapshot_sha256": snapshot_digest(start_files),
             "artifact_snapshot_sha256": snapshot_digest(artifact_files),
+            "artifact_directories": artifact_directories,
+            "artifact_tree_sha256": _sha256(_canonical({
+                "files_sha256": snapshot_digest(artifact_files),
+                "directories": artifact_directories,
+            })),
             "broker_source_sha256": _sha256(Path(__file__).read_bytes()),
             "probe_source_sha256": _sha256(_PROBE.encode("utf-8")),
             "operation_table_sha256": _operation_table_digest(),

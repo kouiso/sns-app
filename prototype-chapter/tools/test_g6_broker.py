@@ -97,6 +97,8 @@ class BrokerTests(unittest.TestCase):
                 "formal_g6_exec": False,
                 "knowledge_isolation": False,
                 "ui_validated": False,
+                "a0_chapter_execution": False,
+                "model_mcp_connected": False,
             },
             trace["claims"],
         )
@@ -117,6 +119,8 @@ class BrokerTests(unittest.TestCase):
             self.assertRegex(trace[field], r"^[0-9a-f]{64}$")
         self.assertEqual(self.start_data, (self.workspace / "README.md").read_bytes())
         self.assertTrue((self.workspace / "src").is_dir())
+        self.assertEqual(["src"], trace["artifact_directories"])
+        self.assertRegex(trace["artifact_tree_sha256"], r"^[0-9a-f]{64}$")
         self.assertEqual(
             b"G6 broker probe\n",
             (self.workspace / "src" / "g6-broker-probe.txt").read_bytes(),
