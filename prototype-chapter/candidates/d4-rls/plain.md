@@ -246,7 +246,7 @@ RPCの想定結果は、最初の呼び出しが`true`、同じ投稿への2回�
 | reloadと復元 | Metro protocol v2で実reload commandを送り、実機側API read countの増加を独立確認しました。復元後はAの投稿がhidden、Bの投稿がvisibleでした。 |
 | 後片付け | 通常sign-outと制作側が所有する投稿のresetを確認しました。 |
 | 実機run v6の故障試験 | 未転送のRPCと、DB更新済み・応答保留のRPCを別々に測り、通常系と合わせ25/25項目を通過しました。結果不明の文言、ボタンの回復、DB実状態、手動再取得、後片付けを照合しました。 |
-| timeoutの切り分け | proxyの応答を60秒保留し、各約22秒のWDA込み観測で結果不明と操作回復を確認しました。20秒保留のv5は中断と503応答の切り分けが不十分なため、最終timeout証拠には使いません。 |
+| timeoutの切り分け | proxyの応答を60秒保留し、未転送21.240秒、応答保留20.815秒のWDA込み観測で結果不明と操作回復を確認しました。20秒保留のv5は中断と503応答の切り分けが不十分なため、最終timeout証拠には使いません。 |
 | 未測定の失敗経路 | UI concurrencyを含む全失敗経路の実機検査は完了していません。実WSL再起動、停電直後の記録耐久性も証明していません。 |
 | 直列化 | `reset_owned.py`のtransaction advisory lockはseed/reset中だけ有効で、UI操作の前に終了します。現在はleaderの運用でUI runを直列化し、run全体のlease実装は未完了です。 |
 | reset/reconcile | resetのsource hashは`6d01cba56da854ccb43ba747a74c1e5b70024004ec09f93f7c29a4de53c8e517`で、reconcileはこれを照合するread-only toolです。所有記録はpasswd homeの`~/.local/state/sns-d4-owned-runs`へ保存し、旧bytesは明示移行で保持します。 |

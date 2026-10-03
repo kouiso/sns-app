@@ -12,7 +12,7 @@
     },
     {
       "path": "START-CONTRACT.md",
-      "sha256": "e493e603256c742cf316db1f41268ee48f500f0b6fe01eafd914a9c0797390af"
+      "sha256": "af49921bc8079374d8782c72933aeb99b562354a490c5df6a0cc4e8c19503713"
     },
     {
       "path": "app/.gitignore",
@@ -96,7 +96,7 @@
     },
     {
       "path": "chapter.md",
-      "sha256": "7167d59e6c81767bd04171e6742d0f11a015429257b0640780e7df577e03511f"
+      "sha256": "91cefeead45dfeaed106c8077166bbcd5bd873406858ff2b07d420114d0c3a6b"
     },
     {
       "path": "inherited-auth-source.json",
@@ -112,7 +112,7 @@
     },
     {
       "path": "plain.md",
-      "sha256": "3413aba53cf6ad920fd04970807b1638801dcb7b2c66067b0a42c03bd5bd2995"
+      "sha256": "8edb57ad094a6201a94c99a660458f3ca48b5e71d909542e9f721ea61deb0f22"
     },
     {
       "path": "reconcile_owned.py",
