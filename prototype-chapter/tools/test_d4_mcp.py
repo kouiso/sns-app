@@ -171,10 +171,19 @@ class MCPTests(unittest.TestCase):
         self.assertNotIn('isError', json.loads(raw)['result'])
 
     def test_real_subprocess_bootstrap_and_starter_typecheck(self):
+        def not_ready(reason):
+            if os.environ.get('D4_REQUIRE_REAL_TOOLCHAIN') == '1':
+                self.fail('Required real toolchain unavailable: ' + reason)
+            self.skipTest('NOT_READY: ' + reason)
+        if ('D4_TEST_DEPENDENCIES' in os.environ) != ('D4_TEST_TARGETS' in os.environ):
+            not_ready('both trusted toolchain overrides are required')
         overlay = Path(os.environ.get('D4_TEST_DEPENDENCIES', '/tmp/sns-auth-sdk57-runtime/node_modules'))
         if not overlay.is_dir() or not Path('/usr/bin/bwrap').is_file():
-            self.skipTest('NOT_READY: local bounded SDK57 toolchain is required')
-        node = subprocess.check_output(['node', '-p', 'process.execPath'], text=True).strip()
+            not_ready('local bounded SDK57 toolchain is required')
+        try:
+            node = subprocess.check_output(['node', '-p', 'process.execPath'], text=True, timeout=10).strip()
+        except (OSError, subprocess.SubprocessError):
+            not_ready('Node is unavailable')
         tools = Path(__file__).resolve().parent
         candidate = tools.parent / 'candidates/d4-runtime'
         roots = json.loads(os.environ['D4_TEST_TARGETS']) if 'D4_TEST_TARGETS' in os.environ else ['/home/kouiso/ghq/kouiso/sns-app/prototype-chapter/listings/expo-first-screen/node_modules', '/tmp/sns-auth-sdk57-libraries/node_modules']

@@ -159,6 +159,11 @@ jobs:
         run: |
           export D4_TEST_DEPENDENCIES="$GITHUB_WORKSPACE/prototype-chapter/candidates/auth-sdk57/node_modules"
           export D4_TEST_TARGETS="$(python3 -c 'import json,os; print(json.dumps([os.environ["D4_TEST_DEPENDENCIES"]]))')"
+          if [ -x /usr/bin/bwrap ]; then
+            export D4_REQUIRE_REAL_TOOLCHAIN=1
+          else
+            echo "::warning title=未判定::D4実隔離toolchain未導入。明示skipを実型検査成功に数えない"
+          fi
           python3 -m unittest discover -s prototype-chapter/tools -p 'test_d4_*.py' -v
           python3 -m unittest discover -s prototype-chapter/tools -p 'test_verify_d4_chapter_build.py' -v
           PYTHONPATH=prototype-chapter/tools python3 - <<'PY'

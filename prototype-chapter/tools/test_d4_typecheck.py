@@ -43,8 +43,11 @@ class D4TypecheckTests(unittest.TestCase):
         cls.targets = tuple(Path(p) for p in json.loads(os.environ["D4_TEST_TARGETS"])) if "D4_TEST_TARGETS" in os.environ else tuple(sorted(roots))
 
     def require_runtime(self) -> None:
-        if not Path("/usr/bin/bwrap").is_file() or not self.node.is_file() or not self.targets:
-            self.skipTest("NOT_READY: fixed bwrap, Node, and SDK57 overlay roots are required")
+        overrides_incomplete = ("D4_TEST_DEPENDENCIES" in os.environ) != ("D4_TEST_TARGETS" in os.environ)
+        if overrides_incomplete or not Path("/usr/bin/bwrap").is_file() or not self.node.is_file() or not self.overlay.is_dir() or not self.targets:
+            if os.environ.get("D4_REQUIRE_REAL_TOOLCHAIN") == "1":
+                self.fail("Required real toolchain unavailable or overrides incomplete")
+            self.skipTest("NOT_READY: fixed bwrap, Node, and SDK57 roots with complete overrides are required")
 
     def checker(self, app: Path, timeout: float = 60) -> FixedD4Typecheck:
         return FixedD4Typecheck(
