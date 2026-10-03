@@ -82,6 +82,10 @@ class BrokerTests(unittest.TestCase):
     def execute(self) -> dict[str, Any]:
         return execute_manifest(self.manifest_path, self.inputs, self.workspace)
 
+    @unittest.skipUnless(
+        Path("/usr/bin/bwrap").is_file(),
+        "NOT_READY: real bwrap probe needs the fixed system executable",
+    )
     def test_real_bwrap_executes_fixed_operations_and_binds_hashes(self) -> None:
         receipt: dict[str, Any] = self.execute()
         trace = receipt["trace"]
