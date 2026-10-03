@@ -54,7 +54,7 @@ def _validated_epub_infos(path: Path) -> tuple[tuple[zipfile.ZipInfo, str], ...]
             media_type = archive.read("mimetype")
         except KeyError as exc:
             raise ValueError("EPUB に mimetype エントリがありません") from exc
-        except zipfile.BadZipFile as exc:
+        except (zipfile.BadZipFile, RuntimeError) as exc:
             raise ValueError("EPUB のエントリが壊れています") from exc
         if media_type != b"application/epub+zip":
             raise ValueError("mimetype が application/epub+zip ではありません")
@@ -86,23 +86,39 @@ def epub_source_paths(path: Path) -> frozenset[str]:
     )
 
 
-def starter_source_paths(root: Path) -> frozenset[str]:
-    """明示された章スターターに最初から存在するファイルを返す。"""
+def _source_tree_entries(root: Path) -> tuple[Path, ...]:
+    """symlinkを含まない明示ルート配下のエントリを返す。"""
+    if root.is_symlink():
+        raise ValueError(f"ソースルートに symlink は使えません: {root}")
     if not root.is_dir():
         raise NotADirectoryError(root)
+    entries = tuple(root.rglob("*"))
+    for path in entries:
+        if path.is_symlink():
+            raise ValueError(f"ソースツリーに symlink は使えません: {path}")
+    return entries
+
+
+def starter_source_paths(root: Path) -> frozenset[str]:
+    """明示された章スターターに最初から存在する通常ファイルを返す。
+
+    ファイル・ディレクトリを問わず symlink は拒否し、ルート外を読み取らない。
+    """
     return frozenset(
         path.relative_to(root).as_posix()
-        for path in root.rglob("*")
+        for path in _source_tree_entries(root)
         if path.is_file()
         and not any(part in IGNORED_DIRS for part in path.relative_to(root).parts)
     )
 
 
 def comparable_source_paths(starter: Path, reference: Path) -> frozenset[str]:
-    """スターターと参照元で内容まで一致するファイルだけを返す。"""
+    """symlinkの無い両ツリーで内容まで一致するファイルだけを返す。"""
+    starter_paths = starter_source_paths(starter)
+    _source_tree_entries(reference)
     return frozenset(
         rel
-        for rel in starter_source_paths(starter)
+        for rel in starter_paths
         if (reference / rel).is_file()
         and (starter / rel).read_bytes() == (reference / rel).read_bytes()
     )

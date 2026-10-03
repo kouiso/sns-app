@@ -158,6 +158,54 @@ def main_test() -> int:
             failed += 1
             print("  ❌ 内容が違うファイルを照合可能と判定した")
 
+        outside_file = root / "outside-secret.txt"
+        outside_file.write_text("secret", encoding="utf-8")
+        outside_dir = root / "outside-dir"
+        outside_dir.mkdir()
+        (outside_dir / "secret.txt").write_text("secret", encoding="utf-8")
+
+        symlink_cases: list[tuple[str, Path, object]] = []
+        starter_file_link = root / "starter-file-link"
+        (starter_file_link / "src").mkdir(parents=True)
+        (starter_file_link / "src/Secret.ts").symlink_to(outside_file)
+        symlink_cases.append(
+            ("スターターの外部ファイルsymlink", starter_file_link, starter_file_link)
+        )
+
+        reference_file_link = root / "reference-file-link"
+        (reference_file_link / "src").mkdir(parents=True)
+        (reference_file_link / "src/App.tsx").symlink_to(outside_file)
+        symlink_cases.append(
+            ("参照元の外部ファイルsymlink", reference_file_link, (starter, reference_file_link))
+        )
+
+        starter_dir_link = root / "starter-dir-link"
+        starter_dir_link.mkdir()
+        (starter_dir_link / "external").symlink_to(outside_dir, target_is_directory=True)
+        symlink_cases.append(
+            ("スターターの外部directory symlink", starter_dir_link, starter_dir_link)
+        )
+
+        reference_dir_link = root / "reference-dir-link"
+        reference_dir_link.mkdir()
+        (reference_dir_link / "external").symlink_to(outside_dir, target_is_directory=True)
+        symlink_cases.append(
+            ("参照元の外部directory symlink", reference_dir_link, (starter, reference_dir_link))
+        )
+
+        total += len(symlink_cases)
+        for label, _, call_args in symlink_cases:
+            try:
+                if isinstance(call_args, tuple):
+                    comparable_source_paths(*call_args)
+                else:
+                    starter_source_paths(call_args)
+            except ValueError:
+                pass
+            else:
+                failed += 1
+                print(f"  ❌ {label} を拒否しなかった")
+
     total += 2
     links = links_from_pdftohtml(
         '<a href="https://example.com/a">a</a><a href="#p2">b</a>'

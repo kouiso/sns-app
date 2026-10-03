@@ -69,12 +69,22 @@ def main() -> None:
                            capture_output=True, text=True, check=True)
         return p.stdout.strip()
 
-    for component in ('db', 'kong', 'inbucket'):
+    containers = subprocess.check_output([
+        'docker', 'ps', '--format', '{{.Names}}'], text=True).splitlines()
+    containers = [name for name in containers
+                  if name.startswith('supabase_') and name.endswith('_sns-trio-local')]
+    required = {'supabase_' + component + '_sns-trio-local'
+                for component in ('db', 'kong', 'inbucket')}
+    if not required.issubset(containers):
+        raise RuntimeError('required dedicated trial containers are not running')
+    for name in containers:
         bindings = json.loads(subprocess.check_output([
             'docker', 'inspect', '--format', '{{json .HostConfig.PortBindings}}',
-            'supabase_' + component + '_sns-trio-local'], text=True))
-        if not bindings or not all(x.get('HostIp') == '127.0.0.1'
-                                   for values in bindings.values() for x in values):
+            name], text=True)) or {}
+        if name in required and not bindings:
+            raise RuntimeError('required trial port bindings are absent')
+        if not all(values and all(x.get('HostIp') == '127.0.0.1' for x in values)
+                   for values in bindings.values()):
             raise RuntimeError('trial container ports must be bound to loopback')
     check('dedicated_ports_loopback_only', True)
 
@@ -187,7 +197,7 @@ def main() -> None:
         status, count = api('POST', '/rest/v1/rpc/trial_soft_delete',
                              {'target_id': post_id}, user['access_token'])
         deleted = sql("SELECT deleted_at IS NOT NULL FROM public.trial_posts WHERE id='" + post_id + "'")
-        check(label + '_soft_delete_rpc', status == 200 and count == expected and
+        check(label + '_soft_delete_rpc', status == 200 and type(count) is int and count == expected and
               deleted == ('t' if expected else 'f'), http=status,
               affected_rows=count if type(count) is int else None,
               db_deleted=deleted == 't')

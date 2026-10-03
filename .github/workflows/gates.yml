@@ -38,11 +38,6 @@ jobs:
             PYTHONDONTWRITEBYTECODE=1 python3 "$test"
           done
 
-      - name: G3・G6 検査器の正負自己テスト（実走とは別）
-        run: |
-          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g3_checks.py'
-          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_support.py'
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -67,6 +62,11 @@ jobs:
         # npm ci だけを使う。npm install へ逃がすと、依存の固定ファイルが本文とズレていても
         # 実行環境の中だけで辻褄を合わせて通ってしまい、ズレたまま気づけなくなる。
         run: npm ci
+
+      - name: G3・G6 検査器の正負自己テスト（実走とは別）
+        run: |
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g3_checks.py'
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_support.py'
 
       - name: 既存試作全体の文体チェック
         working-directory: prototype-chapter
