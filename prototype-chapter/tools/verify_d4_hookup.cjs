@@ -8,15 +8,28 @@ function verifyHookup(source, ts) {
   if (tree.parseDiagnostics.length) throw new Error('invalid TSX');
   let matches = 0;
   function visit(node) {
-    if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(tree) === 'RlsTrial') {
-      const conditional = node.parent;
-      if (!ts.isConditionalExpression(conditional) || conditional.whenTrue !== node ||
+    if ((ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) &&
+        node.tagName.getText(tree) === 'RlsTrial') {
+      const mount = ts.isJsxOpeningElement(node) ? node.parent : node;
+      const conditional = mount.parent;
+      if (!ts.isConditionalExpression(conditional) || conditional.whenTrue !== mount ||
           conditional.condition.getText(tree) !== 'userId') {
         throw new Error('RlsTrial must be the guarded conditional branch');
       }
-      let ancestor = conditional.parent;
-      while (ancestor && !ts.isJsxExpression(ancestor)) ancestor = ancestor.parent;
-      if (!ancestor) throw new Error('conditional must be a JSX expression');
+      let branch = conditional;
+      let ancestor = branch.parent;
+      while (ancestor && !ts.isJsxExpression(ancestor)) {
+        const wrapper = ts.isParenthesizedExpression(ancestor) && ancestor.expression === branch;
+        const outerBranch = ts.isConditionalExpression(ancestor) &&
+          (ancestor.whenTrue === branch || ancestor.whenFalse === branch);
+        if (!wrapper && !outerBranch) throw new Error('mount must flow directly to a JSX child');
+        branch = ancestor;
+        ancestor = branch.parent;
+      }
+      if (!ancestor || ancestor.expression !== branch ||
+          !(ts.isJsxElement(ancestor.parent) || ts.isJsxFragment(ancestor.parent))) {
+        throw new Error('conditional must be a JSX child expression');
+      }
       matches += 1;
     }
     ts.forEachChild(node, visit);

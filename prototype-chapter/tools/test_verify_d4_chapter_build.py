@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from verify_d4_chapter_build import BuildVerificationError, reconstruct_from_chapter
@@ -72,6 +73,31 @@ class ChapterBuildTests(unittest.TestCase):
                 reconstruct_from_chapter(self.root)
         finally:
             path.unlink()
+
+    def test_reviewed_new_chapter_still_requires_exact_hookup(self):
+        path = self.root / "chapter-build.md"
+        original = path.read_bytes()
+        changed = original.replace(b"? <RlsTrial key={userId}", b"? <OtherTrial key={userId}", 1)
+        self.assertNotEqual(changed, original)
+        try:
+            path.write_bytes(changed)
+            with mock.patch("verify_d4_chapter_build.EXPECTED_CHAPTER_SHA256", hashlib.sha256(changed).hexdigest()):
+                with self.assertRaisesRegex(BuildVerificationError, "unreviewed UI hookup"):
+                    reconstruct_from_chapter(self.root)
+        finally:
+            path.write_bytes(original)
+
+    def test_declared_source_symlink_fails_with_public_error_type(self):
+        path = self.root / "start" / "App.tsx"
+        original = path.read_bytes()
+        try:
+            path.unlink()
+            path.symlink_to(self.root / "start" / "README.md")
+            with self.assertRaises(BuildVerificationError):
+                reconstruct_from_chapter(self.root)
+        finally:
+            path.unlink()
+            path.write_bytes(original)
 
     def test_special_node_and_empty_target_directory_are_rejected(self):
         fifo = self.root / "start" / "unexpected"
