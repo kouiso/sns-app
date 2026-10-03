@@ -15,16 +15,86 @@ from g6_live_reload import (
     LiveReloadError,
     LiveReloadSession,
     RESTORE_PRACTICE_TEXT,
+    SDK57_EXECUTION_PROFILE,
+    SDK57_PROFILE,
+    _execution_profile,
+    _read_fixed_source_tree,
+    compile_sdk57_plan,
     run_all,
 )
 
 
 TOOLS = Path(__file__).resolve().parent
 PROTOTYPE = TOOLS.parent
+SDK57_CANDIDATE = PROTOTYPE / "candidates" / "sdk57"
 
 
 def sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+class SDK57SourceValidationTests(unittest.TestCase):
+    def copy_source(self, root: Path) -> Path:
+        source = root / "source"
+        shutil.copytree(SDK57_CANDIDATE / "start-source", source)
+        return source
+
+    def test_sdk57_source_is_exact_regular_14_file_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = self.copy_source(Path(directory))
+            files = _read_fixed_source_tree(
+                source, SDK57_EXECUTION_PROFILE.start_files, require_git=False
+            )
+            self.assertEqual(14, len(files))
+            self.assertEqual(
+                sorted(dict(SDK57_EXECUTION_PROFILE.start_files)), sorted(files)
+            )
+
+    def test_sdk57_source_rejects_extra_missing_tampered_and_symlink(self) -> None:
+        cases = ("extra", "missing", "tampered", "symlink")
+        for case in cases:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as directory:
+                source = self.copy_source(Path(directory))
+                if case == "extra":
+                    (source / "extra.txt").write_text("extra", encoding="utf-8")
+                    pattern = "exactly"
+                elif case == "missing":
+                    (source / "package.json").unlink()
+                    pattern = "exactly"
+                elif case == "tampered":
+                    (source / "package.json").write_text("{}", encoding="utf-8")
+                    pattern = "hash mismatch: package.json"
+                else:
+                    (source / "package.json").unlink()
+                    (source / "package.json").symlink_to("App.tsx")
+                    pattern = "symlink is forbidden"
+                with self.assertRaisesRegex(LiveReloadError, pattern):
+                    _read_fixed_source_tree(
+                        source,
+                        SDK57_EXECUTION_PROFILE.start_files,
+                        require_git=False,
+                    )
+
+    def test_sdk57_chapter_and_profile_are_closed_allowlists(self) -> None:
+        chapter = SDK57_CANDIDATE / "chapter-live-reload.md"
+        start_app = (SDK57_CANDIDATE / "start-source" / "App.tsx").read_bytes()
+        operations, _ = compile_sdk57_plan(chapter, start_app, SDK57_EXECUTION_PROFILE)
+        self.assertEqual("write-complete-app", operations[0].operation_id)
+        self.assertEqual(13, len(operations))
+
+        with tempfile.TemporaryDirectory() as directory:
+            stale = Path(directory) / "chapter.md"
+            stale.write_bytes(chapter.read_bytes() + b"\n")
+            with self.assertRaisesRegex(LiveReloadError, "chapter revision"):
+                compile_sdk57_plan(stale, start_app, SDK57_EXECUTION_PROFILE)
+        with self.assertRaisesRegex(LiveReloadError, "chapter revision"):
+            compile_sdk57_plan(
+                PROTOTYPE / "chapter-live-reload.md",
+                start_app,
+                SDK57_EXECUTION_PROFILE,
+            )
+        with self.assertRaisesRegex(LiveReloadError, "unknown fixed"):
+            _execution_profile("sdk58")
 
 
 class LiveReloadTests(unittest.TestCase):
@@ -324,6 +394,110 @@ class LiveReloadTests(unittest.TestCase):
             LiveReloadSession(self.chapter, self.start, self.start, self.evidence)
         with self.assertRaisesRegex(LiveReloadError, "must not overlap"):
             LiveReloadSession(self.chapter, self.start, self.workspace, self.workspace)
+
+
+class SDK57LiveReloadTests(unittest.TestCase):
+    def setUp(self) -> None:
+        if not os.access("/usr/bin/bwrap", os.X_OK):
+            self.skipTest("NOT_READY: SDK57 execution probe needs /usr/bin/bwrap")
+        self.temp = tempfile.TemporaryDirectory()
+        self.base = Path(self.temp.name)
+        self.chapter = SDK57_CANDIDATE / "chapter-live-reload.md"
+        self.start = self.base / "start"
+        shutil.copytree(SDK57_CANDIDATE / "start-source", self.start)
+        self.git("init", cwd=self.start)
+        self.git("config", "--local", "user.name", "G6 Fixture", cwd=self.start)
+        self.git(
+            "config", "--local", "user.email", "g6@example.invalid", cwd=self.start
+        )
+        self.git("add", ".", cwd=self.start)
+        self.git("commit", "-m", "最初の画面を作る", cwd=self.start)
+        self.workspace = self.base / "work"
+        self.evidence = self.base / "evidence"
+        self.workspace.mkdir()
+        self.evidence.mkdir()
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def git(self, *args: str, cwd: Path) -> str:
+        result = subprocess.run(
+            ["/usr/bin/git", *args],
+            cwd=cwd,
+            check=True,
+            capture_output=True,
+            text=True,
+            env={"PATH": "/usr/bin", "HOME": str(self.base / "host-home")},
+        )
+        return result.stdout
+
+    def session(self) -> LiveReloadSession:
+        return LiveReloadSession(
+            self.chapter,
+            self.start,
+            self.workspace,
+            self.evidence,
+            profile=SDK57_PROFILE,
+        )
+
+    def test_sdk57_executes_full_source_app_only_commit_and_restore(self) -> None:
+        with self.session() as session:
+            receipt = run_all(session)
+        trace = receipt["trace"]
+        self.assertEqual(SDK57_PROFILE, trace["profile"])
+        self.assertEqual(14, len(trace["start_source_files"]))
+        self.assertEqual(14, len(trace["final_source_files"]))
+        self.assertEqual(13, len(trace["actions"]))
+        self.assertEqual(
+            ["complete-edit", "committed", "restore-practice-dirty", "git-restored"],
+            [action["phase"] for action in trace["actions"] if action["phase"]],
+        )
+        self.assertEqual(
+            ["App.tsx"],
+            self.git(
+                "diff",
+                "--name-only",
+                trace["start_head"],
+                trace["final_head"],
+                cwd=self.workspace,
+            ).splitlines(),
+        )
+        start_hashes = {
+            item["path"]: item["sha256"] for item in trace["start_source_files"]
+        }
+        final_hashes = {
+            item["path"]: item["sha256"] for item in trace["final_source_files"]
+        }
+        self.assertEqual(
+            {
+                path: digest
+                for path, digest in start_hashes.items()
+                if path != "App.tsx"
+            },
+            {
+                path: digest
+                for path, digest in final_hashes.items()
+                if path != "App.tsx"
+            },
+        )
+        self.assertNotEqual(start_hashes["App.tsx"], final_hashes["App.tsx"])
+        self.assertEqual("", self.git("status", "--porcelain", cwd=self.workspace))
+
+    def test_sdk57_finish_rejects_non_app_source_mutation(self) -> None:
+        with self.session() as session:
+            while session.next_operation_id is not None:
+                session.request(session.next_operation_id)
+            (self.workspace / "package.json").write_text("{}", encoding="utf-8")
+            with self.assertRaisesRegex(
+                LiveReloadError, "start source hash mismatch: package.json"
+            ):
+                session.finish()
+            self.assertFalse((self.evidence / "trace.json").exists())
+
+    def test_sdk57_start_requires_all_normal_tracked_files(self) -> None:
+        self.git("update-index", "--skip-worktree", "package.json", cwd=self.start)
+        with self.assertRaisesRegex(LiveReloadError, "normal Git index flags"):
+            self.session()
 
 
 if __name__ == "__main__":

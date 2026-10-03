@@ -92,6 +92,20 @@ jobs:
           python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_support.py'
           python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_objective.py' -v
 
+      - name: SDK57 候補のファイル整合と負例検査（正式採用とは別）
+        run: |
+          python3 prototype-chapter/tools/verify_sdk57_candidate.py prototype-chapter/candidates/sdk57
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_verify_sdk57_candidate.py' -v
+          bash prototype-chapter/tools/g3-structure.sh \
+            prototype-chapter/candidates/sdk57/chapter-expo-first-screen.md \
+            prototype-chapter/candidates/sdk57/chapter-live-reload.md \
+            prototype-chapter/candidates/sdk57/controls/expo-first-screen/plain.md \
+            prototype-chapter/candidates/sdk57/controls/expo-first-screen/intro-ablation.experimental.md \
+            prototype-chapter/candidates/sdk57/controls/live-reload/plain.md
+          bash prototype-chapter/tools/g3-style.sh \
+            prototype-chapter/candidates/sdk57/chapter-expo-first-screen.md \
+            prototype-chapter/candidates/sdk57/chapter-live-reload.md
+
       - name: G6 broker schema tests and available OS probe（NON-FORMAL）
         run: |
           if [ ! -x /usr/bin/bwrap ]; then
