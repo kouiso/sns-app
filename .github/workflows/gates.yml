@@ -86,6 +86,158 @@ jobs:
           done
           exit $failed
 
+      - name: G3・G6 試作検査器の正負自己テスト（実走とは別）
+        run: |
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g3_checks.py'
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_support.py'
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_objective.py' -v
+
+      - name: SDK57 候補のファイル整合と負例検査（正式採用とは別）
+        run: |
+          python3 prototype-chapter/tools/verify_sdk57_candidate.py prototype-chapter/candidates/sdk57
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_verify_sdk57_candidate.py' -v
+          bash prototype-chapter/tools/g3-structure.sh \
+            prototype-chapter/candidates/sdk57/chapter-expo-first-screen.md \
+            prototype-chapter/candidates/sdk57/chapter-live-reload.md \
+            prototype-chapter/candidates/sdk57/controls/expo-first-screen/plain.md \
+            prototype-chapter/candidates/sdk57/controls/expo-first-screen/intro-ablation.experimental.md \
+            prototype-chapter/candidates/sdk57/controls/live-reload/plain.md
+          bash prototype-chapter/tools/g3-style.sh \
+            prototype-chapter/candidates/sdk57/chapter-expo-first-screen.md \
+            prototype-chapter/candidates/sdk57/chapter-live-reload.md
+
+      - name: G6 broker schema tests and available OS probe（NON-FORMAL）
+        run: |
+          if [ ! -x /usr/bin/bwrap ]; then
+            echo "::warning title=未判定::実bwrap未導入。schema負例のみ実行し、OS probeを成功に数えない"
+          fi
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_broker.py' -v
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_live_reload.py' -v
+
+      - name: Auth return receiver adversarial tests（NON-FORMAL; no native app claim）
+        run: |
+          node --check prototype-chapter/auth-return-trial/auth_return.mjs
+          node --check prototype-chapter/auth-return-trial/local_adapter.mjs
+          node --test prototype-chapter/auth-return-trial/test_auth_return.mjs
+
+      - name: SDK57 Auth app candidate tests and typecheck（NON-FORMAL）
+        working-directory: prototype-chapter/candidates/auth-sdk57
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run test:auth
+          npm run typecheck
+
+      - name: D4 predecessor candidate safety and shared-toolchain typecheck（NON-FORMAL）
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, subprocess
+          from pathlib import Path
+          base = Path('prototype-chapter/candidates/d4-rls')
+          manifest = json.loads((base / 'SOURCE-MANIFEST.json').read_text())
+          assert manifest['scope'] == 'NON_FORMAL_D4_PUBLIC_SOURCE_ONLY'
+          tracked = subprocess.check_output(['git', 'ls-files', '--', str(base)], text=True).splitlines()
+          expected = {str(Path(path).relative_to(base)) for path in tracked} - {'SOURCE-MANIFEST.json'}
+          listed = [entry['path'] for entry in manifest['files']]
+          assert len(listed) == len(set(listed)) and set(listed) == expected
+          for entry in manifest['files']:
+              path = base / entry['path']
+              assert path.is_file() and not path.is_symlink()
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == entry['sha256'], entry['path']
+          print('D4 public source manifest matched')
+          PY
+          node --check prototype-chapter/rls-trial/measure_sdk.mjs
+          node --check prototype-chapter/candidates/d4-rls/measure_sdk.mjs
+          python3 -m unittest discover -s prototype-chapter/candidates/d4-rls -p 'test_*owned.py' -v
+          cmp prototype-chapter/candidates/auth-sdk57/package.json prototype-chapter/candidates/d4-rls/app/package.json
+          cmp prototype-chapter/candidates/auth-sdk57/package-lock.json prototype-chapter/candidates/d4-rls/app/package-lock.json
+          ln -s ../../auth-sdk57/node_modules prototype-chapter/candidates/d4-rls/app/node_modules
+          prototype-chapter/candidates/auth-sdk57/node_modules/.bin/tsc --noEmit --project prototype-chapter/candidates/d4-rls/app/tsconfig.json
+          bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-rls/chapter.md prototype-chapter/candidates/d4-rls/plain.md
+          bash prototype-chapter/tools/g3-style.sh prototype-chapter/candidates/d4-rls/chapter.md
+
+      - name: D4 declared input, controller lease and chapter build（NON-FORMAL）
+        run: |
+          export D4_TEST_DEPENDENCIES="$GITHUB_WORKSPACE/prototype-chapter/candidates/auth-sdk57/node_modules"
+          export D4_TEST_TARGETS="$(python3 -c 'import json,os; print(json.dumps([os.environ["D4_TEST_DEPENDENCIES"]]))')"
+          if [ -x /usr/bin/bwrap ]; then
+            export D4_REQUIRE_REAL_TOOLCHAIN=1
+          else
+            echo "::warning title=未判定::D4実隔離toolchain未導入。明示skipを実型検査成功に数えない"
+          fi
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_d4_*.py' -v
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_verify_d4_chapter_build.py' -v
+          PYTHONPATH=prototype-chapter/tools python3 - <<'PY'
+          import subprocess, tempfile
+          from pathlib import Path
+          from verify_d4_chapter_build import reconstruct_from_chapter
+          files, receipt = reconstruct_from_chapter(Path('prototype-chapter/candidates/d4-runtime'))
+          dependencies = Path('prototype-chapter/candidates/auth-sdk57/node_modules').resolve()
+          with tempfile.TemporaryDirectory(prefix='sns-d4-chapter-') as temporary:
+              root = Path(temporary)
+              for name, content in files.items():
+                  path = root / name
+                  path.parent.mkdir(parents=True, exist_ok=True)
+                  path.write_bytes(content)
+              (root / 'node_modules').symlink_to(dependencies, target_is_directory=True)
+              subprocess.run([str(dependencies / '.bin/tsc'), '--noEmit', '--project', str(root / 'tsconfig.json')], check=True)
+              subprocess.run(['node', 'prototype-chapter/tools/verify_d4_hookup.cjs', str(root / 'App.tsx'), str(dependencies / 'typescript')], check=True)
+          subprocess.run(['node', 'prototype-chapter/tools/test_verify_d4_hookup.cjs', str(dependencies / 'typescript')], check=True)
+          subprocess.run(['node', 'prototype-chapter/tools/test_verify_d4_origin.cjs', str(dependencies / 'typescript')], check=True)
+          print(receipt)
+          PY
+          bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-runtime/chapter-build.md
+          bash prototype-chapter/tools/g3-style.sh prototype-chapter/candidates/d4-runtime/chapter-build.md
+
+      - name: Full RLS chapter draft checks (not formal G3/G6)
+        run: |
+          bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-heavy/chapter-rls-denial-check.md prototype-chapter/candidates/d4-heavy/answers.md
+          bash prototype-chapter/tools/g3-style.sh prototype-chapter/candidates/d4-heavy/chapter-rls-denial-check.md prototype-chapter/candidates/d4-heavy/answers.md
+          bash prototype-chapter/tools/g3-policy.sh prototype-chapter/candidates/d4-heavy/chapter-rls-denial-check.md prototype-chapter/candidates/d4-heavy/answers.md
+          python3 - <<'PY'
+          import hashlib, json, re
+          from collections import Counter
+          from pathlib import Path
+          base = Path('prototype-chapter/candidates/d4-heavy')
+          matrix = json.loads((base / 'rls-checks.json').read_text())
+          cases = matrix['cases']
+          assert len({case['id'] for case in cases}) == len(cases)
+          counts = Counter(case['current_status'] for case in cases)
+          assert set(counts) <= {'CANDIDATE_EVIDENCE_ONLY', 'NOT_READY'}
+          assert matrix['summary']['total_cases'] == len(cases)
+          assert matrix['summary']['accepted_cases'] == 0
+          assert all(matrix['summary'][key] == value for key, value in counts.items())
+          sources = {source['source_id']: source for source in matrix['provenance_sources']}
+          assert len(sources) == len(matrix['provenance_sources'])
+          for source in sources.values():
+              assert re.fullmatch(r'[0-9a-f]{64}', source['sha256'])
+              if source['file'] is None:
+                  assert source['unpublished_reason']
+              else:
+                  path = Path(source['file'])
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert source['sha256'] == hashlib.sha256(path.read_bytes()).hexdigest()
+          for case in cases:
+              assert all(ref == sources[ref['source_id']] for ref in case['provenance'])
+          assert (base / 'assets/full-sns-map.svg').is_file()
+          print('draft matrix:', len(cases), dict(counts), 'accepted: 0')
+          PY
+
+      - name: Profile predecessor slice checks (not full SNS or G6)
+        run: |
+          cmp prototype-chapter/candidates/auth-sdk57/package.json prototype-chapter/candidates/d4-predecessor/package.json
+          cmp prototype-chapter/candidates/auth-sdk57/package-lock.json prototype-chapter/candidates/d4-predecessor/package-lock.json
+          cmp prototype-chapter/candidates/auth-sdk57/lib/auth-return.mjs prototype-chapter/candidates/d4-predecessor/lib/auth-return.mjs
+          ln -s ../auth-sdk57/node_modules prototype-chapter/candidates/d4-predecessor/node_modules
+          node --check prototype-chapter/candidates/d4-predecessor/lib/profile-flow.mjs
+          node --test prototype-chapter/candidates/d4-predecessor/test-auth-return.mjs prototype-chapter/candidates/d4-predecessor/test-profile-flow.mjs
+          prototype-chapter/candidates/auth-sdk57/node_modules/.bin/tsc --noEmit --project prototype-chapter/candidates/d4-predecessor/tsconfig.json
+
+      # 既存の試作2章とG6対照版の回帰検査。curriculum/*.md の正式G3や
+      # 凍結済みsnapshotの承認には代用しない。
+      - name: G3 試作2章＋対照版の5検査（NON-FORMAL）
+        working-directory: prototype-chapter
+        run: npm run gate:g3:trial
+
       # G3（10 §4）の5検査。文体も対象が curriculum/*.md に変わったので
       # 教材本文が無い間は未判定（3）を返しうる → gate-step.sh 経由。
       - name: G3 文体チェック（textlint）

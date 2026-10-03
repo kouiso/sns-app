@@ -17,6 +17,7 @@ task-app資産棚卸し §4）で、ZIP 梱包も scaffold スクリプトも存
 
 import sys
 import tempfile
+import warnings
 import zipfile
 import zlib
 from pathlib import Path
@@ -24,8 +25,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from sale_package import (  # noqa: E402
+    comparable_source_paths,
     epub_entries,
+    epub_source_paths,
+    links_from_pdftohtml,
     pdf_link_uris,
+    starter_source_paths,
     starter_paths,
 )
 
@@ -171,6 +176,126 @@ def check_starter() -> tuple[int, int]:
     return failed, 5
 
 
+def check_strict_sources() -> tuple[int, int]:
+    """実ファイル照合とfilesystem escape防止の追加契約を検証する。"""
+    failed = 0
+    total = 0
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        epub = root / "sources.epub"
+        with zipfile.ZipFile(epub, "w") as archive:
+            archive.writestr("mimetype", "application/epub+zip")
+            archive.writestr("App.tsx", "root")
+            archive.writestr("app/screens.tsx", "screen")
+            archive.writestr("supabase/migrations/posts.sql", "sql")
+            archive.writestr("examples/App.tsx", "other")
+        total += 1
+        if epub_source_paths(epub) != frozenset(
+            {"App.tsx", "app/screens.tsx", "supabase/migrations/posts.sql"}
+        ):
+            failed += 1
+            print("  ❌ EPUBの同梱ソースパスを正確に絞れない")
+
+        spoofed = root / "spoofed.epub"
+        link = zipfile.ZipInfo("src/App.tsx")
+        link.create_system = 3
+        link.external_attr = 0o120777 << 16
+        with zipfile.ZipFile(spoofed, "w") as archive:
+            archive.writestr("mimetype", "application/epub+zip")
+            archive.writestr("app/screens.tsx/", b"")
+            archive.writestr(link, b"../real/App.tsx")
+        total += 1
+        if epub_source_paths(spoofed):
+            failed += 1
+            print("  ❌ EPUBのdirectoryまたはsymlinkを実ソースと誤認した")
+
+        unsafe = root / "unsafe.epub"
+        with zipfile.ZipFile(unsafe, "w") as archive:
+            archive.writestr("mimetype", "application/epub+zip")
+            archive.writestr("../src/App.tsx", "bad")
+        total += 1
+        try:
+            epub_entries(unsafe)
+        except ValueError:
+            pass
+        else:
+            failed += 1
+            print("  ❌ EPUBのtraversal entryを拒否しなかった")
+
+        duplicate = root / "duplicate.epub"
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            with zipfile.ZipFile(duplicate, "w") as archive:
+                archive.writestr("mimetype", "application/epub+zip")
+                archive.writestr("src/App.tsx", "one")
+                archive.writestr("src/App.tsx", "two")
+        total += 1
+        try:
+            epub_entries(duplicate)
+        except ValueError:
+            pass
+        else:
+            failed += 1
+            print("  ❌ EPUBの重複entryを拒否しなかった")
+
+        starter = root / "starter-source"
+        reference = root / "reference"
+        (starter / "src").mkdir(parents=True)
+        (reference / "src").mkdir(parents=True)
+        (starter / "src/App.tsx").write_text("same", encoding="utf-8")
+        (reference / "src/App.tsx").write_text("same", encoding="utf-8")
+        total += 1
+        if comparable_source_paths(starter, reference) != frozenset({"src/App.tsx"}):
+            failed += 1
+            print("  ❌ 内容が一致する通常ファイルを照合できない")
+
+        outside_file = root / "secret.txt"
+        outside_file.write_text("secret", encoding="utf-8")
+        outside_dir = root / "secret-dir"
+        outside_dir.mkdir()
+        (outside_dir / "secret.txt").write_text("secret", encoding="utf-8")
+        bad_roots: list[tuple[str, Path, Path | None]] = []
+        for side, target, is_directory in (
+            ("starter-file", outside_file, False),
+            ("starter-dir", outside_dir, True),
+        ):
+            tree = root / side
+            tree.mkdir()
+            (tree / "escape").symlink_to(target, target_is_directory=is_directory)
+            bad_roots.append((side, tree, None))
+        for side, target, is_directory in (
+            ("reference-file", outside_file, False),
+            ("reference-dir", outside_dir, True),
+        ):
+            tree = root / side
+            tree.mkdir()
+            (tree / "escape").symlink_to(target, target_is_directory=is_directory)
+            bad_roots.append((side, starter, tree))
+        total += len(bad_roots)
+        for label, first, second in bad_roots:
+            try:
+                if second is None:
+                    starter_source_paths(first)
+                else:
+                    comparable_source_paths(first, second)
+            except ValueError:
+                pass
+            else:
+                failed += 1
+                print(f"  ❌ {label} symlinkを拒否しなかった")
+
+    total += 2
+    if links_from_pdftohtml('<a href="https://example.com">x</a>') != frozenset(
+        {"https://example.com"}
+    ):
+        failed += 1
+        print("  ❌ pdftohtmlのlink annotationを抽出できない")
+    if links_from_pdftohtml("<p>https://example.com</p>"):
+        failed += 1
+        print("  ❌ PDFの印字URLをlink annotationと誤認した")
+    return failed, total
+
+
 def main_test() -> int:
     failed = 0
     epub_failed, epub_total = check_epub()
@@ -179,7 +304,9 @@ def main_test() -> int:
     failed += pdf_failed
     starter_failed, starter_total = check_starter()
     failed += starter_failed
-    total = epub_total + pdf_total + starter_total
+    strict_failed, strict_total = check_strict_sources()
+    failed += strict_failed
+    total = epub_total + pdf_total + starter_total + strict_total
     if failed:
         print(f"❌ sale_package 自己テスト {failed}/{total} 失敗")
         return 1

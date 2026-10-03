@@ -1,189 +1,230 @@
 #!/usr/bin/env bash
-# G6 実走ランナー（10 §4 G6 / 16 A5）
-#
-# 章を「文脈ゼロの実行体」に渡して走らせる。
-# 知識の隔離が要件なので、リポジトリの外へ材料を出してから実行する。
-# sns-app 配下で走らせると CLAUDE.md と SessionStart hook が設計文脈を注入して隔離が破れる。
-#
-# 使い方:
-#   tools/g6-run.sh <章ID> read   ← 読み手の設問（面白さの比較評価）
-#   tools/g6-run.sh <章ID> exec   ← 実走（手順どおりに動かして詰まりを出す）
-#
-# 必要なファイル:
-#   chapter-<章ID>.md         教材本文
-#   chapter-<章ID>-plain.md   比較用（対話を抜いた手順書調）… read のときだけ
-#   snapshots/<前章ID>/       章開始時点のスターター… exec のとき、2章目以降
-#
-# 終了コード: 0=PASS / 1=引数や材料の誤り / 2=FAIL
+# G6 runner. Read mode is provisional until knowledge and runtime isolation are
+# independently proven. Exec mode is intentionally unavailable.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CHAPTER="${1:-}"
 MODE="${2:-}"
-# read は本物の置き場所を半々に入れ替えるので、体数は偶数でなければ釣り合わない。
-# 奇数だと、順番の偏りだけで本物が過半数を取れてしまう（実測: 中身が同じ2本で 2/3 が出た）。
 N="${G6_READERS:-4}"
+TIMEOUT_SECONDS="${G6_TIMEOUT_SECONDS:-1800}"
+MODEL="${G6_MODEL:-gemini-3.8-flash}"
 
-[[ -z "$CHAPTER" || -z "$MODE" ]] && { echo "usage: $(basename "$0") <章ID> read|exec" >&2; exit 1; }
+usage() {
+  echo "usage: $(basename "$0") <章ID> read|exec" >&2
+}
+
+[[ -n "$CHAPTER" && -n "$MODE" ]] || { usage; exit 1; }
+[[ "$N" =~ ^[1-9][0-9]*$ ]] || {
+  echo "FAIL: G6_READERS must be a positive integer" >&2
+  exit 1
+}
+[[ "$TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]] || {
+  echo "FAIL: G6_TIMEOUT_SECONDS must be a positive integer" >&2
+  exit 1
+}
+
+if [[ "$MODE" == "exec" ]]; then
+  echo "NOT_READY: exec requires an independently verified sandbox and objective validator" >&2
+  echo "PROVISIONAL / NON-FORMAL G6: no exec result was produced" >&2
+  exit 2
+fi
+[[ "$MODE" == "read" ]] || { usage; exit 1; }
+(( N % 2 == 0 )) || {
+  echo "FAIL: read の体数は偶数にすること（G6_READERS=$N）" >&2
+  exit 1
+}
 
 BODY="$ROOT/chapter-$CHAPTER.md"
-[[ -f "$BODY" ]] || { echo "FAIL: $BODY が無い" >&2; exit 1; }
+CONTROL_DIR="$ROOT/g6/$CHAPTER"
+PLAIN="$CONTROL_DIR/plain.md"
+MINUS="$CONTROL_DIR/minus.md"
+DEV_LOGS_DIR="${G6_DEV_LOGS_DIR:-$ROOT/../dev-logs}"
+DEV_LOG="$DEV_LOGS_DIR/$CHAPTER.md"
 
-# ★ 隔離: リポジトリの外へ出す。ここを変えると G6 の前提が崩れる。
+[[ -f "$BODY" ]] || { echo "FAIL: $BODY が無い" >&2; exit 1; }
+[[ -f "$PLAIN" ]] || {
+  echo "FAIL: 比較用の $PLAIN が無い。対話を抜いた版を用意する" >&2
+  exit 1
+}
+head -n 5 "$PLAIN" | grep -q "抜いた要素" || {
+  echo "FAIL: $PLAIN の先頭に抜いた要素のメタ行が無い" >&2
+  exit 1
+}
+
+EVIDENCE="$(python3 "$ROOT/tools/g6_support.py" devlog "$DEV_LOG")" || exit 1
+HIGH_VALUE_COUNT="$(printf '%s\n' "$EVIDENCE" | sed -n 's/^HIGH_VALUE_COUNT=//p')"
+CLASSIFIED_ITEM_COUNT="$(printf '%s\n' "$EVIDENCE" | sed -n 's/^CLASSIFIED_ITEM_COUNT=//p')"
+DEV_LOG_SHA256="$(printf '%s\n' "$EVIDENCE" | sed -n 's/^DEV_LOG_SHA256=//p')"
+[[ "$HIGH_VALUE_COUNT" =~ ^[0-9]+$ && "$CLASSIFIED_ITEM_COUNT" =~ ^[0-9]+$ && "$DEV_LOG_SHA256" =~ ^[0-9a-f]{64}$ ]] || {
+  echo "FAIL: 開発ログ証拠を解釈できない" >&2
+  exit 1
+}
+
+if (( HIGH_VALUE_COUNT > 0 )); then
+  [[ -f "$MINUS" ]] || {
+    echo "FAIL: 高価値の詰まりが $HIGH_VALUE_COUNT 件あるため $MINUS が必要" >&2
+    exit 1
+  }
+  head -n 5 "$MINUS" | grep -q "抜いた要素" || {
+    echo "FAIL: $MINUS の先頭に抜いた要素のメタ行が無い" >&2
+    exit 1
+  }
+fi
+
+DROID_BIN="${DROID_BIN:-$(command -v droid || true)}"
+[[ -n "$DROID_BIN" && -x "$DROID_BIN" ]] || {
+  echo "NOT_READY: droid read adapter is unavailable" >&2
+  exit 2
+}
+
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/g6-$CHAPTER-XXXXXX")"
 echo "作業場所（リポジトリ外）: $WORK"
+echo "PROVISIONAL READ ONLY / NON-FORMAL G6"
+echo "knowledge, filesystem, hooks, and network isolation are not independently proven"
+echo "DEV_LOG_SHA256=$DEV_LOG_SHA256 HIGH_VALUE_COUNT=$HIGH_VALUE_COUNT CLASSIFIED_ITEM_COUNT=$CLASSIFIED_ITEM_COUNT"
 
-case "$MODE" in
-  read)
-    (( N % 2 == 0 )) || { echo "FAIL: read の体数は偶数にすること（G6_READERS=$N）" >&2; exit 1; }
-    PLAIN="$ROOT/chapter-$CHAPTER-plain.md"
-    [[ -f "$PLAIN" ]] || { echo "FAIL: 比較用の $PLAIN が無い。本文から対話を抜いた版を用意する" >&2; exit 1; }
-    # ★ 順番の偏りを打ち消す（2026-07-27 の較正で発覚）。
-    # 中身が完全に同じ2本で試したところ、実行体は3体とも A を選び、
-    # 2体が理由に「内容が同じなので先に読んだ A を選ぶ」と書いた。
-    # 常に本物を A に置くと、判定が中身ではなく置き場所で決まる。
-    # よって実行体ごとに本物の位置を入れ替え、どちらに置いたかを REAL に記録して集計する。
-    for i in $(seq 1 "$N"); do
-      D="$WORK/r$i"; mkdir -p "$D"
-      if (( i % 2 == 1 )); then
-        cp "$BODY" "$D/A.md"; cp "$PLAIN" "$D/B.md"; echo "A" > "$D/REAL"
-      else
-        cp "$PLAIN" "$D/A.md"; cp "$BODY" "$D/B.md"; echo "B" > "$D/REAL"
-      fi
-    done
-    cat > "$WORK/prompt.txt" <<'EOF'
+cat > "$WORK/prompt.txt" <<'EOF'
 あなたはプログラミング未経験の社会人です。SNS アプリを自分で作れるようになりたくて、
 教材を探しています。
 
-このディレクトリにある A.md と B.md を読んでください。
-どちらも「ある教材の1章目」です。それ以外のファイルは見ないでください。
-
-読み終えたら、次の3問に答えてください。あなたは読者であって批評家ではありません。
+このディレクトリにある A.md と B.md だけを読んでください。
+どちらも同じ教材の同じ章の候補です。それ以外のファイルは見ないでください。
 
 Q5. どちらの教材を買いますか。A か B か、どちらか一方を必ず選び、理由を1文で。
-Q6. A を読んでいる間、退屈だと感じた箇所はどこですか。無ければ「無し」。
-Q7. B を読んでいる間、退屈だと感じた箇所はどこですか。無ければ「無し」。
+Q6. A を読んでいる間、退屈だと感じた箇所はどこですか。無ければ空配列。
+Q7. B を読んでいる間、退屈だと感じた箇所はどこですか。無ければ空配列。
 
-出力は次の形式だけにしてください。
-
-Q5: A／B — ...
-Q6: ...
-Q7: ...
+JSONオブジェクトだけを返してください。
+{"adapter":"droid-gemini-read","choice":"A","reason":"理由を1文で書く","boring_a":[],"boring_b":[]}
 EOF
-    ;;
-  exec)
-    cp "$BODY" "$WORK/chapter.md"
-    # 章開始時点のスターターだけを渡す。設計書・開発ログ・listings は渡さない。
-    PREV="${G6_PREV_SNAPSHOT:-}"
-    if [[ -n "$PREV" ]]; then
-      [[ -d "$PREV" ]] || { echo "FAIL: スターター $PREV が無い" >&2; exit 1; }
-      mkdir -p "$WORK/start" && cp -R "$PREV/." "$WORK/start/"
-      rm -f "$WORK/start/SNAPSHOT.txt"
-      echo "スターター: $PREV"
+
+declare -a PIDS STATUS
+NEED=$((N / 2 + 1))
+
+prepare_round() {
+  local comparison="$1" i room
+  for i in $(seq 1 "$N"); do
+    room="$WORK/r$i"
+    mkdir -p "$room"
+    if (( i % 2 == 1 )); then
+      cp "$BODY" "$room/A.md"
+      cp "$comparison" "$room/B.md"
+    else
+      cp "$comparison" "$room/A.md"
+      cp "$BODY" "$room/B.md"
     fi
-    cat > "$WORK/prompt.txt" <<'EOF'
-あなたはプログラミング未経験の学習者です。chapter.md だけを読み、書いてある手順を
-そのとおりに実行してください。start/ があれば、それが前の章までの完成状態です。
-
-守ること:
-- chapter.md に書いていない知識で補ってはいけません。書いていないことは「詰まった」として記録します。
-- 詰まっても、自分の知識で先回りして解決しないでください。何が起きたかを記録します。
-- 対話型のコマンド（QR を端末で読む等）は実行できないので「実行できない」と記録します。
-
-最後に次の形式で報告してください。
-
-R1-到達: 章の最後の状態に到達できたか（できた／できなかった）
-R2-詰まった箇所: 手が止まった箇所を、章のどの記述かが分かる形で列挙。無ければ「無し」
-R3-教材外の知識で補った箇所: 章に書いていないことを自分の知識で埋めた箇所を列挙。無ければ「無し」
-R4-実行できなかった手順: 端末操作など、この環境で実行できなかった手順。無ければ「無し」
-EOF
-    ;;
-  *) echo "usage: $(basename "$0") <章ID> read|exec" >&2; exit 1 ;;
-esac
-
-# 別ファミリーの実行体を N 体、並行で走らせる
-CODEX_ARGS=(--skip-git-repo-check)
-if [[ "$MODE" == "exec" ]]; then
-  # 実走は手順どおりにコマンドを打つ必要がある。承認待ちで止まると実走にならないため、
-  # 承認を外して走らせる。**閉じ込めは作業ディレクトリで行う** —
-  # $WORK は mktemp で作ったリポジトリ外の空ディレクトリで、そこを cwd にして起動する。
-  CODEX_ARGS+=(--dangerously-bypass-approvals-and-sandbox)
-fi
-
-cd "$WORK"
-# read は実行体ごとに材料の置き方が違うので、それぞれの部屋を cwd にして起動する
-run_round() {
-  local suffix="$1"
-  for i in $(seq 1 "$N"); do
-    local dir="$WORK"
-    [[ "$MODE" == "read" ]] && dir="$WORK/r$i"
-    ( cd "$dir" && timeout 1800 codex exec "${CODEX_ARGS[@]}" "$(cat "$WORK/prompt.txt")" < /dev/null > "$WORK/${suffix}$i.txt" 2>&1 || true ) &
   done
-  wait
 }
 
-# 本物に投票した数を数える。本物の置き場所は実行体ごとに違う（REAL に記録済み）。
+run_attempt() {
+  local round="$1" attempt="$2" i room
+  PIDS=()
+  STATUS=()
+  for i in $(seq 1 "$N"); do
+    room="$WORK/r$i"
+    (
+      cd "$room"
+      G6_ROUND="$round" G6_ATTEMPT="$attempt" G6_PARTICIPANT="$i" \
+        timeout "$TIMEOUT_SECONDS" "$DROID_BIN" exec \
+          --model "$MODEL" \
+          --reasoning-effort medium \
+          --only-tools Read \
+          --disable-builtin-skills \
+          -f "$WORK/prompt.txt" \
+          < /dev/null > "$WORK/$round-$attempt-$i.json" 2>&1
+    ) &
+    PIDS[i]=$!
+  done
+  for i in $(seq 1 "$N"); do
+    if wait "${PIDS[$i]}"; then
+      STATUS[i]=0
+    else
+      STATUS[i]=$?
+    fi
+  done
+}
+
+validate_attempt() {
+  local round="$1" attempt="$2" i result
+  for i in $(seq 1 "$N"); do
+    if [[ "${STATUS[$i]:-1}" -ne 0 ]]; then
+      echo "FAIL: $round attempt $attempt participant $i exited ${STATUS[$i]}" >&2
+      return 1
+    fi
+    result="$WORK/$round-$attempt-$i.json"
+    if ! python3 "$ROOT/tools/g6_support.py" read < "$result" >/dev/null 2>&1; then
+      echo "FAIL: $round attempt $attempt participant $i returned invalid JSON" >&2
+      return 1
+    fi
+  done
+}
+
 count_real_votes() {
-  local suffix="$1" c=0 v real
+  local round="$1" attempt="$2" i choice real count=0
   for i in $(seq 1 "$N"); do
-    v=$(awk '/tokens used/{f=1} f' "$WORK/${suffix}$i.txt" | grep -m1 -oE "^Q5: [AB]" | awk '{print $2}' || true)
-    real=$(cat "$WORK/r$i/REAL" 2>/dev/null || echo A)
-    [[ -n "$v" && "$v" == "$real" ]] && c=$((c+1))
+    choice="$(
+      python3 "$ROOT/tools/g6_support.py" read \
+        < "$WORK/$round-$attempt-$i.json" |
+        sed -n 's/^CHOICE=//p'
+    )"
+    if (( i % 2 == 1 )); then real="A"; else real="B"; fi
+    [[ "$choice" == "$real" ]] && count=$((count + 1))
   done
-  echo "$c"
+  printf '%s\n' "$count"
 }
 
-run_round out
+show_attempt() {
+  local round="$1" attempt="$2" i
+  echo "----- $round attempt $attempt responses -----"
+  for i in $(seq 1 "$N"); do
+    printf 'participant %s: ' "$i"
+    cat "$WORK/$round-$attempt-$i.json"
+    printf '\n'
+  done
+}
 
-echo "----- 回答 -----"
+evaluate_round() {
+  local round="$1" comparison="$2" attempt=1 votes
+  prepare_round "$comparison"
+  run_attempt "$round" "$attempt"
+  validate_attempt "$round" "$attempt" || return 1
+  show_attempt "$round" "$attempt"
+  votes="$(count_real_votes "$round" "$attempt")"
+  echo "$round real votes: $votes / $N (need $NEED)"
+  (( votes >= NEED )) || return 1
+
+  if (( votes == NEED )); then
+    attempt=2
+    echo "$round reached the exact threshold; retrying the same comparison"
+    prepare_round "$comparison"
+    run_attempt "$round" "$attempt"
+    validate_attempt "$round" "$attempt" || return 1
+    show_attempt "$round" "$attempt"
+    votes="$(count_real_votes "$round" "$attempt")"
+    echo "$round retry real votes: $votes / $N (need $NEED)"
+    (( votes >= NEED )) || return 1
+  fi
+}
+
 FAIL=0
-for i in $(seq 1 "$N"); do
-  echo "=== 実行体 $i ==="
-  # プロンプトの echo と回答が同じ形なので、末尾側だけを採る。
-  # 見出しだけでなく、その下にぶら下がる詳細行も出す（詰まりの中身はそこにある）。
-  # BSD sed は \| の選択肢を解さないので -E を使う（macOS で実際に取り出せなかった）
-  REPORT=$(awk '/tokens used/{f=1} f' "out$i.txt" | sed -nE '/^(Q5|R1-)/,$p')
-  if [[ -z "$REPORT" ]]; then
-    echo "（回答を取り出せなかった。out$i.txt を見ること）"
-    FAIL=1
-  else
-    echo "$REPORT"
-  fi
-done
-
-if [[ "$MODE" == "read" ]]; then
-  # 合否: 本物が過半数で選ばれること（本物の置き場所は実行体ごとに入れ替えてある）
-  VOTES=$(count_real_votes out)
-  NEED=$(( N / 2 + 1 ))
-  echo "----- 判定 -----"
-  # ${N} と書くこと。全角の「（」が直後に来ると、$N だけでは変数名の切れ目にならない
-  echo "本物の得票: ${VOTES} / ${N}（合格は ${NEED} 以上）"
-  if [[ "$VOTES" -lt "$NEED" ]]; then
-    FAIL=2
-  elif [[ "$VOTES" -eq "$NEED" ]]; then
-    # ★ ちょうど閾値ぴったりは、ばらつきの幅と同じで信用できない（実測で 2/3 と 3/3 が両方出た）。
-    # もう1回だけ回して、2回とも閾値以上のときだけ合格にする。
-    echo "得票が閾値ちょうど。もう1回まわして確かめる"
-    run_round re
-    VOTES2=$(count_real_votes re)
-    echo "2回目の得票: ${VOTES2} / ${N}"
-    [[ "$VOTES2" -ge "$NEED" ]] || FAIL=2
-  fi
+if ! evaluate_round plain "$PLAIN"; then
+  echo "FAIL: plain round" >&2
+  FAIL=2
 fi
 
-if [[ "$MODE" == "exec" ]]; then
-  # 合否: 全実行体が章の最後まで到達し、教材外の知識で補った箇所が無いこと。
-  # 「進めたから PASS」にしない（16 A5）。補完はそれ自体が教材の欠落である。
-  echo "----- 判定 -----"
-  NG=0
-  for i in $(seq 1 "$N"); do
-    R=$(awk '/tokens used/{f=1} f' "out$i.txt")
-    echo "$R" | grep -q "^R1-到達: できた" || { echo "実行体 ${i}: 章の最後まで到達していない"; NG=1; }
-    echo "$R" | grep -qE "^R3-教材外の知識で補った箇所: *無し" || { echo "実行体 ${i}: 教材外の知識で補った箇所がある"; NG=1; }
-  done
-  [[ "$NG" -eq 0 ]] && echo "全実行体が到達・補完なし" || FAIL=2
+if [[ "$FAIL" -eq 0 ]]; then
+  if (( HIGH_VALUE_COUNT == 0 )); then
+    echo "R2=N/A HIGH_VALUE_COUNT=0 CLASSIFIED_ITEM_COUNT=$CLASSIFIED_ITEM_COUNT DEV_LOG_SHA256=$DEV_LOG_SHA256"
+  elif ! evaluate_round minus "$MINUS"; then
+    echo "FAIL: minus round" >&2
+    FAIL=2
+  fi
 fi
 
 echo "生ログ: $WORK"
-if [[ "$FAIL" -ne 0 ]]; then echo "FAIL"; exit 2; fi
-echo "PASS"
+if [[ "$FAIL" -ne 0 ]]; then
+  echo "PROVISIONAL_FAIL / NON-FORMAL G6"
+  exit 2
+fi
+echo "PROVISIONAL_PASS / NON-FORMAL G6"

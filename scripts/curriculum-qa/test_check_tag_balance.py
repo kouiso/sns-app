@@ -88,6 +88,11 @@ CASES: list[tuple[str, dict[str, str], list[tuple[str, str]]]] = [
         },
         [],
     ),
+    (
+        "旧scaffold名指しファイルも暗黙には除外しない",
+        {"day08_x.md": block("app/providers.tsx", "  <QueryClientProvider>")},
+        [("app/providers.tsx", "QueryClientProvider")],
+    ),
 
     (
         "読み比べ用サンプルは写経対象ではない",
@@ -265,6 +270,18 @@ def check_provided() -> int:
     return failed
 
 
+def check_provided_paths_alias() -> int:
+    """既存の明示API名も開始状態の控除として維持する。"""
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "day08_x.md"
+        p.write_text(block("App.tsx", "  <View>"), encoding="utf-8")
+        got = find_unclosed([p], provided_paths=frozenset({"App.tsx"}))
+    if got:
+        print(f"  ❌ provided_pathsで明示した開始状態を除外しない: {got}")
+        return 1
+    return 0
+
+
 # (説明, ファイル, 期待する単位一覧)
 DAY_CASES: list[tuple[str, dict[str, str], list[str]]] = [
     (
@@ -388,10 +405,23 @@ def main_test() -> int:
         if sorted(got) != sorted(expected):
             failed += 1
             print(f"  ❌ {name}: 期待 {expected} / 実際 {got}")
-    failed += check_masking() + check_scan() + check_days() + check_provided()
+    failed += (
+        check_masking()
+        + check_scan()
+        + check_days()
+        + check_provided()
+        + check_provided_paths_alias()
+    )
     exit_failed, exit_total = check_exit_code()
     failed += exit_failed
-    total = len(CASES) + len(MASK_CASES) + len(DAY_CASES) + len(PROVIDED_CASES) + 1 + exit_total
+    total = (
+        len(CASES)
+        + len(MASK_CASES)
+        + len(DAY_CASES)
+        + len(PROVIDED_CASES)
+        + 2
+        + exit_total
+    )
     if failed:
         print(f"❌ check_tag_balance 自己テスト {failed}/{total} 失敗")
         return 1

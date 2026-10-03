@@ -20,33 +20,91 @@ ZIP 梱包も scaffold スクリプトも存在しない。代わりにここが
 from __future__ import annotations
 
 import re
+import stat
+import subprocess
+import zipfile
 import zlib
 from functools import cache
 from pathlib import Path
 
 __all__ = [
     "REPO_ROOT",
+    "comparable_source_paths",
     "epub_entries",
+    "epub_source_paths",
+    "links_from_pdftohtml",
     "pdf_link_uris",
+    "pdf_link_targets",
     "starter_paths",
+    "starter_source_paths",
 ]
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+IGNORED_DIRS = frozenset({".expo", ".git", "dist", "node_modules"})
+HREF = re.compile(r"\bhref=[\"']([^\"']+)[\"']", re.I)
+
+
+def _validated_epub_infos(path: Path) -> tuple[tuple[zipfile.ZipInfo, str], ...]:
+    """EPUBを検証し、ZipInfoと正規化したエントリ名を返す。"""
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    try:
+        archive = zipfile.ZipFile(path)
+    except zipfile.BadZipFile as exc:
+        raise ValueError("EPUB が ZIP として壊れています") from exc
+    with archive:
+        infos = tuple(
+            (info, info.filename.rstrip("/"))
+            for info in archive.infolist()
+            if info.filename.rstrip("/")
+        )
+        names = [name for _, name in infos]
+        if len(names) != len(set(names)):
+            raise ValueError("EPUB に重複するエントリ名があります")
+        for name in names:
+            if (
+                "\\" in name
+                or name.startswith("/")
+                or any(part in {"", ".", ".."} for part in name.split("/"))
+            ):
+                raise ValueError(f"EPUB に安全でないエントリ名があります: {name}")
+        try:
+            media_type = archive.read("mimetype")
+        except KeyError as exc:
+            raise ValueError("EPUB に mimetype エントリがありません") from exc
+        except (zipfile.BadZipFile, RuntimeError) as exc:
+            raise ValueError("EPUB のエントリが壊れています") from exc
+        if media_type != b"application/epub+zip":
+            raise ValueError("mimetype が application/epub+zip ではありません")
+        return infos
 
 
 @cache
 def epub_entries(epub: Path) -> frozenset[str]:
-    """EPUB に同梱されるファイルのパス一覧。EPUB は ZIP 形式（16 B9 / D23）。
+    """EPUB に同梱される安全なエントリ名一覧。EPUB は ZIP 形式（16 B9 / D23）。
 
     返すのはエントリ名そのまま（`OEBPS/xxx.xhtml` など）。教材本文が
     「EPUB に入っているファイル」と見なせるかの判定は呼び出し側が行う。
     """
-    import zipfile
+    return frozenset(name for _, name in _validated_epub_infos(epub))
 
-    if not zipfile.is_zipfile(epub):
-        raise ValueError(f"EPUB（ZIP形式）として読めません: {epub}")
-    with zipfile.ZipFile(epub) as zf:
-        return frozenset(zf.namelist())
+
+def epub_source_paths(path: Path) -> frozenset[str]:
+    """EPUBに実ファイルとして同梱された照合可能なソースパスを返す。
+
+    ディレクトリエントリとUnix symlinkは数えない。保証するのはパスの存在だけで、
+    参照元との内容一致やEPUB全体の妥当性ではない。
+    """
+    return frozenset(
+        name
+        for info, name in _validated_epub_infos(path)
+        if not info.is_dir()
+        and not stat.S_ISLNK(info.external_attr >> 16)
+        and (
+            name in {"App.tsx", "package.json"}
+            or name.startswith(("app/", "src/", "prisma/", "supabase/"))
+        )
+    )
 
 
 def _literal_string(raw: bytes) -> bytes:
@@ -150,6 +208,59 @@ def pdf_link_uris(pdf: Path) -> frozenset[str]:
     return frozenset(uris)
 
 
+def links_from_pdftohtml(output: str) -> frozenset[str]:
+    """pdftohtmlのHTML出力からリンク注釈の行き先を抽出する。"""
+    return frozenset(match.group(1) for match in HREF.finditer(output))
+
+
+def pdf_link_targets(path: Path, *, executable: str = "pdftohtml") -> frozenset[str]:
+    """PDFのリンク注釈をpdftohtmlで列挙する。"""
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    result = subprocess.run(
+        [executable, "-stdout", "-i", "-noframes", str(path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return links_from_pdftohtml(result.stdout)
+
+
+def _source_tree_entries(root: Path) -> tuple[Path, ...]:
+    """symlinkを含まない明示ルート配下のエントリを返す。"""
+    if root.is_symlink():
+        raise ValueError(f"ソースルートに symlink は使えません: {root}")
+    if not root.is_dir():
+        raise NotADirectoryError(root)
+    entries = tuple(root.rglob("*"))
+    for path in entries:
+        if path.is_symlink():
+            raise ValueError(f"ソースツリーに symlink は使えません: {path}")
+    return entries
+
+
+def starter_source_paths(root: Path) -> frozenset[str]:
+    """章スターターに最初から存在する通常ファイルを返す。"""
+    return frozenset(
+        path.relative_to(root).as_posix()
+        for path in _source_tree_entries(root)
+        if path.is_file()
+        and not any(part in IGNORED_DIRS for part in path.relative_to(root).parts)
+    )
+
+
+def comparable_source_paths(starter: Path, reference: Path) -> frozenset[str]:
+    """symlinkの無い両ツリーで内容まで一致するファイルだけを返す。"""
+    starter_files = starter_source_paths(starter)
+    _source_tree_entries(reference)
+    return frozenset(
+        rel
+        for rel in starter_files
+        if (reference / rel).is_file()
+        and (starter / rel).read_bytes() == (reference / rel).read_bytes()
+    )
+
+
 # EPUB・PDF は不変の成果物なので読み出しをキャッシュしてよいが、
 # 開始状態は編集中に変わるディレクトリなのでキャッシュしない。
 def starter_paths(starter: Path) -> frozenset[str]:
@@ -161,10 +272,12 @@ def starter_paths(starter: Path) -> frozenset[str]:
     開始状態は現時点でリポジトリに存在しない（10 §3 G0 の未決項）。
     この関数は「在れば読む」だけを担い、不在の扱いは呼び出し側が決める。
     """
+    if starter.is_symlink():
+        raise ValueError(f"開始状態に symlink は使えません: {starter}")
     if starter.is_dir():
         return frozenset(
             f.relative_to(starter).as_posix()
-            for f in sorted(starter.rglob("*"))
+            for f in _source_tree_entries(starter)
             if f.is_file()
         )
     if starter.is_file():
