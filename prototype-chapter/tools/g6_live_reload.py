@@ -3,7 +3,12 @@
 The model-facing surface is intentionally only ``LiveReloadSession.request``
 with an operation ID.  The trusted controller owns paths and setup.  GUI,
 Metro, device UI, model/MCP wiring, and formal G6 completion remain unsupported.
+Recorded source hashes bind disk bytes observed at initialization and finish;
+they do not prove which bytes the already-running interpreter loaded.
+The trusted same-UID controller must prevent path replacement between checks;
+this component does not defend against a hostile host process racing its reads.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -16,7 +21,6 @@ from typing import Any, Final
 
 from g6_broker import (
     BWRAP_PATH,
-    BrokerError,
     _bwrap_prefix,
     _preflight,
     _run,
@@ -28,9 +32,15 @@ class LiveReloadError(ValueError):
     """Raised when the fixed chapter execution cannot be proven."""
 
 
-CHAPTER_SHA256: Final = "2df26dc8ba13d0928187ae81b5f2c1af6a55e1a5ec91d600480387f8fca67785"
-START_APP_SHA256: Final = "5c7d8b989dc7a6a70e4a6be61ec95b1c5a1562e8a510efb3aa6b8cbe94033190"
-FINAL_APP_SHA256: Final = "fb927c6ef3ec31a6c6237f1e9454d7147bdb0605314edc7e0faa7efb504a4949"
+CHAPTER_SHA256: Final = (
+    "2df26dc8ba13d0928187ae81b5f2c1af6a55e1a5ec91d600480387f8fca67785"
+)
+START_APP_SHA256: Final = (
+    "5c7d8b989dc7a6a70e4a6be61ec95b1c5a1562e8a510efb3aa6b8cbe94033190"
+)
+FINAL_APP_SHA256: Final = (
+    "fb927c6ef3ec31a6c6237f1e9454d7147bdb0605314edc7e0faa7efb504a4949"
+)
 COMMIT_MESSAGE: Final = "文字と色の変更を確かめる"
 RESTORE_PRACTICE_TEXT: Final = "元に戻す練習"
 COMPONENT_SOURCE: Final = Path(__file__).resolve()
@@ -62,6 +72,16 @@ def _canonical(value: object) -> bytes:
     return json.dumps(
         value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
+
+
+def _read_regular(path: Path, label: str) -> bytes:
+    try:
+        mode = path.lstat().st_mode
+    except OSError as exc:
+        raise LiveReloadError(f"{label} is unavailable") from exc
+    if not stat.S_ISREG(mode):
+        raise LiveReloadError(f"{label} must be a regular, non-symlink file")
+    return path.read_bytes()
 
 
 def _source_binding(lines: list[str], start: int, end: int) -> SourceBinding:
@@ -96,7 +116,9 @@ def compile_plan(chapter_path: Path, start_app: bytes) -> tuple[list[Operation],
         raise LiveReloadError("chapter must be a regular, non-symlink file")
     chapter = chapter_path.read_bytes()
     if _sha256(chapter) != CHAPTER_SHA256:
-        raise LiveReloadError("chapter revision is stale or unapproved for this component")
+        raise LiveReloadError(
+            "chapter revision is stale or unapproved for this component"
+        )
     if _sha256(start_app) != START_APP_SHA256:
         raise LiveReloadError("start App.tsx hash mismatch")
     try:
@@ -133,12 +155,12 @@ def compile_plan(chapter_path: Path, start_app: bytes) -> tuple[list[Operation],
         + function_fence[3].rstrip("\n")
         + start_text[function_end:]
     )
-    style_anchor = "  body: {\n    fontSize: 16,\n    marginTop: 8,\n    color: '#555',\n  },\n"
+    style_anchor = (
+        "  body: {\n    fontSize: 16,\n    marginTop: 8,\n    color: '#555',\n  },\n"
+    )
     if function_stage.count(style_anchor) != 1:
         raise LiveReloadError("start App.tsx style anchor is not unique")
-    final_text = function_stage.replace(
-        style_anchor, style_anchor + style_fence[3], 1
-    )
+    final_text = function_stage.replace(style_anchor, style_anchor + style_fence[3], 1)
     final_app = final_text.encode("utf-8")
     if _sha256(final_app) != FINAL_APP_SHA256:
         raise LiveReloadError("compiled App.tsx differs from the reviewed listing")
@@ -149,6 +171,9 @@ def compile_plan(chapter_path: Path, start_app: bytes) -> tuple[list[Operation],
         RESTORE_PRACTICE_TEXT,
         1,
     ).encode("utf-8")
+
+    if len(lines) < 83 or RESTORE_PRACTICE_TEXT not in lines[82]:
+        raise LiveReloadError("restore-practice instruction is missing from line 83")
 
     function_source = _source_binding(lines, function_fence[1], function_fence[2])
     style_source = _source_binding(lines, style_fence[1], style_fence[2])
@@ -163,17 +188,77 @@ def compile_plan(chapter_path: Path, start_app: bytes) -> tuple[list[Operation],
     practice_source = _source_binding(lines, 83, 83)
     return (
         [
-            Operation("write-app-function", "write", function_source, content=function_stage.encode(), phase="text"),
-            Operation("write-note-style", "write", style_source, content=final_app, phase="style"),
-            Operation("git-status-before-commit", "command", save_sources[0], argv=("/usr/bin/git", "status", "--short", "App.tsx")),
-            Operation("git-diff-before-commit", "command", save_sources[1], argv=("/usr/bin/git", "diff", "--", "App.tsx")),
-            Operation("git-add-app", "command", save_sources[2], argv=("/usr/bin/git", "add", "App.tsx")),
-            Operation("git-commit-app", "command", save_sources[3], argv=("/usr/bin/git", "commit", "-m", COMMIT_MESSAGE), phase="committed"),
-            Operation("write-restore-practice", "write", practice_source, content=practice_app, phase="restore-practice-dirty"),
-            Operation("git-status-before-restore", "command", restore_sources[0], argv=("/usr/bin/git", "status", "--short", "App.tsx")),
-            Operation("git-diff-before-restore", "command", restore_sources[1], argv=("/usr/bin/git", "diff", "--", "App.tsx")),
-            Operation("git-restore-app", "command", restore_sources[2], argv=("/usr/bin/git", "restore", "App.tsx")),
-            Operation("git-diff-after-restore", "command", restore_sources[3], argv=("/usr/bin/git", "diff", "--", "App.tsx"), phase="git-restored"),
+            Operation(
+                "write-app-function",
+                "write",
+                function_source,
+                content=function_stage.encode(),
+                phase="text",
+            ),
+            Operation(
+                "write-note-style",
+                "write",
+                style_source,
+                content=final_app,
+                phase="style",
+            ),
+            Operation(
+                "git-status-before-commit",
+                "command",
+                save_sources[0],
+                argv=("/usr/bin/git", "status", "--short", "App.tsx"),
+            ),
+            Operation(
+                "git-diff-before-commit",
+                "command",
+                save_sources[1],
+                argv=("/usr/bin/git", "diff", "--", "App.tsx"),
+            ),
+            Operation(
+                "git-add-app",
+                "command",
+                save_sources[2],
+                argv=("/usr/bin/git", "add", "App.tsx"),
+            ),
+            Operation(
+                "git-commit-app",
+                "command",
+                save_sources[3],
+                argv=("/usr/bin/git", "commit", "-m", COMMIT_MESSAGE),
+                phase="committed",
+            ),
+            Operation(
+                "write-restore-practice",
+                "write",
+                practice_source,
+                content=practice_app,
+                phase="restore-practice-dirty",
+            ),
+            Operation(
+                "git-status-before-restore",
+                "command",
+                restore_sources[0],
+                argv=("/usr/bin/git", "status", "--short", "App.tsx"),
+            ),
+            Operation(
+                "git-diff-before-restore",
+                "command",
+                restore_sources[1],
+                argv=("/usr/bin/git", "diff", "--", "App.tsx"),
+            ),
+            Operation(
+                "git-restore-app",
+                "command",
+                restore_sources[2],
+                argv=("/usr/bin/git", "restore", "App.tsx"),
+            ),
+            Operation(
+                "git-diff-after-restore",
+                "command",
+                restore_sources[3],
+                argv=("/usr/bin/git", "diff", "--", "App.tsx"),
+                phase="git-restored",
+            ),
         ],
         chapter,
     )
@@ -185,11 +270,17 @@ def _validate_tree_no_links(root: Path, label: str) -> None:
     for path in root.rglob("*"):
         mode = path.lstat().st_mode
         if stat.S_ISLNK(mode) or not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
-            raise LiveReloadError(f"unsupported {label} entry: {path.relative_to(root)}")
+            raise LiveReloadError(
+                f"unsupported {label} entry: {path.relative_to(root)}"
+            )
 
 
 class LiveReloadSession:
-    """Execute the fixed artifact/Git subsequence one requested ID at a time."""
+    """Execute the fixed artifact/Git subsequence one requested ID at a time.
+
+    An initialization failure preserves any copied workspace/evidence for
+    diagnosis.  That path set is consumed; a retry must use new empty paths.
+    """
 
     def __init__(
         self,
@@ -216,9 +307,7 @@ class LiveReloadSession:
                 root = resolved[name]
                 other = resolved[other_name]
                 if root.is_relative_to(other) or other.is_relative_to(root):
-                    raise LiveReloadError(
-                        f"{name} and {other_name} must not overlap"
-                    )
+                    raise LiveReloadError(f"{name} and {other_name} must not overlap")
         for root, label in ((workspace, "workspace"), (evidence_root, "evidence_root")):
             if any(root.iterdir()):
                 raise LiveReloadError(f"{label} must be empty")
@@ -227,9 +316,9 @@ class LiveReloadSession:
             raise LiveReloadError("start_root must contain exactly App.tsx and .git")
         if not (start_root / "App.tsx").is_file() or not (start_root / ".git").is_dir():
             raise LiveReloadError("start_root App.tsx/.git entry types are invalid")
-        start_app = (start_root / "App.tsx").read_bytes()
+        start_app = _read_regular(start_root / "App.tsx", "start App.tsx")
         self.operations, self.chapter = compile_plan(chapter_path, start_app)
-        shutil.copy2(start_root / "App.tsx", workspace / "App.tsx")
+        (workspace / "App.tsx").write_bytes(start_app)
         shutil.copytree(start_root / ".git", workspace / ".git")
         self.workspace = workspace
         self.evidence_root = evidence_root
@@ -238,30 +327,45 @@ class LiveReloadSession:
         self.start_head = ""
         self.committed_head = ""
         self.closed = False
+        self.failed = False
+        self.failure_reason = ""
         self.finalized = False
-        self.component_source_sha256 = _sha256(COMPONENT_SOURCE.read_bytes())
-        self.broker_source_sha256 = _sha256(BROKER_SOURCE.read_bytes())
+        self.component_source_sha256 = _sha256(
+            _read_regular(COMPONENT_SOURCE, "component source")
+        )
+        self.broker_source_sha256 = _sha256(
+            _read_regular(BROKER_SOURCE, "broker source")
+        )
         self.private_home = workspace.parent / f".{workspace.name}-live-reload-home"
         if self.private_home.exists() or self.private_home.is_symlink():
             raise LiveReloadError("private HOME path already exists")
         self.private_home.mkdir(mode=0o700)
         try:
             _validate_bwrap(BWRAP_PATH)
+            self.bwrap_sha256 = _sha256(_read_regular(BWRAP_PATH, "bwrap executable"))
             self.prefix = _bwrap_prefix(BWRAP_PATH, workspace, self.private_home) + [
                 "--dev",
                 "/dev",
             ]
             self.preflight = _preflight(self.prefix)
             self._validate_start()
-        except (BrokerError, LiveReloadError, OSError) as exc:
+        except BaseException as exc:
             self.close()
+            if not isinstance(exc, Exception):
+                raise
             if isinstance(exc, LiveReloadError):
                 raise
             raise LiveReloadError(str(exc)) from exc
 
     @property
     def next_operation_id(self) -> str | None:
-        return self.operations[self.index].operation_id if self.index < len(self.operations) else None
+        if self.closed:
+            return None
+        return (
+            self.operations[self.index].operation_id
+            if self.index < len(self.operations)
+            else None
+        )
 
     def _command(self, argv: tuple[str, ...]) -> tuple[str, str]:
         result = _run(self.prefix + list(argv))
@@ -286,6 +390,8 @@ class LiveReloadSession:
             for path in hooks.iterdir()
         ):
             raise LiveReloadError("executable Git hooks are forbidden")
+        if (self.workspace / ".git" / "commondir").exists():
+            raise LiveReloadError("Git commondir indirection is forbidden")
         allowed_config = {
             "core.repositoryformatversion",
             "core.filemode",
@@ -305,7 +411,9 @@ class LiveReloadSession:
             ).splitlines()
         )
         if not actual_config <= allowed_config:
-            raise LiveReloadError("start Git repository contains unsupported local config")
+            raise LiveReloadError(
+                "start Git repository contains unsupported local config"
+            )
         for key in ("user.name", "user.email"):
             value = self._git(
                 "config",
@@ -319,6 +427,17 @@ class LiveReloadSession:
                 raise LiveReloadError(f"start Git repository lacks local {key}")
         if self._git("rev-parse", "--show-toplevel").strip() != "/work":
             raise LiveReloadError("start Git repository is not rooted at the workspace")
+        if self._git("rev-parse", "--git-common-dir").strip() != ".git":
+            raise LiveReloadError("start Git common directory must be .git")
+        if self._git("ls-files", "-v").splitlines() != ["H App.tsx"]:
+            raise LiveReloadError("start App.tsx must have normal Git index flags")
+        if (
+            self._git("rev-parse", "HEAD:App.tsx").strip()
+            != self._git("hash-object", "App.tsx").strip()
+        ):
+            raise LiveReloadError(
+                "start HEAD App.tsx differs from validated start bytes"
+            )
         if self._git("status", "--porcelain", "--untracked-files=all"):
             raise LiveReloadError("start Git repository must be clean")
         if self._git("ls-files").splitlines() != ["App.tsx"]:
@@ -338,7 +457,7 @@ class LiveReloadSession:
         if phase_root.exists():
             raise LiveReloadError(f"duplicate phase snapshot: {phase}")
         phase_root.mkdir()
-        app = (self.workspace / "App.tsx").read_bytes()
+        app = _read_regular(self.workspace / "App.tsx", "workspace App.tsx")
         (phase_root / "App.tsx").write_bytes(app)
         status = self._git("status", "--short", "App.tsx")
         head = self._git("rev-parse", "HEAD").strip()
@@ -360,7 +479,9 @@ class LiveReloadSession:
         if self.closed:
             raise LiveReloadError("session is closed")
         if type(operation_id) is not str or self.index >= len(self.operations):
-            raise LiveReloadError("operation request is invalid or execution is complete")
+            raise LiveReloadError(
+                "operation request is invalid or execution is complete"
+            )
         operation = self.operations[self.index]
         if operation_id != operation.operation_id:
             raise LiveReloadError(
@@ -368,43 +489,71 @@ class LiveReloadSession:
             )
         stdout = ""
         stderr = ""
-        if operation.kind == "write":
-            assert operation.content is not None
-            self._write(operation.content)
-        elif operation.kind == "command":
-            stdout, stderr = self._command(operation.argv)
-        else:
-            raise LiveReloadError(f"unsupported compiled operation kind: {operation.kind}")
-        self._validate_operation_effect(operation, stdout)
-        phase_snapshot_sha256 = ""
-        if operation.phase is not None:
-            phase_snapshot_sha256 = self._snapshot(operation.phase)
-        record = {
-            "id": operation.operation_id,
-            "kind": operation.kind,
-            "source_start_line": operation.source.start_line,
-            "source_end_line": operation.source.end_line,
-            "source_sha256": operation.source.sha256,
-            "chapter_sha256": _sha256(self.chapter),
-            "argv_sha256": _sha256(_canonical(list(operation.argv))),
-            "content_sha256": _sha256(operation.content or b""),
-            "stdout_sha256": _sha256(stdout.encode()),
-            "stderr_sha256": _sha256(stderr.encode()),
-            "phase": operation.phase,
-            "phase_snapshot_sha256": phase_snapshot_sha256,
-        }
-        self.trace.append(record)
-        self.index += 1
-        return record
+        try:
+            if operation.kind == "write":
+                assert operation.content is not None
+                self._write(operation.content)
+                if (
+                    _read_regular(self.workspace / "App.tsx", "workspace App.tsx")
+                    != operation.content
+                ):
+                    raise LiveReloadError(
+                        f"write operation did not produce exact bytes: {operation.operation_id}"
+                    )
+            elif operation.kind == "command":
+                stdout, stderr = self._command(operation.argv)
+            else:
+                raise LiveReloadError(
+                    f"unsupported compiled operation kind: {operation.kind}"
+                )
+            self._validate_operation_effect(operation, stdout)
+            phase_snapshot_sha256 = ""
+            if operation.phase is not None:
+                phase_snapshot_sha256 = self._snapshot(operation.phase)
+            record = {
+                "id": operation.operation_id,
+                "kind": operation.kind,
+                "source_start_line": operation.source.start_line,
+                "source_end_line": operation.source.end_line,
+                "source_sha256": operation.source.sha256,
+                "chapter_sha256": _sha256(self.chapter),
+                "argv_sha256": _sha256(_canonical(list(operation.argv))),
+                "content_sha256": _sha256(operation.content or b""),
+                "stdout_sha256": _sha256(stdout.encode()),
+                "stderr_sha256": _sha256(stderr.encode()),
+                "phase": operation.phase,
+                "phase_snapshot_sha256": phase_snapshot_sha256,
+            }
+            self.trace.append(record)
+            self.index += 1
+            return record
+        except BaseException as exc:
+            self.failed = True
+            self.failure_reason = str(exc) or type(exc).__name__
+            self.close()
+            raise
 
     def _validate_operation_effect(self, operation: Operation, stdout: str) -> None:
-        app = (self.workspace / "App.tsx").read_bytes()
-        if operation.operation_id == "write-app-function" and _sha256(app) in {START_APP_SHA256, FINAL_APP_SHA256}:
-            raise LiveReloadError("function edit was a no-op or skipped its intermediate stage")
-        if operation.operation_id == "write-note-style" and _sha256(app) != FINAL_APP_SHA256:
+        app = _read_regular(self.workspace / "App.tsx", "workspace App.tsx")
+        if operation.operation_id == "write-app-function" and _sha256(app) in {
+            START_APP_SHA256,
+            FINAL_APP_SHA256,
+        }:
+            raise LiveReloadError(
+                "function edit was a no-op or skipped its intermediate stage"
+            )
+        if (
+            operation.operation_id == "write-note-style"
+            and _sha256(app) != FINAL_APP_SHA256
+        ):
             raise LiveReloadError("style edit did not reach the reviewed App.tsx")
-        if operation.operation_id == "git-status-before-commit" and stdout != " M App.tsx\n":
-            raise LiveReloadError("pre-commit status did not show only App.tsx modified")
+        if (
+            operation.operation_id == "git-status-before-commit"
+            and stdout != " M App.tsx\n"
+        ):
+            raise LiveReloadError(
+                "pre-commit status did not show only App.tsx modified"
+            )
         if operation.operation_id == "git-diff-before-commit" and not stdout:
             raise LiveReloadError("pre-commit diff is empty")
         if operation.operation_id == "git-add-app":
@@ -417,13 +566,26 @@ class LiveReloadSession:
             if self.committed_head == self.start_head:
                 raise LiveReloadError("git commit did not advance HEAD")
         if operation.operation_id == "write-restore-practice":
-            if RESTORE_PRACTICE_TEXT.encode() not in app or not self._git("status", "--short", "App.tsx"):
-                raise LiveReloadError("restore-practice edit did not create a dirty App.tsx")
-        if operation.operation_id == "git-status-before-restore" and stdout != " M App.tsx\n":
+            if RESTORE_PRACTICE_TEXT.encode() not in app or not self._git(
+                "status", "--short", "App.tsx"
+            ):
+                raise LiveReloadError(
+                    "restore-practice edit did not create a dirty App.tsx"
+                )
+        if (
+            operation.operation_id == "git-status-before-restore"
+            and stdout != " M App.tsx\n"
+        ):
             raise LiveReloadError("restore status did not show App.tsx modified")
-        if operation.operation_id == "git-diff-before-restore" and RESTORE_PRACTICE_TEXT not in stdout:
+        if (
+            operation.operation_id == "git-diff-before-restore"
+            and RESTORE_PRACTICE_TEXT not in stdout
+        ):
             raise LiveReloadError("restore-practice diff is missing the specified text")
-        if operation.operation_id == "git-restore-app" and _sha256(app) != FINAL_APP_SHA256:
+        if (
+            operation.operation_id == "git-restore-app"
+            and _sha256(app) != FINAL_APP_SHA256
+        ):
             raise LiveReloadError("git restore did not restore the committed App.tsx")
         if operation.operation_id == "git-diff-after-restore":
             if stdout or self._git("status", "--porcelain", "--untracked-files=all"):
@@ -437,25 +599,72 @@ class LiveReloadSession:
         if self.index != len(self.operations):
             raise LiveReloadError("required operation sequence is incomplete")
         if any(self.private_home.iterdir()):
-            raise LiveReloadError("fixed operations wrote unexpected private HOME state")
-        if _sha256(COMPONENT_SOURCE.read_bytes()) != self.component_source_sha256:
+            raise LiveReloadError(
+                "fixed operations wrote unexpected private HOME state"
+            )
+        if (
+            _sha256(_read_regular(COMPONENT_SOURCE, "component source"))
+            != self.component_source_sha256
+        ):
             raise LiveReloadError("component source changed during execution")
-        if _sha256(BROKER_SOURCE.read_bytes()) != self.broker_source_sha256:
+        if (
+            _sha256(_read_regular(BROKER_SOURCE, "broker source"))
+            != self.broker_source_sha256
+        ):
             raise LiveReloadError("broker source changed during execution")
-        if _sha256((self.workspace / "App.tsx").read_bytes()) != FINAL_APP_SHA256:
+        if _sha256(_read_regular(BWRAP_PATH, "bwrap executable")) != self.bwrap_sha256:
+            raise LiveReloadError("bwrap executable changed during execution")
+        final_app = _read_regular(self.workspace / "App.tsx", "final App.tsx")
+        if _sha256(final_app) != FINAL_APP_SHA256:
             raise LiveReloadError("final App.tsx integrity check failed")
         if self._git("status", "--porcelain", "--untracked-files=all"):
             raise LiveReloadError("final Git repository is not clean")
         final_head = self._git("rev-parse", "HEAD").strip()
         if not self.committed_head or final_head != self.committed_head:
             raise LiveReloadError("final Git HEAD differs from the chapter commit")
+        if self._git("rev-list", "--parents", "-n", "1", final_head).splitlines() != [
+            f"{final_head} {self.start_head}"
+        ]:
+            raise LiveReloadError("chapter commit parent differs from the start HEAD")
+        if (
+            self._git("log", "-1", "--format=%s", final_head).rstrip("\n")
+            != COMMIT_MESSAGE
+        ):
+            raise LiveReloadError(
+                "chapter commit message differs from the fixed message"
+            )
+        if self._git("ls-tree", "--name-only", final_head).splitlines() != ["App.tsx"]:
+            raise LiveReloadError("chapter commit tree must contain only App.tsx")
+        if (
+            self._git("rev-parse", f"{final_head}:App.tsx").strip()
+            != self._git("hash-object", "App.tsx").strip()
+        ):
+            raise LiveReloadError("chapter commit App.tsx differs from final App.tsx")
+        expected_phases = {
+            operation.phase
+            for operation in self.operations
+            if operation.phase is not None
+        }
+        if {path.name for path in self.evidence_root.iterdir()} != expected_phases:
+            raise LiveReloadError("evidence root contains unexpected phase entries")
         for record in self.trace:
             phase = record["phase"]
             if phase is None:
                 continue
             phase_root = self.evidence_root / phase
-            app = (phase_root / "App.tsx").read_bytes()
-            metadata = (phase_root / "snapshot.json").read_bytes()
+            if phase_root.is_symlink() or not phase_root.is_dir():
+                raise LiveReloadError(f"phase snapshot directory is invalid: {phase}")
+            if {path.name for path in phase_root.iterdir()} != {
+                "App.tsx",
+                "snapshot.json",
+            }:
+                raise LiveReloadError(
+                    f"phase snapshot contains unexpected entries: {phase}"
+                )
+            app = _read_regular(phase_root / "App.tsx", f"{phase} App.tsx")
+            metadata = _read_regular(
+                phase_root / "snapshot.json", f"{phase} snapshot metadata"
+            )
             actual_snapshot_sha256 = _sha256(
                 _canonical(
                     {
@@ -490,12 +699,12 @@ class LiveReloadSession:
                     ]
                 )
             ),
-            "bwrap_sha256": _sha256(BWRAP_PATH.read_bytes()),
+            "bwrap_sha256": self.bwrap_sha256,
             "component_source_sha256": self.component_source_sha256,
             "broker_source_sha256": self.broker_source_sha256,
             "sandbox_recipe_sha256": _sha256(_canonical(self.prefix)),
             "start_app_sha256": START_APP_SHA256,
-            "final_app_sha256": _sha256((self.workspace / "App.tsx").read_bytes()),
+            "final_app_sha256": _sha256(final_app),
             "start_head": self.start_head,
             "final_head": final_head,
             "preflight": self.preflight,

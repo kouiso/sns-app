@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from g6_live_reload import (
     COMMIT_MESSAGE,
@@ -42,7 +43,9 @@ class LiveReloadTests(unittest.TestCase):
         )
         self.git("init", cwd=self.start)
         self.git("config", "--local", "user.name", "G6 Fixture", cwd=self.start)
-        self.git("config", "--local", "user.email", "g6@example.invalid", cwd=self.start)
+        self.git(
+            "config", "--local", "user.email", "g6@example.invalid", cwd=self.start
+        )
         self.git("add", "App.tsx", cwd=self.start)
         self.git("commit", "-m", "start", cwd=self.start)
         self.workspace = self.base / "work"
@@ -65,12 +68,16 @@ class LiveReloadTests(unittest.TestCase):
         return result.stdout
 
     def session(self) -> LiveReloadSession:
-        return LiveReloadSession(self.chapter, self.start, self.workspace, self.evidence)
+        return LiveReloadSession(
+            self.chapter, self.start, self.workspace, self.evidence
+        )
 
     def test_real_bwrap_executes_fixed_app_git_and_restore_stages(self) -> None:
         with self.session() as session:
             receipt = run_all(session)
-        self.assertEqual(FINAL_APP_SHA256, sha((self.workspace / "App.tsx").read_bytes()))
+        self.assertEqual(
+            FINAL_APP_SHA256, sha((self.workspace / "App.tsx").read_bytes())
+        )
         self.assertEqual("", self.git("status", "--porcelain", cwd=self.workspace))
         self.assertEqual(
             COMMIT_MESSAGE,
@@ -78,8 +85,9 @@ class LiveReloadTests(unittest.TestCase):
         )
         self.assertEqual(
             ["App.tsx"],
-            self.git("show", "--pretty=", "--name-only", "HEAD", cwd=self.workspace)
-            .splitlines(),
+            self.git(
+                "show", "--pretty=", "--name-only", "HEAD", cwd=self.workspace
+            ).splitlines(),
         )
         self.assertTrue((self.evidence / "text" / "App.tsx").is_file())
         self.assertTrue((self.evidence / "style" / "App.tsx").is_file())
@@ -91,7 +99,12 @@ class LiveReloadTests(unittest.TestCase):
         )
         trace = receipt["trace"]
         self.assertTrue(trace["claims"]["artifact_git_execution"])
-        for claim in ("formal_g6_exec", "model_mcp_connected", "metro_executed", "ui_validated"):
+        for claim in (
+            "formal_g6_exec",
+            "model_mcp_connected",
+            "metro_executed",
+            "ui_validated",
+        ):
             self.assertFalse(trace["claims"][claim])
         self.assertEqual(11, len(trace["actions"]))
         self.assertEqual(64, len(trace["component_source_sha256"]))
@@ -107,11 +120,43 @@ class LiveReloadTests(unittest.TestCase):
         with self.session() as session:
             with self.assertRaisesRegex(LiveReloadError, "order violation"):
                 session.request("sh -c id")
+            self.assertFalse(session.failed)
+            self.assertFalse(session.closed)
             with self.assertRaisesRegex(LiveReloadError, "order violation"):
                 session.request("write-note-style")
             session.request("write-app-function")
             with self.assertRaisesRegex(LiveReloadError, "order violation"):
                 session.request("write-app-function")
+
+    def test_execution_failure_closes_session_and_exact_write_is_required(self) -> None:
+        with self.session() as session:
+
+            def wrong_write(_content: bytes) -> None:
+                (self.workspace / "App.tsx").write_bytes(b"wrong")
+
+            with mock.patch.object(session, "_write", side_effect=wrong_write):
+                with self.assertRaisesRegex(LiveReloadError, "exact bytes"):
+                    session.request("write-app-function")
+            self.assertTrue(session.failed)
+            self.assertTrue(session.closed)
+            self.assertIn("exact bytes", session.failure_reason)
+            self.assertIsNone(session.next_operation_id)
+            with self.assertRaisesRegex(LiveReloadError, "session is closed"):
+                session.request("write-app-function")
+
+    def test_interrupted_write_still_closes_and_marks_session_failed(self) -> None:
+        with self.session() as session:
+
+            def interrupted_write(_content: bytes) -> None:
+                (self.workspace / "App.tsx").write_bytes(b"partial")
+                raise KeyboardInterrupt
+
+            with mock.patch.object(session, "_write", side_effect=interrupted_write):
+                with self.assertRaises(KeyboardInterrupt):
+                    session.request("write-app-function")
+            self.assertTrue(session.failed)
+            self.assertTrue(session.closed)
+            self.assertEqual("KeyboardInterrupt", session.failure_reason)
 
     def test_stale_chapter_start_extra_content_and_symlink_fail_closed(self) -> None:
         self.chapter.write_bytes(self.chapter.read_bytes() + b"\n")
@@ -142,7 +187,9 @@ class LiveReloadTests(unittest.TestCase):
             (self.workspace / "App.tsx").write_bytes(
                 (PROTOTYPE / "listings" / "live-reload" / "App.tsx").read_bytes()
             )
-            with self.assertRaisesRegex(LiveReloadError, "did not show App.tsx modified"):
+            with self.assertRaisesRegex(
+                LiveReloadError, "did not show App.tsx modified"
+            ):
                 session.request("git-status-before-restore")
 
     def test_start_must_be_clean_owned_repo_with_local_identity(self) -> None:
@@ -160,7 +207,36 @@ class LiveReloadTests(unittest.TestCase):
         with self.assertRaisesRegex(LiveReloadError, "user.email"):
             self.session()
 
-    def test_executable_git_hook_and_unsupported_local_config_are_rejected(self) -> None:
+    def test_start_rejects_commondir_index_flags_and_head_blob_mismatch(self) -> None:
+        commondir = self.start / ".git" / "commondir"
+        commondir.write_text(".git\n", encoding="utf-8")
+        with self.assertRaisesRegex(LiveReloadError, "commondir"):
+            self.session()
+        self.assertTrue(any(self.workspace.iterdir()))
+
+        commondir.unlink()
+        shutil.rmtree(self.workspace)
+        self.workspace.mkdir()
+        self.git("update-index", "--skip-worktree", "App.tsx", cwd=self.start)
+        with self.assertRaisesRegex(LiveReloadError, "normal Git index flags"):
+            self.session()
+
+        self.git("update-index", "--no-skip-worktree", "App.tsx", cwd=self.start)
+        shutil.rmtree(self.workspace)
+        self.workspace.mkdir()
+        (self.start / "App.tsx").write_text("wrong HEAD", encoding="utf-8")
+        self.git("add", "App.tsx", cwd=self.start)
+        self.git("commit", "--amend", "--no-edit", cwd=self.start)
+        shutil.copy2(
+            PROTOTYPE / "listings" / "expo-first-screen" / "App.tsx",
+            self.start / "App.tsx",
+        )
+        with self.assertRaisesRegex(LiveReloadError, "start HEAD App.tsx"):
+            self.session()
+
+    def test_executable_git_hook_and_unsupported_local_config_are_rejected(
+        self,
+    ) -> None:
         hook = self.start / ".git" / "hooks" / "post-commit"
         hook.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
         hook.chmod(0o755)
@@ -173,7 +249,9 @@ class LiveReloadTests(unittest.TestCase):
         with self.assertRaisesRegex(LiveReloadError, "unsupported local config"):
             self.session()
 
-    def test_unsupported_fsmonitor_is_rejected_before_git_status_can_run_it(self) -> None:
+    def test_unsupported_fsmonitor_is_rejected_before_git_status_can_run_it(
+        self,
+    ) -> None:
         monitor = self.start / ".git" / "malicious-fsmonitor"
         monitor.write_text(
             "#!/usr/bin/python3\n"
@@ -245,9 +323,7 @@ class LiveReloadTests(unittest.TestCase):
         with self.assertRaisesRegex(LiveReloadError, "must not overlap"):
             LiveReloadSession(self.chapter, self.start, self.start, self.evidence)
         with self.assertRaisesRegex(LiveReloadError, "must not overlap"):
-            LiveReloadSession(
-                self.chapter, self.start, self.workspace, self.workspace
-            )
+            LiveReloadSession(self.chapter, self.start, self.workspace, self.workspace)
 
 
 if __name__ == "__main__":
