@@ -5,8 +5,12 @@
   "main": "index.js",
   "scripts": {
     "gate:style": "tools/g3-style.sh",
+    "gate:g3": "tools/g3-full.sh",
+    "gate:g3:controls-sync": "tools/g3-controls-sync.sh",
+    "gate:g3:trial": "npm run gate:g3:controls-sync && tools/g3-full.sh --start-state-manifest g3-start-state.trial.json --dev-logs-dir ../dev-logs chapter-expo-first-screen.md chapter-live-reload.md chapter-expo-first-screen-plain.md chapter-live-reload-plain.md g6/expo-first-screen/plain.md g6/expo-first-screen/minus.md g6/live-reload/plain.md",
+    "gate:g3:selftest": "python3 tools/test_g3_checks.py",
     "gate:quote": "tools/g5-quote.sh",
-    "gate": "npm run gate:style && npm run gate:quote",
+    "gate": "npm run gate:style && npm run gate:g3:trial && npm run gate:quote",
     "snapshot": "tools/make-snapshot.sh",
     "g6": "tools/g6-run.sh",
     "gate:style:selftest": "prh/testdata/run.sh"

@@ -90,7 +90,9 @@ def find_missing(text: str, root: Path) -> list[tuple[int, str]]:
         if not fp:
             continue
         value = filepath_value(fp).split("（")[0].split("(")[0].strip()
-        if not value.startswith(("src/", "prisma/", "scripts/")):
+        if not value.startswith(
+            ("app/", "src/", "prisma/", "scripts/", "supabase/", "prototype-chapter/")
+        ):
             continue
         if not (root / value).exists():
             hits.append((i, value))

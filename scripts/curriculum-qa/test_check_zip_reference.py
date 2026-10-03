@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """check_zip_reference.py の退行テスト。
 
-止めるもの（ZIP に入らない `src/` と見比べさせる）と、止めてはいけないもの
-（ZIP に入らない旨を添えてある／照合ではなく作成の指示／scaffold が配るファイルとの
+止めるもの（配布EPUBに入らない `src/` と見比べさせる）と、止めてはいけないもの
+（配布物に無い旨を添えてある／照合ではなく作成の指示／明示した同梱ファイルとの
 照合／コードブロックの中）の両方を置く。
 """
 
@@ -10,15 +10,23 @@ import contextlib
 import io
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from check_zip_reference import find_refs, main  # noqa: E402
+from check_zip_reference import find_refs, main, not_in_distribution  # noqa: E402
+
+AVAILABLE = frozenset(
+    {
+        "src/server/api/routers/_helpers/select.ts",
+        "src/app/layout.tsx",
+    }
+)
 
 CASES: list[tuple[str, str, list[int]]] = [
     (
-        "ZIP に無い src/ との照合を指示したら止める",
+        "配布EPUBに無い src/ との照合を指示したら止める",
         "完成形は、このリポジトリの `src/app/user/[id]/user-detail-client.tsx` と同じです。"
         "手元のコードと見比べてください。\n",
         [1],
@@ -30,12 +38,18 @@ CASES: list[tuple[str, str, list[int]]] = [
         [],
     ),
     (
+        "現行のEPUBに無い旨を添えてあれば通す",
+        "配布EPUBには完成版の `src/app/page.tsx` は含まれていません。"
+        "そのため、見比べる必要はありません。\n",
+        [],
+    ),
+    (
         "照合ではなく作成の指示は通す",
         "まず `src/app` の中に `dashboard` フォルダを作ります。\n",
         [],
     ),
     (
-        "scaffold が配るファイルとの照合は通す",
+        "明示した同梱ファイルとの照合は通す",
         "`src/server/api/routers/_helpers/select.ts` を開き、教材のコードと見比べます。\n",
         [],
     ),
@@ -82,7 +96,7 @@ CASES: list[tuple[str, str, list[int]]] = [
         [],
     ),
     (
-        "scaffold が名指しで配るファイルとの照合は通す",
+        "別の明示済み同梱ファイルとの照合は通す",
         "`src/app/layout.tsx` を開き、教材のコードと見比べます。\n",
         [],
     ),
@@ -130,7 +144,7 @@ CASES: list[tuple[str, str, list[int]]] = [
         [1],
     ),
     (
-        "前置き付きでも scaffold が配るファイルなら通す",
+        "前置き付きでも同梱ファイルなら通す",
         "`./src/server/api/routers/_helpers/select.ts` と見比べます。\n",
         [],
     ),
@@ -182,19 +196,99 @@ def check_exit_code() -> tuple[int, int]:
         ("照合の指示が残っていれば 1 を返す", "`src/app/page.tsx` と見比べてください。\n", 1),
         ("問題が無ければ 0 を返す", "`src/app/page.tsx` を作ります。\n", 0),
     ]
-    for name, body, want in cases:
-        with tempfile.TemporaryDirectory() as d:
+    with tempfile.TemporaryDirectory() as d:
+        epub = Path(d) / "book.epub"
+        with zipfile.ZipFile(epub, "w") as archive:
+            archive.writestr("mimetype", "application/epub+zip")
+        for name, body, want in cases:
             Path(d, "day05_x.md").write_text(body, encoding="utf-8")
-            if run(["check_zip_reference.py", d]) != want:
+            if run(["check_zip_reference.py", "--epub", str(epub), d]) != want:
                 failed += 1
                 print(f"  ❌ {name}")
-    if run(["check_zip_reference.py", "/no/such/path"]) != 2:
-        failed += 1
-        print("  ❌ 見つからないパスで 2 を返さない")
-    with tempfile.TemporaryDirectory() as d:
-        if run(["check_zip_reference.py", d]) != 2:
+        Path(d, "day05_x.md").write_text(
+            "`app/screens.tsx` と見比べて確認してください。\n", encoding="utf-8"
+        )
+        directory_only = Path(d) / "directory-only.epub"
+        with zipfile.ZipFile(directory_only, "w") as archive:
+            archive.writestr("mimetype", "application/epub+zip")
+            archive.writestr("app/screens.tsx/", b"")
+        if run(["check_zip_reference.py", "--epub", str(directory_only), d]) != 1:
+            failed += 1
+            print("  ❌ ディレクトリエントリを同梱ソースとして通した")
+        actual_file = Path(d) / "actual-file.epub"
+        with zipfile.ZipFile(actual_file, "w") as archive:
+            archive.writestr("mimetype", "application/epub+zip")
+            archive.writestr("app/screens.tsx", b"export default null")
+        if run(["check_zip_reference.py", "--epub", str(actual_file), d]) != 0:
+            failed += 1
+            print("  ❌ 実ファイルとして同梱された照合先を認識できない")
+        if run(["check_zip_reference.py", "--epub", str(epub), "/no/such/path"]) != 2:
+            failed += 1
+            print("  ❌ 見つからない教材パスで 2 を返さない")
+        empty = Path(d) / "empty"
+        empty.mkdir()
+        if run(["check_zip_reference.py", "--epub", str(epub), str(empty)]) != 2:
             failed += 1
             print("  ❌ 対象0件で 2 を返さない")
+    if run(["check_zip_reference.py", "/no/such/path"]) != 2:
+        failed += 1
+        print("  ❌ EPUB 未指定で 2 を返さない")
+    return failed, len(cases) + 5
+
+
+def check_current_source_paths() -> tuple[int, int]:
+    cases = [
+        (
+            "同梱されていないExpo Routerファイルを止める",
+            "`app/screens.tsx` と見比べて確認してください。\n",
+            frozenset(),
+            [1],
+        ),
+        (
+            "同梱されたExpo Routerファイルは通す",
+            "`app/screens.tsx` と見比べて確認してください。\n",
+            frozenset({"app/screens.tsx"}),
+            [],
+        ),
+        (
+            "同梱されていないSupabase migrationを止める",
+            "`supabase/migrations/20261003_posts.sql` と照合してください。\n",
+            frozenset(),
+            [1],
+        ),
+        (
+            "同梱されたSupabase migrationは通す",
+            "`supabase/migrations/20261003_posts.sql` と照合してください。\n",
+            frozenset({"supabase/migrations/20261003_posts.sql"}),
+            [],
+        ),
+        (
+            "同梱されていないルートApp.tsxを止める",
+            "`App.tsx` と見比べて確認してください。\n",
+            frozenset(),
+            [1],
+        ),
+    ]
+    failed = 0
+    for name, body, available, expected in cases:
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "day05_x.md"
+            path.write_text(body, encoding="utf-8")
+            got = [line for _, line, _, _ in find_refs([path], available)]
+        if got != expected:
+            failed += 1
+            print(f"  ❌ {name}: 期待 {expected} / 実際 {got}")
+
+    # PDF のリンク注釈はURLの存在しか示さず、ソース同梱の証拠にはならない。
+    if not_in_distribution(
+        "App.tsx", frozenset({"https://example.com/App.tsx"})
+    ) is not True:
+        failed += 1
+        print("  ❌ PDFリンク注釈URLをソース同梱と誤認した")
+    # basename が同じでも、異なる置き場のファイルは照合先にならない。
+    if not_in_distribution("App.tsx", frozenset({"src/App.tsx"})) is not True:
+        failed += 1
+        print("  ❌ 異なる置き場の同名ソースを照合先と誤認した")
     return failed, len(cases) + 2
 
 
@@ -204,13 +298,15 @@ def main_test() -> int:
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "day05_x.md"
             p.write_text(body, encoding="utf-8")
-            got = [i for _, i, _, _ in find_refs([p])]
+            got = [i for _, i, _, _ in find_refs([p], AVAILABLE)]
         if sorted(got) != sorted(expected):
             failed += 1
             print(f"  ❌ {name}: 期待 {expected} / 実際 {got}")
     exit_failed, exit_total = check_exit_code()
     failed += exit_failed
-    total = len(CASES) + exit_total
+    current_failed, current_total = check_current_source_paths()
+    failed += current_failed
+    total = len(CASES) + exit_total + current_total
     if failed:
         print(f"❌ check_zip_reference 自己テスト {failed}/{total} 失敗")
         return 1

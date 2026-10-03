@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "scope": "chapter-content-mixing-only",
+  "snapshot_conformance_checked": false,
+  "chapters": {
+    "expo-first-screen": {
+      "snapshot": {
+        "revision": "TRIAL-ONLY:declared-empty-before-expo-first-screen:2026-10-03",
+        "source_root": "declared-empty-start",
+        "status": "declared-empty-trial",
+        "allow_empty": true,
+        "tracked_files": []
+      },
+      "allowed_state_contract": "試作上の開始はスターターコード0件。Node.js、npm、エディタ、Expo Goは環境条件であり配布済みソースではない。凍結済みの製品開始状態ではない。",
+      "forbidden_paths": [
+        "App.tsx",
+        "app",
+        "supabase"
+      ],
+      "forbidden_patterns": [
+        "(?i)expo-router|@supabase|createClient\\s*\\(|auth\\.uid\\s*\\(|CREATE\\s+POLICY"
+      ]
+    },
+    "live-reload": {
+      "snapshot": {
+        "revision": "TRIAL-ONLY:UNFROZEN:listings/expo-first-screen:2026-10-03",
+        "source_root": "listings/expo-first-screen",
+        "status": "unfrozen-reference-candidate",
+        "tracked_files": [
+          {
+            "path": ".gitignore",
+            "sha256": "5936b94a73a28b6735de672b54c2c058a33c9ae1edb62d87d6a4418e14447805"
+          },
+          {
+            "path": "App.tsx",
+            "sha256": "5c7d8b989dc7a6a70e4a6be61ec95b1c5a1562e8a510efb3aa6b8cbe94033190"
+          },
+          {
+            "path": "app.json",
+            "sha256": "fbde05e86276ce6fb77baa4495bd7f37097aa7d9367565539ce36a738dd8dba1"
+          },
+          {
+            "path": "index.ts",
+            "sha256": "5c157f4d44972d9c84415e1e4bda595b3abcd8cf733f8a9cd20935bec3eccc42"
+          },
+          {
+            "path": "package-lock.json",
+            "sha256": "ceaef42805134421829a322d114e5b12d46c6c450d2a4d8de2ee246bb357131d"
+          },
+          {
+            "path": "package.json",
+            "sha256": "fa499830a8bf57bf29aadeab3261371684046ef496761b2add2e8271a511bc32"
+          },
+          {
+            "path": "tsconfig.json",
+            "sha256": "712583ff9cdb4b4e4f9b000a4a56d68db8dc1921cbfbc36d490a3a9f2be3dd72"
+          }
+        ]
+      },
+      "allowed_state_contract": "snapshots/expo-first-screenが現存しないため、listings/expo-first-screenのソース系7ファイルを非凍結の参照元候補として使う。正式な章開始snapshot、配布物、G1承認済み状態ではない。",
+      "forbidden_paths": [
+        "app",
+        "supabase"
+      ],
+      "forbidden_patterns": [
+        "(?i)expo-router|@supabase|createClient\\s*\\(|auth\\.uid\\s*\\(|CREATE\\s+POLICY|styles\\.note|いま書き換えたところ"
+      ]
+    }
+  }
+}

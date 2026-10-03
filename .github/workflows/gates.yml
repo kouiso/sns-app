@@ -1,11 +1,11 @@
 name: gates
 
 # 教材の機械ゲート（10_教材制作フロー.md §4）のうち、**今できる分だけ**を CI で常設する。
-#   G3 のうち文体チェック … textlint + preset-ja-technical-writing + prh辞書
+#   G3 試作5検査 … 文体・構造・開始状態混入・方針同期・開発ログ
 #   G5 引用ゲート        … embedmd。教材に貼ったコードが listings/ の実ファイルとズレていないか
 #
 # ★ このジョブが緑でも「G3 と G5 を通過した」とは言えない。
-#   G3 は5検査のうち1つしか実装していない（下のステップ名に明記）。
+#   G3 は試作2章と対照版だけ。開始状態manifestは未凍結、snapshot適合は保証外。
 #   G5 も引用範囲の過不足は見ていない（道具検証の記録 §9 / §14）。
 #   必須チェックに指定するときは、この差を承知のうえで指定すること。
 #
@@ -32,6 +32,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: G0 教材QAの自己テスト
+        run: |
+          for test in scripts/curriculum-qa/test_*.py; do
+            PYTHONDONTWRITEBYTECODE=1 python3 "$test"
+          done
+
+      - name: G3・G6 検査器の正負自己テスト（実走とは別）
+        run: |
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g3_checks.py'
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_support.py'
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -57,14 +68,14 @@ jobs:
         # 実行環境の中だけで辻褄を合わせて通ってしまい、ズレたまま気づけなくなる。
         run: npm ci
 
-      # ★ これは G3 の全部ではない。10 §4 の G3 は5つの検査からなる。
-      #   実装済み: 文体チェック（textlint）
-      #   未実装:   構造チェック / 開始状態混入検査 / 方針同期チェック / 開発ログの存在確認
-      #   この4つは Phase 2 のゲート実装で作る。それまで、このジョブが緑でも
-      #   「G3 を通過した」とは言えない。名前を「G3」にすると通過したと読めるので付けない。
-      - name: G3のうち文体チェックのみ（残り4検査は未実装）
+      - name: 既存試作全体の文体チェック
         working-directory: prototype-chapter
         run: npm run gate:style
+
+      # 章開始状態の凍結・正式承認・snapshot全体の照合には代用しない。
+      - name: G3 試作2章＋対照版の5検査（NON-FORMAL）
+        working-directory: prototype-chapter
+        run: npm run gate:g3:trial
 
       - name: G5 引用ゲート
         working-directory: prototype-chapter

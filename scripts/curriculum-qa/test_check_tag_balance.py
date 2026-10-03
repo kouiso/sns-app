@@ -3,7 +3,7 @@
 
 止めるもの（閉じタグが1つも無いまま開くタグ）と、止めてはいけないもの（同じ日に閉じる、
 別の日に閉じる、ジェネリクスと比較演算子、自己終了タグ、コメントと文字列の中のタグ、
-scaffold が最初から配るファイル）の両方を置く。
+    明示された開始状態に最初から在るファイル）の両方を置く。
 """
 
 import contextlib
@@ -89,13 +89,13 @@ CASES: list[tuple[str, dict[str, str], list[tuple[str, str]]]] = [
         [],
     ),
     (
-        "scaffold が配るファイルは対象外",
+        "旧scaffold名だけでは開始状態扱いしない",
         {
             "day18_x.md": block(
                 "src/component/task/task-detail-dialog.tsx", "  <Dialog open={open}>"
             )
         },
-        [],
+        [("src/component/task/task-detail-dialog.tsx", "Dialog")],
     ),
     (
         "読み比べ用サンプルは写経対象ではない",
@@ -138,9 +138,9 @@ CASES: list[tuple[str, dict[str, str], list[tuple[str, str]]]] = [
         [("src/app/(auth)/login/page.tsx", "form")],
     ),
     (
-        "scaffold が名指しで配るファイルも対象外",
+        "旧scaffold名指しファイルも暗黙には除外しない",
         {"day08_x.md": block("src/app/providers.tsx", "  <QueryClientProvider>")},
-        [],
+        [("src/app/providers.tsx", "QueryClientProvider")],
     ),
     (
         ".ts の型アサーションは開始タグではない",
@@ -267,6 +267,18 @@ def check_days() -> int:
             print(f"  ❌ {name}: 期待 [{expected}] / 実際 {got}")
     return failed
 
+
+def check_provided_paths() -> int:
+    """現在の章スターターを明示した場合だけ、開始済みファイルを除外する。"""
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "day08_x.md"
+        p.write_text(block("App.tsx", "  <View>"), encoding="utf-8")
+        got = find_unclosed([p], provided_paths=frozenset({"App.tsx"}))
+    if got:
+        print(f"  ❌ 明示した開始状態を除外しない: {got}")
+        return 1
+    return 0
+
 MASK_CASES: list[tuple[str, str, str]] = [
     ("行コメントを潰す", "a // } ) \nb", "a" + " " * 8 + "\nb"),
     ("文字列を潰す", 'const s = "}}}";', "const s =" + " " * 6 + ";"),
@@ -347,10 +359,10 @@ def main_test() -> int:
         if sorted(got) != sorted(expected):
             failed += 1
             print(f"  ❌ {name}: 期待 {expected} / 実際 {got}")
-    failed += check_masking() + check_scan() + check_days()
+    failed += check_masking() + check_scan() + check_days() + check_provided_paths()
     exit_failed, exit_total = check_exit_code()
     failed += exit_failed
-    total = len(CASES) + len(MASK_CASES) + len(DAY_CASES) + 1 + exit_total
+    total = len(CASES) + len(MASK_CASES) + len(DAY_CASES) + 2 + exit_total
     if failed:
         print(f"❌ check_tag_balance 自己テスト {failed}/{total} 失敗")
         return 1

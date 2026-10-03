@@ -115,23 +115,20 @@ CASES: list[tuple[str, str, list[str], list[str]]] = [
     ),
 ]
 
-# ワークフローの起動条件が、この検査の見る拡張子を全部覆っているか。
-# png だけに絞られていると、未参照の webp を足すPRでゲートが一度も走らない。
-WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/material-gate.yml"
+# 現行CIが自己テストを実行し、画像変更でも起動対象から外さないことを見る。
+WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/gates.yml"
 
 
 def check_workflow_paths() -> tuple[int, int]:
-    from check_unused_image import IMAGE_SUFFIX
-
     text = WORKFLOW.read_text(encoding="utf-8")
-    # `pull_request` と `push` で別々に書くため、両方に在ることを件数で見る。
     failed = 0
-    for suffix in sorted(IMAGE_SUFFIX):
-        got = text.count(f"- 'material/**/*{suffix}'")
-        if got < 2:
-            failed += 1
-            print(f"  ❌ material-gate.yml の起動条件に {suffix} が {got} 箇所しかない（期待 2）")
-    return failed, len(IMAGE_SUFFIX)
+    if "scripts/curriculum-qa/test_*.py" not in text:
+        failed += 1
+        print("  ❌ gates.yml が curriculum QA の自己テストを実行していない")
+    if "paths-ignore:" in text:
+        failed += 1
+        print("  ❌ gates.yml が paths-ignore で画像変更を除外している")
+    return failed, 2
 
 
 def build(d: Path, md: str, images: list[str]) -> None:

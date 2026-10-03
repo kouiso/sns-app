@@ -32,8 +32,8 @@
 再掲の影響を受けない。29周目の最重量案件（day29 の `<form>` が30日のどこでも閉じない）は
 この形で捕まる。
 
-scaffold が最初から配るファイルは対象外にする。読者が写経していない行が既に手元に
-在るので、教材のブロックだけを見ても閉じタグの有無は判定できない。
+章スターターが最初から配るファイルは、呼び出し側が `provided_paths` で明示して
+対象外にする。暗黙の旧配布仕様へ依存すると現在の開始状態を誤認するためである。
 """
 
 from __future__ import annotations
@@ -44,7 +44,6 @@ from collections import Counter
 from pathlib import Path
 
 from curriculum_blocks import concat_by_file, mask_code
-from sale_package import scaffold_src_paths
 
 IDENT = re.compile(r"[A-Za-z0-9_$]")
 TAG_NAME = re.compile(r"[A-Za-z][\w.\-]*")
@@ -166,7 +165,9 @@ def scan_tags(code: str, *, jsx: bool = True) -> tuple[Counter, Counter]:
     return opened, closed
 
 
-def find_unclosed(paths: list[Path]) -> list[tuple[str, str, list[int]]]:
+def find_unclosed(
+    paths: list[Path], *, provided_paths: frozenset[str] = frozenset()
+) -> list[tuple[str, str, list[int]]]:
     """(書き込み先, 閉じられていないタグ名, そのタグを開いている day) を返す。
 
     mask_code はブロックごとに掛ける。連結してから1回で掛けると、ある day の
@@ -180,10 +181,9 @@ def find_unclosed(paths: list[Path]) -> list[tuple[str, str, list[int]]]:
     `check_false_success.py` が「day10 は正しく閉じている」という記述を、
     day29 が後から開きっぱなしにしたせいで偽と判定してしまう。
     """
-    provided = scaffold_src_paths()
     hits: list[tuple[str, str, list[int]]] = []
     for target, blocks in sorted(concat_by_file(paths).items()):
-        if target in provided:
+        if target in provided_paths:
             continue
         masked = [mask_code("\n".join(b.lines)) for b in blocks]
         jsx = allows_jsx(target, {b.lang for b in blocks})

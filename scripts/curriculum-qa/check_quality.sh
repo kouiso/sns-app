@@ -283,6 +283,11 @@ run_corpus_checks() {
       if [ ! -f "$SCRIPT_DIR/$c.py" ]; then
         echo "❌ $c FAIL (スクリプト欠落: $c.py)"
         corpus_failed=1
+      elif [ "$c" = "check_zip_reference" ] && [ -n "${CURRICULUM_EPUB:-}" ]; then
+        if ! python3 "$SCRIPT_DIR/$c.py" --epub "$CURRICULUM_EPUB" "$root"; then
+          echo "❌ $c FAIL"
+          corpus_failed=1
+        fi
       elif python3 "$SCRIPT_DIR/$c.py" "$root"; then
         :
       else

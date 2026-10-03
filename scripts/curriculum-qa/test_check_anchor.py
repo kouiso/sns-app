@@ -64,13 +64,13 @@ MISSING_CASES: list[tuple[str, str, list[tuple[int, str]]]] = [
         [(2, "src/app/graduation/page.tsx")],
     ),
     (
-        "完成版に在るパスは通す",
-        "```tsx\n// filepath: src/app/page.tsx\n```",
+        "現行Expo試作に在るパスは通す",
+        "```tsx\n// filepath: prototype-chapter/listings/expo-first-screen/App.tsx\n```",
         [],
     ),
     (
-        "在るパスに注記が付いていても通す",
-        "```tsx\n// filepath: src/app/page.tsx（同じファイルの続き）\n```",
+        "現行Expo試作のパスに注記が付いていても通す",
+        "```tsx\n// filepath: prototype-chapter/listings/expo-first-screen/App.tsx（同じファイルの続き）\n```",
         [],
     ),
     (
