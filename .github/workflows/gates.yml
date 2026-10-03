@@ -155,6 +155,29 @@ jobs:
           bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-rls/chapter.md prototype-chapter/candidates/d4-rls/plain.md
           bash prototype-chapter/tools/g3-style.sh prototype-chapter/candidates/d4-rls/chapter.md
 
+      - name: D4 declared input, controller lease and chapter build（NON-FORMAL）
+        run: |
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_d4_*.py' -v
+          python3 -m unittest discover -s prototype-chapter/tools -p 'test_verify_d4_chapter_build.py' -v
+          PYTHONPATH=prototype-chapter/tools python3 - <<'PY'
+          import subprocess, tempfile
+          from pathlib import Path
+          from verify_d4_chapter_build import reconstruct_from_chapter
+          files, receipt = reconstruct_from_chapter(Path('prototype-chapter/candidates/d4-runtime'))
+          dependencies = Path('prototype-chapter/candidates/auth-sdk57/node_modules').resolve()
+          with tempfile.TemporaryDirectory(prefix='sns-d4-chapter-') as temporary:
+              root = Path(temporary)
+              for name, content in files.items():
+                  path = root / name
+                  path.parent.mkdir(parents=True, exist_ok=True)
+                  path.write_bytes(content)
+              (root / 'node_modules').symlink_to(dependencies, target_is_directory=True)
+              subprocess.run([str(dependencies / '.bin/tsc'), '--noEmit', '--project', str(root / 'tsconfig.json')], check=True)
+          print(receipt)
+          PY
+          bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-runtime/chapter-build.md
+          bash prototype-chapter/tools/g3-style.sh prototype-chapter/candidates/d4-runtime/chapter-build.md
+
       # 既存の試作2章とG6対照版の回帰検査。curriculum/*.md の正式G3や
       # 凍結済みsnapshotの承認には代用しない。
       - name: G3 試作2章＋対照版の5検査（NON-FORMAL）
