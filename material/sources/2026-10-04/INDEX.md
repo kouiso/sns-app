@@ -1,6 +1,6 @@
 # 2026-10-04 SNS教材 設計文書の原本
 
-`kouiso/sns-app` のローカル作業ツリー（未コミット分を含む）から内容を変えずにコピーした。SHA-256 はコピー元とコピー後で一致を確認済み。
+`kouiso/sns-app` のローカル作業ツリー（未コミット分を含む）と、Windows 側の作業フォルダから内容を変えずにコピーした。SHA-256 はコピー元とコピー後で一致を確認済み。
 
 | ファイル | 元の絶対パス | 更新日時 | サイズ(byte) | SHA-256 | 区分 |
 | --- | --- | --- | --- | --- | --- |
@@ -27,11 +27,10 @@
 | 16_決定バックログ.md | `/home/kouiso/ghq/kouiso/sns-app/material/16_決定バックログ.md` | 2026-09-19 22:08:16 +0900 | 98839 | `33b1459e8353871a22e9a3a9f8ac21d2aa9579069f6619351e43bf104db12cb8` | 5 17参照資料 |
 | 18_章分割表.md | `/home/kouiso/ghq/kouiso/sns-app/material/18_章分割表.md` | 2026-10-03 13:17:02 +0900 | 21265 | `1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0` | 5 17参照資料 |
 | PROGRESS.md | `/home/kouiso/ghq/kouiso/sns-app/material/PROGRESS.md` | 2026-10-04 13:33:13 +0900 | 106037 | `768c44687682dd660ab150a365f7d228777a5a363bae28a38e7f3823ca0b66a8` | 5 10/4版の進捗台帳 |
+| plan-current.md | `/mnt/c/Users/suker/Documents/Codex/2026-10-03/wsl-task-app-edu-creator-snsapp/review/plan-current.md` | 2026-10-04 17:51:22 +0900 | 7837 | `f2f6a1e8af2a51961d9a8345d964b7a95f1f20196028f569c0a6575124294d69` | 4 統合プラン（PDF が原本と書く本文） |
+| live-source-audit.json | `/mnt/c/Users/suker/Documents/Codex/2026-10-03/wsl-task-app-edu-creator-snsapp/review/deepening/live-source-audit.json` | 2026-10-04 15:19:59 +0900 | 312608 | `1e6d99097394726b74c8ecd1d852ff481906af8396691d2c7ffeb486835c7312` | 4 統合プラン（PDF が原本と書く監査記録） |
+| 2026-10-04T08-53-08-869Z-taskapp-edu-creator-sns-8ae1.html | `/mnt/c/Users/suker/AppData/Local/Temp/ai-human-output/1-0-2/2026-10-04T08-53-08-869Z-taskapp-edu-creator-sns-8ae1.html` | 2026-10-04 17:53:08 +0900 | 16389 | `ff4dc2ea14fcf4e0fef5d4967bca8a920607d0a5a59e672cee396e2fa3ef7f0f` | 4 統合プラン（PDF を作った HTML） |
 
 ## 見つからなかったもの
 
-- 4 統合プラン（本リポジトリと関連2リポジトリをまとめた計画）の原本は見つかっていない。PDF が原本と書く `review/plan-current.md` と `review/deepening/live-source-audit.json` も同じ。
-  - WSL の / 全体: ファイル名 `plan-current.md` `live-source-audit.json` `*統合プラン*` `*設計案と完了条件*` で 0 件。
-  - WSL のホーム以下の .md/.txt/.html/.docx（2026-10-03 以降）: 本文に `統合プラン` を含む原本は 0 件。
-  - 作業AIの記録（2026-10-03 以降）: `review/plan-current.md` を書いた記録は 0 件。
-  - 本リポジトリと関連2リポジトリの全ブランチ履歴: `review/plan-current.md` は 0 件。
+- `SNS教材_設計案と完了条件_2026-10-04.pdf` を作った元ファイル（HTML など）。WSL の / 全体と Windows の Documents / Desktop / Downloads / OneDrive / E: と、PDF 用の一時 HTML フォルダに無かった。本文の正本は上の 1〜3 の .md。
