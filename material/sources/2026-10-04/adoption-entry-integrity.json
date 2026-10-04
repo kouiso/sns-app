@@ -1,0 +1,16 @@
+{
+  "scope": "author document/source consistency, not implementation, independent validator or G6",
+  "sources_checked": 17,
+  "entrance_hash_matched": true,
+  "source_hashes_matched": true,
+  "original_decisions": 84,
+  "original_backlog_rows_exact_matched": 114,
+  "db13_count": 13,
+  "original_chapters": 31,
+  "selected_variant": null,
+  "current_trio_obtained": false,
+  "adopted": false,
+  "runtime_measured": false,
+  "implementation_ready": false,
+  "goal_complete": false
+}

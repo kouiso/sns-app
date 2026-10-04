@@ -1,0 +1,24 @@
+{
+  "at_utc": "2026-10-04T04:24:40.019266+00:00",
+  "scope": "known typed key/input lost/unregistered outcome only, explicit original WREC change proposal",
+  "sources": {
+    "material/decisions/20261004-登録不明と入力喪失の回復比較.md": "b26adf5ecb59abc079591273dbd2688989c37958e400ab4bb724d4b6cdd1dbf1",
+    "material/decisions/20261004-保存復帰APIと権限の具体案.md": "b0fc82d667f6aee77a91f475a0c0236142b7902c643d247e2663ed997d220330",
+    "material/evidence/20261004-whole-design/contracts.json": "134c8348ae095f5978c2300326ca3917632713e41641eaa8c15374afd58b4966",
+    "material/decisions/20261004-SNS教材の設計判断パッケージ.md": "10fceaf6ec5b967a98d1b3cf536eb2820d9b0568b869cf909cb118c7297dceb9"
+  },
+  "recommended_comparison": "B known-key explicit cancel-before-registration",
+  "unchanged_original_rule": "absence/legacy cannot fence in v7; proposal has not modified it",
+  "unknown_key_loss_resolved": false,
+  "native_review": "initial REJECT3; final three-repair limited OKAY0",
+  "full_trio_review_obtained": false,
+  "runtime_measured": false,
+  "adopted": false,
+  "original_sync_applied": false,
+  "implementation_ready": false,
+  "goal_complete": false,
+  "native_final_scope": "fence retention, legacy writer enablement gate, receipt scope and abuse quota",
+  "design_recovery_candidate_prepared": true,
+  "original_change_required": true,
+  "updated_utc": "2026-10-04T04:28:42.685973+00:00"
+}

@@ -1,0 +1,72 @@
+{
+  "created_utc": "2026-10-04T04:08:30.346307+00:00",
+  "scope": "v7-specific original-source adoption deltas and measurement admission; not full84 patch, approval or execution",
+  "candidate_master_sha256": "10fceaf6ec5b967a98d1b3cf536eb2820d9b0568b869cf909cb118c7297dceb9",
+  "screen_copy_sha256": "d8c1c73c651ddf625f42cdc62da7dd784cd9d64f55d48eac05d3ea23ed58f110",
+  "original_changes_applied": false,
+  "adopted": false,
+  "implementation_ready": false,
+  "measurements_executed": false,
+  "goal_complete": false,
+  "targets": [
+    {
+      "id": "AUTH-ROUTE",
+      "source": "material/04_詳細設計書.md",
+      "source_sha256": "c297797c6534c1f692999ed970e3d0ac5319c59386d0904e797dd0a6dbc42037",
+      "anchor": "### 9.3 セッションの状態は3値である",
+      "line": 945,
+      "proposed_delta": "§7.1・§9.3・§9.4を同時改訂。Auth三値を保ち、ログイン中→無条件タイムラインという表示を、owner/project・目的・未確認操作・既知結果・初期設定の順序を評価する画面選択へ置換。購読数と復帰判断を区別する。"
+    },
+    {
+      "id": "AUTH-LINK",
+      "source": "material/08_テスト計画書.md",
+      "source_sha256": "5a6c20f348de4b7a213cf8bc35d388679694f4d997857bfde392b562116ec66a",
+      "anchor": "| H7 | 別の端末でリンクを開いたとき | PC のメールで同じリンクを開く | ブラウザが開く。**アプリ側の画面は待ったまま**になる（04 §1.4 の経路 b） | 復帰経路が設計に無い【04 §1.4 で起票済み】 | **B18** |",
+      "line": 307,
+      "proposed_delta": "H6/H7/H8/H9/H10/H11に確認/reset目的とUID前記録を接続。別端末のメール確認が、現在端末のsession成立を意味するという期待を置かない。cold/warm、期限・再利用・別owner・通信不明の最終画面と認証状態を別証拠にする。"
+    },
+    {
+      "id": "MUTATION",
+      "source": "material/06_API設計書.md",
+      "source_sha256": "c801ca63b2f559de8a1a7d496cf973153bc2c34519948ceabd3342ba8f274e7a",
+      "anchor": "### 6.3 ★ 最も重要な1点 — 拒否は「エラー」として返るとは限らない",
+      "line": 986,
+      "proposed_delta": "影響行数確認の既存規則を維持し、WREC採用時は「errorなし/1行/現在値一致」と当該操作のtrusted successを分離。profile_save/post_saveのowner/project/keyとterminal証拠を追記する。公開関数名/引数/権限/lock順序は未設計のため、原06単独で確定しない。"
+    },
+    {
+      "id": "DB13",
+      "source": "material/05_DB設計書.md",
+      "source_sha256": "773a983bd3490a3bd09132baceab9912393c932a01c1692e93a6f165d9fa2e82",
+      "anchor": "## 4. 既知の未解決課題（Codex R1 M22 — Phase 1で解消するまで本書は「過不足なくカバー」を名乗らない）",
+      "line": 183,
+      "proposed_delta": "全13項目を残したまま、operation台帳/receipt/同key排他・新key admission/保持と消去を追加設計対象に起票する。DB13索引の追記だけで13件を解消しない。原03/05が確定してから06を凍結する原順序を守る。"
+    },
+    {
+      "id": "CHAPTER",
+      "source": "material/18_章分割表.md",
+      "source_sha256": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+      "anchor": "| text-post | 140 | B | 文章を投稿する | posts と同章の RLS を作り、280字以内の投稿を投稿詳細で確認できる | profile-view-and-edit | - | 未着手 |  | 投稿作成,投稿詳細 | screen | 予定節: 投稿した文章が詳細に出る（未実測） | B1,B63,B68,B71,B72,B76,B86,B91,B115 |",
+      "line": 56,
+      "proposed_delta": "140/145候補/150/120/130の画面・開始終了・DB/API・受入を同時改訂。入力画面へ移るだけではkey生成/予約なし。submitで入力固定後に一度だけadmission/予約、以後は同key明示続行。145は既存本人投稿を探す章で、150新規保存の許可の代わりにはならない。"
+    },
+    {
+      "id": "G6",
+      "source": "material/10_教材制作フロー.md",
+      "source_sha256": "c1f03057e33f40301d9250867facfce7feeb896321c615c5584d3b25dc0a7a27",
+      "anchor": "- **G6 教材実走検証（新設 — 局長の危惧 2026-07-24 への直接対策）**:",
+      "line": 470,
+      "proposed_delta": "原execの非執筆・文脈ゼロ・教材とstarterのみ、read4体×2roundsの各3/4条件を維持。Read限定CLIや今回の文書照合をG6へ代入しない。plain/minusは既存真正logから作り、R2 N/Aは高価値0のcount/hash証拠に限る。"
+    }
+  ],
+  "preserved_contracts": [
+    "Phase0 prior approval",
+    "FR1–15",
+    "DB13 all13",
+    "all84 original decisions unadopted",
+    "31 original/B32 candidate not frozen",
+    "C7/C8 unanswered",
+    "D4 full PR-to-G6 cost before G1",
+    "no automatic offline queue/send",
+    "no new paid contracts or publication"
+  ]
+}

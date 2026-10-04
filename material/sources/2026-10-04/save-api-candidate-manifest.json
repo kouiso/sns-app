@@ -1,0 +1,42 @@
+{
+  "created_utc": "2026-10-04T04:14:18.704477+00:00",
+  "scope": "logical API/authority/lock-order comparison candidate; not public schema/function/grants implementation",
+  "sources": {
+    "material/decisions/20261004-保存復帰APIと権限の具体案.md": "b0fc82d667f6aee77a91f475a0c0236142b7902c643d247e2663ed997d220330",
+    "material/evidence/20261004-whole-design/contracts.json": "134c8348ae095f5978c2300326ca3917632713e41641eaa8c15374afd58b4966",
+    "material/decisions/20261004-SNS教材の設計判断パッケージ.md": "10fceaf6ec5b967a98d1b3cf536eb2820d9b0568b869cf909cb118c7297dceb9",
+    "material/decisions/20261004-保存前確認と復帰方式の採否補足.md": "7a185531cf75a6d108350b64805081f79a6237410ac8b5d283e513ddff3c6753"
+  },
+  "original_adopted": false,
+  "original_sync_applied": false,
+  "runtime_measured": false,
+  "implementation_ready": false,
+  "full_trio_review_obtained": false,
+  "goal_complete": false,
+  "native_review": "3-repair limited recheck OKAY; no full trio/runtime acceptance",
+  "source_master_v7_unchanged": true,
+  "initial_native_mandatory_count": 5,
+  "unresolved_adoption_blockers": [
+    "registration unknown + missing exact input + server absence has no safe recovery in current WREC",
+    "public schema/function/arguments/grants not adopted",
+    "image immutable binding/retention and UI acknowledgement not synchronized into original documents",
+    "performance, Storage, concurrent runtime and full formal tests unmeasured",
+    "latest Gemini/Claude review unavailable"
+  ],
+  "native_sequence": [
+    {
+      "scope": "initial whole supplementary candidate",
+      "mandatory": 5
+    },
+    {
+      "scope": "five repairs and supplementary boundaries",
+      "mandatory": 3
+    },
+    {
+      "scope": "only final three repairs",
+      "mandatory": 0
+    }
+  ],
+  "final_native_review_scope": "only static validation vs dynamic rejection, image preparation/registration/recovery order, key uniqueness",
+  "updated_utc": "2026-10-04T04:20:38.069795+00:00"
+}

@@ -1,0 +1,245 @@
+{
+  "scope": "Original05 section4 exactly13 unresolved issues; design candidates not closure; entire goal remains wider",
+  "entries": [
+    {
+      "issue_number": 1,
+      "original_text": "`03_基本設計書.md` UC1の「新規投稿のフォロワー通知」が FR9 / notifications.type に無い → 通知種別に含めるかPhase 1で決定",
+      "decisions": [
+        "B7",
+        "B28",
+        "B74"
+      ],
+      "learner_result": "通常投稿では通知を増やさず、like/reply/repost/followの4種を受け取る",
+      "joint_source_changes": "03 UC1の新規投稿通知を除外する変更候補。05 enumは4種、06生成条件・通知先と04行先/08 FR9を同時照合",
+      "authority_and_timing": "01 FR9と03 UC1の差分を局長判断し、設計担当がB7/B28/B74を採否。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "4種の新規操作と通常投稿0通知を対照。生成/配信を別に確認",
+      "premortem_and_hold": "通常投稿noticeを落とす案は原UC1変更で未承認。取消/再操作/重複/自己/rollbackはDB13-13も必要",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 2,
+      "original_text": "post_media の「最大4枚」をDB層でどう保証するか（アプリ層検証のみ / CHECK制約 / トリガー）",
+      "decisions": [
+        "B70",
+        "B82",
+        "B76"
+      ],
+      "learner_result": "選んだ画像0〜4枚を順序通り表示し、5枚目は理由を見て選び直す",
+      "joint_source_changes": "05 post_mediaの位置をpositionへ改名、0〜3/NOT NULL/親と位置の一意性。06直接経路と親移動、04枚数と保持、08 DB負例",
+      "authority_and_timing": "設計担当＋実測担当。改名・欠番許否と移行をB82含め同時採否。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "NULL/-1/4/重複/同時INSERT/親移動を試し5行目不可、保存後順序とDBを照合",
+      "premortem_and_hold": "位置制約だけで許可bucket/owner/空親は守れない。DB13-3/10/12と同時",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 3,
+      "original_text": "posts.body が無条件NULL可で「本文も引用も無い空投稿」を表現できてしまう → CHECK制約（repost_of_post_id IS NOT NULL OR body IS NOT NULL）を検討",
+      "decisions": [
+        "B68",
+        "B71",
+        "B72",
+        "B66",
+        "B92",
+        "B84"
+      ],
+      "learner_result": "文章または画像だけで表現し、空の投稿や途中の画像投稿を他人に見せない",
+      "joint_source_changes": "05本文条件と安定画像参照、06認可DB取引と全書込終了形、04結果不明/保持、08全経路と最後の画像除去",
+      "authority_and_timing": "画像のみ可否は局長のFR3解釈/01再承認、終了形方式は原設計担当。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "通常/返信/引用/無言repostの本文/画像/参照表。1〜4枚目の参照失敗、重複position、他人path、異bucket、commit直前競合で親＋全mediaが全成功または全rollback（親0/部分media0）になり、並行した他人SELECTから途中形が見えないことを確認。本文NULL化/最後のmedia除去/親移動の全UPDATE/DELETE終了形、空白/DB不明を対照",
+      "premortem_and_hold": "別表media存在を単一行CHECKで証明しない。Storageは別系で、B85再確認まで不用意に消さない",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 4,
+      "original_text": "reply_to_post_id と repost_of_post_id の同時指定（引用リプライ相当）を禁止するか許可するか",
+      "decisions": [
+        "B72",
+        "B68",
+        "B71",
+        "B74"
+      ],
+      "learner_result": "返信と引用を一度に兼ねる操作を作らず、何に対する投稿か一つに分かる",
+      "joint_source_changes": "05二参照同時指定不可、06作成/生成、04返信/引用操作、08参照NULL/削除/不可視親",
+      "authority_and_timing": "設計担当。FR5/6の許容範囲を局長の該当要件判断に合わせる。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "二参照同時payload拒否/DB不変と4許可種の成功、通知行先の対照",
+      "premortem_and_hold": "UIで同時指定を隠すだけでは不足。FK存在と親可視性を分ける",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 5,
+      "original_text": "FR10 検索の実現方式（LIKE / pg_trgm / 全文検索）と索引設計",
+      "decisions": [
+        "B73",
+        "B83",
+        "B122",
+        "B25"
+      ],
+      "learner_result": "入力した語で本文と利用者を探し、空・失敗・古い結果を区別する",
+      "joint_source_changes": "05意味はILIKE部分一致候補、pg_trgmは同述語の索引支援。06literal escape/結果集合、04世代と再試行、08日本語/短語/順序/性能",
+      "authority_and_timing": "設計担当が意味/索引を実測から採否。類似度/FTSへの変更は別期待集合。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "索引あり/なし同queryの集合一致、%/_/escape文字、NULL username/display_name、短語、A/B/anon、古い応答を比較",
+      "premortem_and_hold": "対象規模の性能値未測定。短語禁止や意味を変えて合格させない。索引なし退路も同条件で判定",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 6,
+      "original_text": "notifications.type の enum と FR9 の通知種別一覧を1対1で照合するチェックをPhase 1完了条件に含める",
+      "decisions": [
+        "B74",
+        "B7",
+        "B28",
+        "B89"
+      ],
+      "learner_result": "通知の種類から行先が分かり、開けない対象では一覧へ戻れる",
+      "joint_source_changes": "05 enumとFR9を一対一、06 type/actor/recipient/post_id/NULL、04遷移、08各typeの欠落余剰",
+      "authority_and_timing": "設計担当。DB13-1の要件採否後にenum/trigger/行先を束で承認。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "likeは対象、reply/repostは作成子、followはpost_id NULLでprofile。削除済み対象と自己操作対照",
+      "premortem_and_hold": "enum一致だけでは生成回数/配信/既読の権限を証明しない",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 7,
+      "original_text": "username を最終的に必須にするか（本書 users 節の「まだ決めていないこと」）",
+      "decisions": [
+        "B24",
+        "B25",
+        "B96",
+        "B97",
+        "B90",
+        "B91"
+      ],
+      "learner_result": "登録時はメールとパスワードだけ、確認後に表示IDを決め、離脱後は設定へ戻る",
+      "joint_source_changes": "05 DB NULL可を登録用に維持。06初期設定保存の入力/競合/保護列、04 routeで設定完了を判定、08再起動/通常client迂回",
+      "authority_and_timing": "設計担当。アプリ必須化/FR2表現は原要件の該当再承認。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "登録trigger NULL成功、初期設定NULL/空/長さ/重複拒否、正常保存、途中離脱/再起動、他人更新不可",
+      "premortem_and_hold": "DB NOT NULLへ無断変更しない。route制御とDB書込許可は別で、何を未設定者に許すかもB90/B91で必要",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 8,
+      "original_text": "未設定の利用者を他人のタイムラインにどう表示するか（同上）",
+      "decisions": [
+        "B25",
+        "B24",
+        "B73",
+        "B81"
+      ],
+      "learner_result": "他人の表示IDが未設定でも一覧を読め、機密情報を代わりに見せない",
+      "joint_source_changes": "04表示名または設定中の利用者、06内部ID遷移と検索集合、05 NULL意味、08全カード/検索/通知",
+      "authority_and_timing": "設計担当。公開列範囲はB81と同時。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "username/display_nameのNULL組合せ、同名、設定後更新、profile遷移、username非一致でもdisplay_name一致を対照",
+      "premortem_and_hold": "メール/UUIDを表示名に補わない。内部遷移IDは画面のラベルに露出しない",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 9,
+      "original_text": "UUID・作成日時の既定値を誰が入れるか（`16_決定バックログ.md` B19）",
+      "decisions": [
+        "B19",
+        "B64",
+        "B78",
+        "B91"
+      ],
+      "learner_result": "保存後に入力とDB生成値を見比べ、端末時計で投稿順が変わらない",
+      "joint_source_changes": "05 table別ID/default/複合PK、users.id=Auth ID、users.updated_atのDB値制御。06返却/保護列、04不明結果再確認、08省略/偽値",
+      "authority_and_timing": "設計担当＋実測担当。request IDは別の未採用契約。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "全tableの省略/明示値・本人/他人・更新禁止列・同値更新・再送・衝突を対照",
+      "premortem_and_hold": "DEFAULTだけでは明示上書きを禁止しない。作成時刻/作者/親保護と結果不明の同一操作照合を別に設計する",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 10,
+      "original_text": "画像の形式・容量をサーバー側で止めるか（同 B21）",
+      "decisions": [
+        "B21",
+        "B104",
+        "B84",
+        "B85"
+      ],
+      "learner_result": "画像を選んだ時点で許可条件が分かり、改造clientも境界を越えない",
+      "joint_source_changes": "04早期検証、05 bucket設定/画像安定参照、06 bytes/MIME/signatureの責務、08偽MIME/サイズ/OS/Web",
+      "authority_and_timing": "設計担当＋実測担当。具体形式/bytes上限と検証方式は未採用。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "実bytesで正常/超過/形式不一致/偽MIME、upload/download照合、拒否後object/DB状態",
+      "premortem_and_hold": "bucket MIME設定だけで偽内容の検証まで保証しない。署名を検証する責務と実行場所が未成立なら採用不可",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 11,
+      "original_text": "タイムライン生成をプッシュ型にするかプル型にするか（本書 §3 の未決定事項。`16` B4）",
+      "decisions": [
+        "B4",
+        "B60",
+        "B23",
+        "B122",
+        "B10"
+      ],
+      "learner_result": "自分とフォロー相手の投稿を読み、follow解除や削除後も正しい集合へ戻る",
+      "joint_source_changes": "05 pull読取と索引、06対象集合/順序/追加読取、04空/失敗/再取得、08 self+followingと性能",
+      "authority_and_timing": "設計担当。selfを含むFR4解釈と08旧self E2Eは局長の該当判断へ。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "A/B/Cでself/followee/unfollow/削除/同時新着/同時刻/追加読取、重複欠落/性能を測る",
+      "premortem_and_hold": "pullが正しさと性能を満たすまで採用しない。push変更時はfan-out/削除/章依存も再比較",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 12,
+      "original_text": "削除済み投稿を SELECT ポリシーで隠すか、アプリ側の絞り込みに任せるか（本書 §5 の未決定。`16` B27）",
+      "decisions": [
+        "B27",
+        "B76",
+        "B115",
+        "B84",
+        "B85"
+      ],
+      "learner_result": "削除した投稿を一覧や詳細から読めず、もう操作できない状態が分かる",
+      "joint_source_changes": "05 parent/child RLSと親生存、06 SELECT/INSERT/許可cleanup、04対象不可と戻り、08本人/他人/改造client",
+      "authority_and_timing": "設計担当＋実測担当。public画像URL残存と回収はB84/B85の別契約。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "既知削除IDでparent/media/likes/tags/bookmark/返信/引用/通常clientの読取と子追加拒否、DB事後状態",
+      "premortem_and_hold": "DB非表示はStorage URL失効ではない。物理DELETE/restoreを追加せず、限定cleanupは別権限",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    },
+    {
+      "issue_number": 13,
+      "original_text": "`notifications` を作る DB トリガーの実装範囲（同上。`16` B28）",
+      "decisions": [
+        "B28",
+        "B7",
+        "B74",
+        "B89",
+        "B77",
+        "B79"
+      ],
+      "learner_result": "200以後の新しい交流操作から通知が生まれ、本人だけ既読化できる",
+      "joint_source_changes": "05生成権限、06全4triggerと自己/再操作/rollback/保持、04既読/失敗、08生成と配信/権限",
+      "authority_and_timing": "設計担当。第一候補は過去操作backfillなし、取消でも過去通知を保持し、再作成された新しい実操作で新規通知を1件作る。履歴表示の意味とtype別期待を原04/05/06/08へ同時承認。原05の13件はPhase1解消/P1G1条件を保持",
+      "required_evidence": "直接INSERT拒否、4新規操作と自己操作0、rollbackで通知0。like/followのDELETEでは既存通知id/read_at/行数kを保持、再INSERT成功で新id/未読NULLを1件追加しk+1。reply/repostは旧子の論理削除でも旧通知保持、新idの子再作成で通知1件追加。PK衝突や同一失敗要求で行が作られなければ通知増分0。本人未読への明示既読操作はserver時刻1回（NULL payloadも含む）、本人再送/NULL/過去/未来/反復は旧時刻同値保持、保護列拒否、他人read_at UPDATE/DELETE拒否＋DB不変",
+      "premortem_and_hold": "生成とRealtimeの成功を分ける。取消後の通知は現在の関係ではなく過去の出来事として表示し、削除対象は一覧へ戻す。別の新規投稿を誤再送して作ることを二重要求防止済みとしない。既読値はserver一方向、trigger候補なら05/06§3へ反映。Storage rollback/回収はDB取引とは別",
+      "adopted": false,
+      "source_sync_applied": false,
+      "formal_closure": false
+    }
+  ]
+}
