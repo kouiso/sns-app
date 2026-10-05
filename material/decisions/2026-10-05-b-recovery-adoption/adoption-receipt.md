@@ -44,7 +44,7 @@
 
 ## 同期した文書と置き換えた箇所
 
-原本は `material/sources/2026-10-04/` に置いたまま手を入れていない（INDEX.md の SHA-256 と一致したまま）。このディレクトリに同じ名前で複製し、複製の側だけを書き換えた。ファイル名を原本と同じにしたのは、文書どうしがファイル名で互いを参照しているため。
+原本は `material/sources/2026-10-04/` に置いたまま手を入れていない（INDEX.md の SHA-256 と一致したまま）。このディレクトリに同じ名前で複製し、複製の側だけを書き換えた。ファイル名を原本と同じにしたのは、文書どうしがファイル名で互いを参照しているため。複製の中にある `../evidence/...` や `whole-design/...` などの参照先は、`material/sources/2026-10-04/` の同名ファイルを指す（E22で直した1か所を除き、原本の書き方のまま）。
 
 | ID | ファイル | 置き換えたこと |
 | --- | --- | --- |
@@ -67,8 +67,13 @@
 | E17 | contracts.json（registration_recovery） | E15と同じ |
 | E18 | 20261004-SNS設計の採否入口.md（先に読む3点の2） | 未登録fence禁止の置き換えだけは全体v7/画面案/画面JSON/whole contractsへ反映済み、それ以外は未反映と書いた |
 | E19 | 20261004-登録不明と入力喪失の回復比較.md（3候補の表のA行） | 版3ではBを採用したためAは不採用と書いた |
+| E20 | contracts.json（linearization、英文） | 「unregistered/legacy/absence cannot fence」から unregistered を外し、既知keyの未登録は本人の明示終了でだけ閉じると書いた |
+| E21 | screen-copy.json（linearization、英文） | E20と同じ |
+| E22 | 20261004-SNS設計の採否入口.md（状態の行） | source hash一覧への相対パスを、この複製から原本の manifest に届く `../../sources/2026-10-04/adoption-entry-manifest.json` に直した |
+| E23 | contracts.json（fence_input_requirement、英文） | 登録済みreservedに加えて、版3では未登録の既知keyも本人が明示終了できると足した |
+| E24 | screen-copy.json（fence_input_requirement、英文） | E23と同じ |
 
-Devin の作業報告では「13か所」とされていた。上の表は同じ7文書を改めて全文検索した結果で、screen-copy.json の同文3か所を1行にまとめ、状態行と比較表の整合（E06・E10・E18・E19）を足している。
+Devin の作業報告では「13か所」とされていた。上の表は同じ7文書を日本語と英語の両方で改めて全文検索した結果で、screen-copy.json の同文3か所を1行にまとめ、状態行と比較表の整合（E06・E10・E18・E19）、英文の契約（E20〜E24）を足している。E20〜E24 は PR レビューで見つかった英文の取りこぼしを直したもの。
 
 ## 書き換えずに残した記述と理由
 
@@ -82,9 +87,11 @@ Devin の作業報告では「13か所」とされていた。上の表は同じ
 
 ## 確かめたこと
 
+以下のコマンドはリポジトリのルートで実行する。
+
 - 原本26ファイルは差分なし: `git diff --stat origin/docs/sns-design-sources-2026-10-04 -- material/sources/` が空。
-- JSONが読めること: `jq empty screen-copy.json contracts.json` が成功。
-- 相反する条件が残っていないこと: このディレクトリの7文書（このreceiptは引用を含むので除く）で次の語を検索して0件。`未登録/legacy`、`不存在/legacyへ`、`不在をterminalにせず`、`閉鎖を成立させられず`、`選択済みではない`、`未採用。元WREC`、`不存在禁止を保持`、`B採用には`、`未登録にfence`。
+- JSONが読めること: `jq empty material/decisions/2026-10-05-b-recovery-adoption/screen-copy.json material/decisions/2026-10-05-b-recovery-adoption/contracts.json` が成功。
+- 相反する条件が残っていないこと: このディレクトリの7文書（このreceiptは引用を含むので除く）で次の語を検索して0件。`未登録/legacy`、`不存在/legacyへ`、`不在をterminalにせず`、`閉鎖を成立させられず`、`選択済みではない`、`未採用。元WREC`、`不存在禁止を保持`、`B採用には`、`未登録にfence`、英文の `unregistered/legacy/absence cannot fence`。
 - 「B案だけが根本原因を止める」に当たる表現が7文書に無いこと: `だけが根本`、`根本原因を止める` で0件。
 
 ## 次に必要な実測と開始材料

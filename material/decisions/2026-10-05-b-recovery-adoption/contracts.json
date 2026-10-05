@@ -157,9 +157,9 @@
     "automatic_offline_queue": false,
     "adopted": false,
     "executed": false,
-    "linearization": "All reservation retries/save/fence/delayed/allowed DML or RPC paths share owner/project/typed-key lock and reread state. reserved -> success | closed_unsaved mutually exclusive irreversible. Terminal keys never reopened; unregistered/legacy/absence cannot fence. DB receipt atomic with post/profile mutation; Storage separate.",
+    "linearization": "All reservation retries/save/fence/delayed/allowed DML or RPC paths share owner/project/typed-key lock and reread state. reserved -> success | closed_unsaved mutually exclusive irreversible. Terminal keys never reopened; legacy keys and mere absence reads cannot fence. A known typed key that is unregistered closes only when the owner explicitly terminates it (cancel-before-registration, B recovery plan adopted as version 3; conditions: keep minimal identity, revoke old writers, cap quota). DB receipt atomic with post/profile mutation; Storage separate.",
     "pending_end": "WREC予約を持つ操作では同owner/project/typed keyのlock内でcommit済みsuccessまたはclosed_unsavedをtrusted観測した後だけ当該pending UIを終了。確定拒否もclosed_unsaved(reason=rejected)commit確認が必要。rollback/closure返答不明/Authや制限の非terminal事象はpending維持。non-WREC/legacyは原採用済み終了条件に従い遡及しない。",
-    "fence_input_requirement": "none: unknown registered reserved operation can be explicitly closed regardless of retained input. Retained exact input required only for retry.",
+    "fence_input_requirement": "none: unknown registered reserved operation can be explicitly closed regardless of retained input. Under version 3, a known typed key with no server record can also be explicitly closed by the owner (cancel-before-registration). Retained exact input required only for retry.",
     "closed_reason_enum": [
       "user_cancelled",
       "rejected"
