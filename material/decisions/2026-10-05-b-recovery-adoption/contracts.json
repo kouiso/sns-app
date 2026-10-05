@@ -174,7 +174,7 @@
     "resume_and_before_new_save": "採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
     "device_local_dispatch_evidence": "未開始を確かめた同一端末経路だけ: この端末からは、まだ保存要求を送っていません。同じ操作の状態を確認しています。再起動/記録喪失後は未送信を断言せず結果確認へ。",
     "immediate_save_result_classification": "AUTH04/POST02のWREC個別分岐にtrusted terminal5 outcomesを先行。拒否/rollbackだけで終了せず、非WREC/legacyの旧個別行をWRECへ適用しない。",
-    "registration_recovery": "採用時は同typed key/同lockでの予約再試行・結果再読取の安全性と出口を実測。terminalを再openしない。不存在/legacyへfenceなし。未採用では利用不可。",
+    "registration_recovery": "採用時は同typed key/同lockでの予約再試行・結果再読取の安全性と出口を実測。terminalを再openしない。単なる不存在read/legacyへfenceなし。既知typed keyの不存在は、本人が終了を明示した時だけ閉じる（B回復案）。key/context喪失時の回復は未設計。未採用では利用不可。",
     "discovery_order": "共通Auth/用途/本人guard後に正常本人server履歴と端末記録を照合し、trusted terminal→未確認登録/予約/保存→未送信/通常章を分類する。履歴取得不能でも既知trusted terminalの表示を隠さず、新保存の許可は別に停止する。",
     "new_key_admission": {
       "scope": "採用実測済みWRECの新しいkeyによるpost_save/profile_saveを作る本人の明示操作前だけ。同keyの既知結果表示/明示回復、active要求待ち、単なる閲覧は別。",

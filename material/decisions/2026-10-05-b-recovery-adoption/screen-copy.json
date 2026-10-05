@@ -755,7 +755,7 @@
         },
         {
           "action": "この操作を中止して結果を確定",
-          "guard": "WREC採用・実測後、本人の明示中止は元入力あり/なし両方で可能。同owner/project/typed key lock後、successなら成功結果を返し取消不可、reservedだけclosed_unsavedへ不可逆commit、既terminal再open/未登録/legacy/read不存在fence不可。中止返答不明もterminal確認までunknown/pending維持。",
+          "guard": "WREC採用・実測後、本人の明示中止は元入力あり/なし両方で可能。同owner/project/typed key lock後、successなら成功結果を返し取消不可、reservedだけclosed_unsavedへ不可逆commit、既terminal再open/legacy/read不存在fence不可。既知typed keyの未登録は、本人が終了を明示した時だけcancel-before-registrationで閉じる（B回復案。最小identity保持/旧writer失効/quota上限が条件）。中止返答不明もterminal確認までunknown/pending維持。",
           "target_candidates": [
             {
               "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
@@ -925,7 +925,7 @@
         },
         {
           "action": "この操作を中止して結果を確定",
-          "guard": "WREC採用・実測後、本人の明示中止は元入力あり/なし両方で可能。同owner/project/typed key lock後、successなら成功結果を返し取消不可、reservedだけclosed_unsavedへ不可逆commit、既terminal再open/未登録/legacy/read不存在fence不可。中止返答不明もterminal確認までunknown/pending維持。",
+          "guard": "WREC採用・実測後、本人の明示中止は元入力あり/なし両方で可能。同owner/project/typed key lock後、successなら成功結果を返し取消不可、reservedだけclosed_unsavedへ不可逆commit、既terminal再open/legacy/read不存在fence不可。既知typed keyの未登録は、本人が終了を明示した時だけcancel-before-registrationで閉じる（B回復案。最小identity保持/旧writer失効/quota上限が条件）。中止返答不明もterminal確認までunknown/pending維持。",
           "target_candidates": [
             {
               "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
@@ -1667,7 +1667,7 @@
         },
         {
           "action": "この操作を中止して結果を確定",
-          "guard": "WREC採用・実測後、本人の明示中止は元入力あり/なし両方で可能。同owner/project/typed key lock後、successなら成功結果を返し取消不可、reservedだけclosed_unsavedへ不可逆commit、既terminal再open/未登録/legacy/read不存在fence不可。中止返答不明もterminal確認までunknown/pending維持。",
+          "guard": "WREC採用・実測後、本人の明示中止は元入力あり/なし両方で可能。同owner/project/typed key lock後、successなら成功結果を返し取消不可、reservedだけclosed_unsavedへ不可逆commit、既terminal再open/legacy/read不存在fence不可。既知typed keyの未登録は、本人が終了を明示した時だけcancel-before-registrationで閉じる（B回復案。最小identity保持/旧writer失効/quota上限が条件）。中止返答不明もterminal確認までunknown/pending維持。",
           "target_candidates": [
             {
               "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
@@ -2540,7 +2540,7 @@
       "resume_and_before_new_save": "採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
       "device_local_dispatch_evidence": "未開始を確かめた同一端末経路だけ: この端末からは、まだ保存要求を送っていません。同じ操作の状態を確認しています。再起動/記録喪失後は未送信を断言せず結果確認へ。",
       "immediate_save_result_classification": "AUTH04/POST02のWREC個別分岐にtrusted terminal5 outcomesを先行。拒否/rollbackだけで終了せず、非WREC/legacyの旧個別行をWRECへ適用しない。",
-      "registration_recovery": "採用時は同typed key/同lockでの予約再試行・結果再読取の安全性と出口を実測。terminalを再openしない。不存在/legacyへfenceなし。未採用では利用不可。",
+      "registration_recovery": "採用時は同typed key/同lockでの予約再試行・結果再読取の安全性と出口を実測。terminalを再openしない。単なる不存在read/legacyへfenceなし。既知typed keyの不存在は、本人が終了を明示した時だけ閉じる（B回復案）。key/context喪失時の回復は未設計。未採用では利用不可。",
       "discovery_order": "共通Auth/用途/本人guard後に正常本人server履歴と端末記録を照合し、trusted terminal→未確認登録/予約/保存→未送信/通常章を分類する。履歴取得不能でも既知trusted terminalの表示を隠さず、新保存の許可は別に停止する。",
       "new_key_admission": {
         "scope": "採用実測済みWRECの新しいkeyによるpost_save/profile_saveを作る本人の明示操作前だけ。同keyの既知結果表示/明示回復、active要求待ち、単なる閲覧は別。",
@@ -2643,7 +2643,7 @@
       "copy": "この操作は保存せずに終了しました。",
       "primary_action": "閉じる",
       "state": "WREC未保存終了確認済み",
-      "guard": "WREC採用実測済み、現在本人/通常用途/owner-project-typed key一致、同lock内committed closed_unsaved(reason=user_cancelled)をtrusted観測。success/未登録/legacy/単なる不存在/応答不明をこの表示にしない。Storage bytesの不存在や自動削除を意味しない。",
+      "guard": "WREC採用実測済み、現在本人/通常用途/owner-project-typed key一致、同lock内committed closed_unsaved(reason=user_cancelled)をtrusted観測。success/legacy/単なる不存在/応答不明/closure未commitの未登録をこの表示にしない。B回復案のcancel-before-registrationで閉じた既知keyは、commit済みtrusted receiptを観測した時だけこの表示にする。Storage bytesの不存在や自動削除を意味しない。",
       "target_candidates": [
         {
           "when": "本人が閉じる、共通guard通過",
