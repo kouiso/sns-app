@@ -1,0 +1,1986 @@
+{
+  "scope": "Original18 chapter dependencies only, 83 B+C8; not entire goal",
+  "updated_at_utc": "2026-10-03T17:50:08.960575+00:00",
+  "entries": [
+    {
+      "decision_id": "B14",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**標準送信＋A/B再利用を第一候補**にし、学習者と制作run別の総需要が実測枠を超える場合だけカスタムSMTPへ上げる。独学者が外部サービスを増やさず、上限時の停止・待機・再開を学べる。",
+      "alternative_tradeoff": "最初からSMTP: 登録・秘密・費用・後片付けが増える。確認要求を切る: FR13体験を失う。待つだけ: 再開条件が不明。",
+      "joint_adoption_conditions": "B109の所有宛先、B18/B103の復帰、B88、A/B/C/D/W/E需要式に加え、B18/B103 matrix、B50軽重3+3、110追加比較各3、145追加比較各3、条件付き相互作用A/B/C/D各3（計12）、D4/G6 exec、人間独学のproject/run別送信需要を総台帳へ集計（read-only G6 readは送信0）して確定。",
+      "source_change_candidates": "04§1.4/§4 E12、06§1.2、08§10、11§4原則2/6、18章100/110/210/290/310の開始資源。05はDB変更なしと明記。",
+      "missing_measurement_approval": "現行枠の単位、停止通数、応答、到達、回復時間、リンク期限は未測定。SMTP要否と章開始資源は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 154,
+          "text": "| B14 | **カスタム SMTP の要否** ★新規（2026-07-26） | **⚠️ 期限切れ → 章分割表の凍結前（B1）へ再設定（2026-07-28）** | Supabase 標準のメール送信は**1時間に2通まで**。複数アカウントを作る演習（タイムライン・通知・フォローの章）が詰まる可能性がある。実際に何通目で止まるかを確かめてから決める。**推測で決めない**（A3「タイミングの無い先送りは禁止」）。**元の期限は「捨て試作で実測」だったが、捨て試作は 2026-07-27 に完了したのに測っていない。期限を守れなかった事実をここに残す。**再設定した期限が章分割表の凍結前である理由は、演習に要るアカウント数が決まる時点で上限に当たるか判明していないと章を設計できないため | 02 §5 R2 |"
+        },
+        {
+          "line": 245,
+          "text": "| B14 | 認証実測担当＋設計担当 | B18, B88, B109 | 送信・到達・復帰の実測から要否を決定 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-sign-up",
+        "auth-email-confirmation",
+        "password-reset"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B18",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**resetは安定custom scheme＋development build、確認はHTTPS完了後の本人loginを技術上の第一比較候補**とする。Expo公式は安定Auth URLにこの経路を推奨する。resetのExpo Go URLは実験的代案で、通った局所結果だけで標準経路へ昇格しない。B5/B15/B121のWindows・iPhone所有条件と費用/配布/署名の成立が未証明なので、技術推奨だけで教材経路を採用しない。初期AuthのPC確認用HTTPS着地点は290の学習者公開hostとは別の開始資源として所有/費用/停止を決める。採用候補はいずれも外部メール/cold-warm/resetが全て成立する場合だけで、token転記や受入範囲の縮小で通さない。nativeとWebの入口を分け、確認とrecoveryを用途別に処理する。リンク受領、session成立、本人確認を順に見られる。",
+      "alternative_tradeoff": "Expo Go固有URLだけ: SDK/起動状態へ依存。token転記: 秘密露出。Web/native共通扱い: 保存・復帰差を隠す。",
+      "joint_adoption_conditions": "B5のbuild範囲、B88確認境界、B95 lifecycle、B103別端末、B14送信枠を同時採用。",
+      "source_change_candidates": "04§1.4/§2.1〜2.2/§9.6、06§1.2、08§4 H6〜H8/§10.6、11§4原則5/8、18章110/210/290。05はDB境界外と記す。",
+      "missing_measurement_approval": "同一/別端末、起動中/終了中、確認/reset、期限切れ/使用済みを採用SDK・buildで未実測。URL値とbuild範囲は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 158,
+          "text": "| B18 | **メール確認のリダイレクト先をどう作るか** ★新規（2026-07-27） | P1 | 別ファミリーレビュー指摘。FR13（メール確認）はメールのリンクからアプリへ戻す必要があり、Expo Go だけで完結するとは限らない。B5（実機ビルド）の論点を「EAS Build を教えるか」から「認証の確認用にどの時点で専用ビルドを作るか」へ書き換える | 01 FR13, 03 UC3, B5 |"
+        },
+        {
+          "line": 247,
+          "text": "| B18 | 実測担当＋設計担当 | B5, B14, B103 | 起動中/終了中・同一/別端末の復帰が再現可能 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-sign-up",
+        "auth-email-confirmation",
+        "password-reset",
+        "web-platform-fixes"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B88",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**確認前sessionを発行しないAuth設定を第一候補**にし、110でAuth状態、120で確認後の同一許可操作を観測する。確認前RLSの隠れた複雑さを増やさず、登録・確認・書込を三段階で学べる。",
+      "alternative_tradeoff": "確認前session＋claim付きRLS: 境界は強く見せられるが、全書込式とtoken更新の説明が増える。確認前UPDATEを未導入列で拒否: 偽の対照。",
+      "joint_adoption_conditions": "B18/B95、users read範囲、B24初期設定、B78/B91の許可操作を確定し、sessionなしとRLS拒否を教材で分離。",
+      "source_change_candidates": "04§1.4/§7/§9、05 RLS共通原則とusers、06§1.4/§2.3、08§5.5/§10、11§4原則6、18章100/110/120/220。",
+      "missing_measurement_approval": "採用projectの確認前session挙動、server確認状態、確認後の同一操作は未実測。Auth設定案と原18の正負例移動は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 289,
+          "text": "| B88 | メール確認前の書込み防止境界 | 実測担当＋設計担当 | P1/G1通過前（未決） | B14, B18 | Auth設定案とRLS案を実測 | 03/06/08と証拠が一致 | 06U16 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-sign-up",
+        "auth-email-confirmation",
+        "password-reset"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B103",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**確認は別端末で完了後に元端末で本人login、resetは対応済みアプリがある端末で完了**を第一候補にする。端末が違っても秘密URLを転記せず既知の入口へ戻れる。290前のPCでresetを開いた場合は元スマホの210再発行入口へ戻り、新しいlinkを元スマホで開く。PC完了用reset画面を先取りせず追加再送をB14へ計上する。確認用早期HTTPS着地点と担当はB18/B6で別に承認する。",
+      "alternative_tradeoff": "両端末へtoken共有: 秘密露出。reset linkを別端末で開いて通常loginだけ: recovery成立を証明できない。常に再送: 枠を消費。",
+      "joint_adoption_conditions": "B18の用途別redirect、B14枠、B95 session再検証、B109本人所有宛先と同時採用。",
+      "source_change_candidates": "04§1.4の復帰2経路、06§1.2の#13/#15、08§10.6、11§2独学者/§4原則2、18章110/210/290。05は変更なし。",
+      "missing_measurement_approval": "別端末の確認完了→元端末login、resetの新旧credential対照は未実測。端末別標準経路は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 304,
+          "text": "| B103 | メールリンクを別端末で開く復帰経路 | 実測担当＋設計担当 | P1/G1通過前（未決） | B18, B88 | 同一端末/別端末を分けて測る | 最終ログインまでの経路が再現可能 | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-email-confirmation",
+        "password-reset",
+        "web-platform-fixes"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B109",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**本人所有A/Bを基本、必要時だけD/Wを追加し、秘密台帳で用途とAuth IDを管理**する。質問相手のいない学習者でも「今どの本人か」と後片付け対象を見失わない。",
+      "alternative_tradeoff": "使い捨てメール: 到達失敗の切分け不能。aliasを独立宛先と仮定: 一意判定未確認。毎章新規作成: 枠と負荷が増える。",
+      "joint_adoption_conditions": "B14需要式、B10開始データ、B103端末、G6所有・破棄境界を同時採用。実アドレス/passwordは教材・証拠から除外。",
+      "source_change_candidates": "04§1.4開始資源、06§3.2、08§6.3/§10.5/§12、11§2ペルソナB/§4原則2、18章100〜220/290。05は試験利用者のDB行との対応だけ記す。",
+      "missing_measurement_approval": "alias/複数宛先、受信、利用上限、参照残存時の後片付けは未確認。必要個数と秘密台帳の運用は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 310,
+          "text": "| B109 | テスト用メールアドレスの準備 | 認証実測担当 | P1/G1通過前（未決） | B14 | 所有する試験宛先と使用上限を明示 | 宛先・後片付け・回数上限が記録済み | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-sign-up",
+        "auth-email-confirmation",
+        "password-reset"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B95",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**Auth/session所有者をapp rootに一つ置き、採用SDKの自動更新へ寄せてforeground/backgroundで一度だけ開始停止**する。画面を越えて残る本人状態と、画面local状態を学習者が区別できる。",
+      "alternative_tradeoff": "各screenでlistener: 二重実行。SDK自動更新＋手動timerの重複: 競合。常時更新: background資源と説明が増える。",
+      "joint_adoption_conditions": "B18 URL処理、B87状態所有、B88確認状態、B103別端末、B108再購読と同じlifecycle表で採る。",
+      "source_change_candidates": "04§9.2〜9.6、06 Auth初期化/§4.1開始停止、08§7.3/§10.6、11§4原則2、18章110/120/210/270/290。05はDB変更なし。",
+      "missing_measurement_approval": "cold start、複数往復、background復帰、logout、refresh重複数は未実測。採用SDK契約と所有componentは未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 296,
+          "text": "| B95 | セッション更新開始停止と二重実行防止 | 実測担当 | P1/G1通過前（未決） | B18 | foreground/background遷移を実測 | 更新継続・重複なしの証拠がある | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-session-and-profile-setup"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B62",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**採用Auth projectのpassword規則を登録とresetの共通正本**にする。教材独自の別規則を増やさず、同じ拒否から同じ回復を学べる。",
+      "alternative_tradeoff": "client側をさらに強くする: Authとの差で二重拒否。弱いclient検証だけ: server拒否を説明できない。規則値を推測で固定: 更新時に破綻。",
+      "joint_adoption_conditions": "B98確認欄、B100文言、B14 rate/メール制限、FR1/FR14の同一試験値を同時採用。",
+      "source_change_candidates": "04§1.2ログイン/登録/reset、05はpassword非保持を再確認、06§6 X1/X3、08 FR1/FR14/§10、11§4原則1/3、18章100/210/290。",
+      "missing_measurement_approval": "採用Auth設定の値、境界値、SDK応答は未収集。規則値と原01の再承認は未達。",
+      "original_backlog_rows": [
+        {
+          "line": 202,
+          "text": "| B62 | **パスワードの強度規則をどこで決めるか** ★新規（2026-08-09） | **パートB の認証の章の実装PR前** | 04 §1.2 のログイン行とパスワード再設定行に「Supabase 側の設定に従う。**設定値は未定**」とあるだけで、【未決】の印も期限も無かった（A3 違反）。06 §1.2 の #1 / #15 は「RLS 対象外」としか書かず、08 §2 の FR1・FR14 にも観点が無い。決まらないと 04 §1.1 の E1（入力エラー）を新規登録とパスワード再設定の2画面で書けない | 04 §1.2, 08 §2 FR1・FR14 |"
+        },
+        {
+          "line": 261,
+          "text": "| B62 | 設計担当 | B98 | Auth設定・画面検証・FR1/FR14試験が一致 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-sign-up",
+        "password-reset"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B98",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**登録とresetに確認用password欄を置き、不一致なら両入力を保持して該当欄へ戻す**。初心者が秘密を表示し続けず、通信前に打ち間違いから回復できる。",
+      "alternative_tradeoff": "一欄＋表示切替だけ: 同じ誤入力に気づきにくい。確認欄なし: server成功後まで誤りが分からない。二欄を自動同期: 確認にならない。",
+      "joint_adoption_conditions": "B62共通規則、B100文言、focus/読み上げ、passwordをlog/DBへ残さない条件を同時採用。",
+      "source_change_candidates": "04§1.2登録/reset入力、05 usersにpasswordを置かない説明、06§6、08 FR1/FR14、11§2独学者/§4原則2、18章100/210/290。",
+      "missing_measurement_approval": "keyboard/focus、表示切替、入力保持、境界値は未実測。欄追加と学習負荷は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 299,
+          "text": "| B98 | 確認用パスワード欄 | 設計担当 | P1/G1通過前（未決） | B62 | 誤入力回復と学習負荷で比較 | 画面・検証・試験が確定 | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-sign-up"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B19",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**恒久IDと`created_at`はDB既定、`users.id`はAuth ID、結果不明用request IDは必要なら別契約**とする。学習者は入力値とDB生成値を保存後に見比べられる。",
+      "alternative_tradeoff": "全ID/client生成: triggerと複合主キーへ合わない。client時刻: 並び替えを端末時計に渡す。本文・時刻一致で照合: 因果証明にならない。",
+      "joint_adoption_conditions": "B64、各tableの主キー、140の結果不明回復、B78/B91返却列を同時採用。",
+      "source_change_candidates": "04§4 M4/投稿結果確認、05全table default/§4、06§1.2/§3.1/U10、08 DB前後確認、11§4原則2、18章100/120/140以後。",
+      "missing_measurement_approval": "table別責務表、省略/明示値、再送/衝突は未実測。request ID導入の要否は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 159,
+          "text": "| B19 | **DB 側の既定値（UUID・作成日時）を誰が入れるか** ★新規（2026-07-27） | P1 | 別ファミリーレビュー指摘。旧構成では ORM とサーバーが埋めていた。クライアントから直接 insert する構成では、DB に `gen_random_uuid()` / `now()` を持たせるか、全 insert でクライアントが入れる契約にするかを決める必要がある | 05, 06 |"
+        },
+        {
+          "line": 248,
+          "text": "| B19 | 設計担当 | B64 | UUID・作成/更新日時の各責務がSQLと一致。06 U10は由来として保持 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-sign-up",
+        "auth-session-and-profile-setup"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B64",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**DBのBEFORE UPDATE triggerで`users.updated_at`をserver時刻へ更新**する。プロフィールの保存値と更新時刻が一緒に変わり、client改変を教えずに済む。",
+      "alternative_tradeoff": "client時刻: 改変/時計ずれ。専用関数だけ: B78で全profile更新を関数へ寄せる場合は整合するが関数責務が増える。defaultだけ: UPDATEでは変わらない。",
+      "joint_adoption_conditions": "B19 server時刻、B78/B91更新経路、同値UPDATEの扱いを同時採用。",
+      "source_change_candidates": "04§7保存確認、05 users列/設計メモ、06§2.3/§3.1/U10/U19、08 FR2/§5.5、11§4原則5、18章120/130/220。",
+      "missing_measurement_approval": "trigger再帰、同値、他人/直接時刻更新、結果不明後の再読取は未実測。trigger追加は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 204,
+          "text": "| B64 | **`users.updated_at` を誰がいつ更新するか** ★新規（2026-08-09） | **B19 を決めるときに同時**（06 U10 と1つに畳む） | 05 は `updated_at` に `NOT NULL, default now()` を置き、理由を「既定値が無いとトリガーからの INSERT が落ちる」とだけ書く。06 §3.1 のトリガーは insert しか扱わない。**プロフィール編集（#7）やプロフィール初期設定（#13-2）の UPDATE で誰が更新するかが 04・05・06 のどこにも無い。**B19（既定値を誰が入れるか）の文面は「UUID・作成日時」で更新日時を含んでいない。クライアントに入れさせるか DB のトリガーを1本足すかで 06 §3 の本数が変わる | 05, 06 §3.1・U10, B19 |"
+        },
+        {
+          "line": 263,
+          "text": "| B64 | 設計担当 | B19, B91 | `updated_at`更新主体とSQL・許可列が一致 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-session-and-profile-setup"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B24",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**DBは登録triggerのためNULL可を維持し、アプリの「初期設定完了」だけusername必須**にする。途中離脱から120へ戻れ、Auth登録を壊さない。",
+      "alternative_tradeoff": "DB NOT NULL: trigger時に値がない。仮username: 露出/衝突/変更規則が増える。NULLのまま通常画面へ進む: B25負担が全画面へ残る。",
+      "joint_adoption_conditions": "B25 fallback、B96規則、B97競合、B88確認済み、route判定を同時採用。",
+      "source_change_candidates": "04§7.1/§7.4、05 users/§4、06§1.2 #13-2/§2.3、08 FR2/§5.5、11§4原則2、18章100/120/130/230。",
+      "missing_measurement_approval": "trigger行、離脱、NULL/空/直接API、再起動routeは未実測。アプリ必須化と原FR2表現は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 164,
+          "text": "| B24 | **表示ID（username）を最終的に必須にするか** ★新規（2026-07-28） | P1 | Round 13 指摘。B20 の決定で `username` を NULL 可へ変えた結果、**未設定のまま残る利用者が存在しうる**。後から NOT NULL を付けるのか、画面の誘導だけで済ませるのかを決める。`05_DB設計書.md` の users 節に書いてあったが本台帳に無く、**この台帳が未決定の唯一の正本だという前提を破っていた** | 05 users / B20 |"
+        },
+        {
+          "line": 252,
+          "text": "| B24 | 設計担当 | B25, B96, B97 | 必須化時点とDB/UI規則が一致 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-session-and-profile-setup",
+        "profile-view-and-edit"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B25",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**本人には初期設定への回復、他人には表示名または「設定中の利用者」を出し、username検索からは除外**する。メールやUUIDを見せず、途中利用者で一覧を壊さない。",
+      "alternative_tradeoff": "`@null`/空欄: 画面崩れ。email fallback: 個人情報露出。仮username: B24とは別仕様が増える。未設定者を全経路から隠す: 既知投稿/関係が辿れない。",
+      "joint_adoption_conditions": "B24、users read範囲、B96/B97、usernameに依存しない内部遷移IDを同時採用。",
+      "source_change_candidates": "04§1.2/§7.5、05 users、06タイムライン/profile/search行、08 FR2/FR8/FR10、11§4原則2/5、18章120/130/160/170/200/230/270。",
+      "missing_measurement_approval": "NULL組合せ、同名、設定後更新、検索/通知/reader名は未実測。fallback文言と公開範囲は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 165,
+          "text": "| B25 | **表示IDが未設定の利用者を他人からどう見せるか** ★新規（2026-07-28） | P1 | Round 13 指摘。B24 と同じ穴。タイムライン・プロフィール・検索結果で何を出すかが決まっていない。表示IDが空だとプロフィールのURLも作れない | 05 users / B20 / 03 #13-2 |"
+        },
+        {
+          "line": 253,
+          "text": "| B25 | 設計担当 | B24 | 未設定時の各画面表示と試験が確定 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-session-and-profile-setup",
+        "profile-view-and-edit",
+        "follow-relations",
+        "search-posts-and-users",
+        "app-polish"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B96",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**`[a-z0-9_]`、3〜30文字、小文字保存を第一提案**にし、先頭末尾underscore・連続underscore・予約語は別表で拒否する。日本語は表示名へ置き、URL/検索の説明を一つにできる。",
+      "alternative_tradeoff": "Unicode username: 正規化/似た文字/URL説明が重い。英数字だけ1文字〜: 衝突と誤入力が増える。大文字保持: 大小文字一意性が見えにくい。",
+      "joint_adoption_conditions": "B24必須化、B97空き確認、DB CHECK/UNIQUE正規化、既存値移行を同時採用。具体値は原承認まで提案扱い。",
+      "source_change_candidates": "04§7.2〜7.3、05 users制約、06 #13-2/§6 X1、08 FR2境界、11§3前提不要/§4原則6、18章120/130/230。",
+      "missing_measurement_approval": "3文字根拠、予約語、正規化、既存値、UI/DB同一判定は未実測。文字集合・最小長は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 297,
+          "text": "| B96 | 表示IDの文字種と最小長 | 設計担当 | P1/G1通過前（未決） | B24 | 入力規則とDB制約を同時決定 | UI/DB/試験が一致 | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-session-and-profile-setup"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B97",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**入力停止後の補助的空き確認＋保存時UNIQUE再判定**を第一候補にする。「使用可能」は予約でないと表示し、競合時は入力を保持する。",
+      "alternative_tradeoff": "送信時のみ: 単純だが長い入力後に衝突。毎文字照会: 古い応答/通信量。予約: 期限・解放・悪用対策という新機能。",
+      "joint_adoption_conditions": "B96正規化、B100状態文言、古いresponse抑止、DB UNIQUEを同時採用。",
+      "source_change_candidates": "04§7.3、05 users UNIQUE、06 #13-2/§6 X1、08 FR2競合、11§4原則2/8、18章120/130。",
+      "missing_measurement_approval": "A/B競争、応答逆転、offline、列挙リスクは未実測。補助照会の間隔と有無は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 298,
+          "text": "| B97 | 表示ID空き確認の時点 | 設計担当 | P1/G1通過前（未決） | B24, B96 | 送信時必須、入力中は実測で選ぶ | 競合時UXと試験が確定 | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-session-and-profile-setup"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B87",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**app rootはAuth/現在本人だけ、screenはS1〜S4、権限は別軸、表示部品は受取値だけ**を第一候補にする。80で学んだ状態の見方を全章へ再利用できる。",
+      "alternative_tradeoff": "全global store: 所有者が見えない。各部品fetch: 重複通信。全screen listener: B95と競合。巨大screen: 最初の結果が遠い。",
+      "joint_adoption_conditions": "B95 lifecycle、B67権限、B100エラー、B1章境界を同時採用。",
+      "source_change_candidates": "04§1.1/§1.2/§9/§10、05はDB境界との分離注記、06§1/§6、08主要画面状態、11§4原則4/5/8、18章80以後/270。",
+      "missing_measurement_approval": "全画面所有表、mount/離脱/再起動、二重副作用は未実測。component境界と章割りは未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 288,
+          "text": "| B87 | コンポーネント分割と状態配置 | 設計担当 | P1/G1通過前（未決） | B1, B67 | 画面共通状態を先に分類 | 全画面の責務と状態所有者が記録済み | 04§10, 06U15 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "app-navigation",
+        "app-polish"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B100",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**「未完了のこと・入力保持の有無・次の操作」の三要素を共通規則**にし、拒否と結果不明を別文言にする。独学者が連打や全resetへ逃げず戻れる。",
+      "alternative_tradeoff": "raw error表示: 秘密/内部構造露出。全て「失敗」: 回復不能。全code個別翻訳: SDK更新負担。timeoutを失敗断定: 二重mutation。",
+      "joint_adoption_conditions": "B62/B97、06 X1〜X6、B86の0行観測、各画面の保持/再開条件を同時採用。最終日本語は12/G2で一元化。",
+      "source_change_candidates": "04§1.1/全画面エラー、05制約名非表示、06§6、08失敗/再試行観点、11§2独学者/§4原則1〜3、18全章/270。",
+      "missing_measurement_approval": "実際のcode/応答、focus/readout、結果不明回復は未収集。文言正本と原同期は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 301,
+          "text": "| B100 | エラー文言の共通規則 | 設計担当 | P1/G1通過前（未決） | B62 | 原因分類と回復操作を対応付ける | 主要エラーの文言と回復先が確定 | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "app-navigation",
+        "app-polish"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B67",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**権限を未確認/要求中/許可/拒否/OS制限の別軸にし、S1〜S4は画面状態として維持**する。カメラ拒否と入力中画像を同時に説明できる。",
+      "alternative_tradeoff": "S5権限一つへ集約: カメラ/写真の組合せが潰れる。権限を各screenへ分散: 復帰処理が重複。拒否をE2通信失敗: 原因が違う。",
+      "joint_adoption_conditions": "B87状態所有、B114 accessibility、B5 build/権限文言、260の両方拒否回復を同時採用。",
+      "source_change_candidates": "04§1.1/§2.1、05 Storage境界との分離、06画像アクセス行/§6、08§4.2 H3/§7.2、11§4カメラ節目/原則2、18章150/260/270/290。",
+      "missing_measurement_approval": "iOS/Androidの全組合せ、limited、設定変更後復帰、Expo Go/専用build差は未実測。P1/G1前の状態案と原04同期は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 207,
+          "text": "| B67 | **権限（カメラ／写真ライブラリ）の状態を 04 §1.1 の状態分類のどこに置くか** ★新規（2026-08-09） | **本番1章目の凍結前**（08 §12 の「権限を両方拒否したときの画面」と同じ席） | 08 §4.2 の H3 が「権限の状態を画面のどこで持つかは 04 に無い」と指摘している。04 §1.1 の S1〜S4 に権限の状態は無く（S4 は入力エラーと送信の失敗）、しかも 04 §1.1 は「**どの画面でも同じ4種類しか出てこない**」と断定している。5つ目が要るなら、その断定が偽になり、**最初の画面での導入から書き直し**になる（教材は「またこの4つ」で押し通す設計のため） | 04 §1.1, 08 §4.2 H3 |"
+        },
+        {
+          "line": 266,
+          "text": "| B67 | 設計担当 | B87, B114 | 権限状態・拒否画面・状態分類が一致 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "image-post",
+        "camera-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B78",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**users/postsの一般UPDATEを閉じ、プロフィール更新・論理削除は用途別関数、notificationsはB77のread_at列GRANT**を第一候補にする。RLSの行制限と列/操作制限を別の目に見える対照で学べる。",
+      "alternative_tradeoff": "users画像URLを列GRANTだけで守る案は値のowner/bucket意味を保証しない。notifications read_atは列GRANTと行RLSで別に比較する。users/postsの関数と無制限直接UPDATE併存は迂回路。全列owner可: 保護列を改変できる。",
+      "joint_adoption_conditions": "B64/B91、B77 notifications文言、関数のinvoker/definer・search_path・EXECUTE、B86影響行観測を同時採用。",
+      "source_change_candidates": "04§8.4〜8.5、05 RLS注意/表、06§2.3/§2.4/§2.7/U4/U19、08§5.5〜5.7/§12、11§4 RLS節目/原則6、18章120/130/140/200/220。",
+      "missing_measurement_approval": "3表×本人/他人×許可/禁止列×直接/関数は未実測。関数方式と教材の導入順は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 279,
+          "text": "| B78 | 更新列をGRANTか専用関数で制限 | 実測担当＋設計担当 | P1/G1通過前（未決） | B77, B91 | 3テーブルを同じ比較軸で試す | 所有者・権限・正負例を含む方式決定 | 06U4, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-session-and-profile-setup",
+        "profile-view-and-edit",
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B91",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**`users`はusername/display_name/bioと採用した画像参照だけ、`posts`は`deleted_at`操作だけ**を更新可能にする。FR3にない本文編集を足さず、保存と論理削除の意味が明確になる。",
+      "alternative_tradeoff": "owner全列UPDATE: 時刻/author/親を改変。posts本文編集: 新要件・通知/スレッド回帰が増える。画像のため全users列許可: 過剰。",
+      "joint_adoption_conditions": "B64時刻、B78方式、B92画像参照方式、B27削除可視性を同時採用。",
+      "source_change_candidates": "04§7/§8、05 users/posts/RLS、06§2.3/§2.4/U19、08 FR2/FR3/§5.5〜5.6、11§4初投稿/RLS節目、18章120/130/140/180/220。",
+      "missing_measurement_approval": "許可列/禁止列/混合payload、再公開、親改変は未実測。編集列と画像URL列は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 292,
+          "text": "| B91 | `posts/users`の更新列制限 | 実測担当＋設計担当 | P1/G1通過前（未決） | B64, B78 | B78と同じ2案で比較 | 編集可能列とSQL正負例が確定 | 06U19, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-session-and-profile-setup",
+        "profile-view-and-edit",
+        "text-post",
+        "rls-denial-check"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B68",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**通常・返信・引用は本文または画像1〜4枚の少なくとも一方、無言リポストは参照があれば本文なし可**を第一推奨にする。140は文章投稿、150で画像だけも表現でき、cameraで撮った結果を不要な本文入力なしに投稿できる。",
+      "alternative_tradeoff": "本文必須案はSQLが単純になるが写真だけの表現を制限するため、実装容易性だけで第一推奨へ狭めない。body NULLなら全て許可は空投稿になる。全種本文必須: 無言リポストを壊す。",
+      "joint_adoption_conditions": "B71の親と画像参照の原子的確定、B72投稿種別、B70枚数、FR3/FR5/FR6の原承認を同時採用。",
+      "source_change_candidates": "04§1.3入力、05 posts/§4課題3、06 posts insert/RLS、08 FR3/FR5/FR6、11§4初投稿/原則5、18章140/150/180。",
+      "missing_measurement_approval": "trim/空白、本文/参照組合せ、改造clientは未実測。画像だけ許可とFR3解釈、章150の説明負荷は局長/原01再承認が必要。",
+      "original_backlog_rows": [
+        {
+          "line": 208,
+          "text": "| B68 | **01 FR3 の文面が「本文必須」と読めることの是正**（画像だけの投稿を許すか） ★新規（2026-08-09） | **05 の局長承認前**（01 の再承認と同じ席） | 01 FR3 は「本文（最大280文字）＋画像最大4枚」と書き、本文が任意だとは書いていない。05 の `posts.body` は無条件 NULL 可で、05 §4 課題3 が空投稿の CHECK 制約を論点に立てているが、**課題3 が扱うのは DB 側の制約であって 01 の文面の是正は誰も持っていない**。課題3 の式 `repost_of_post_id IS NOT NULL OR body IS NOT NULL` は `post_media` を見ていないので、**画像だけの投稿は通らない**。許すかどうかが決まらないと、04 §1.3 の入力の検証が中途半端に残り、この式の欠陥に誰も気づけない | 01 FR3, 05 §4 課題3, 04 §1.3, 08 §2 FR3 |"
+        },
+        {
+          "line": 267,
+          "text": "| B68 | 局長（要件）＋設計担当 | B71 | FR3・DB制約・画像だけ投稿の許否が一致 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "text-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B71",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**認可付きDB単一トランザクションでposts親とpost_media参照を確定し、終了形がB68/B72を満たすことをDBで保証**する案を第一推奨にする。空の親を公開してから画像を足さない。全直接INSERT/UPDATE/DELETE経路も終了形検査を強制するか通常clientから閉じ、最後のmedia除去・親移動で画像だけ投稿が空にならないようにする。Storage uploadはDBトランザクションの外にあり、失敗objectはB85へ接続する。FKと親生存/可視性はB76/B115で別に保証する。",
+      "alternative_tradeoff": "post_media存在をCHECK: 別表を保証できない。UIだけ: 改造clientが空行作成。draft/publication方式は代案だが公開前状態・列・遷移・回復を増やす。本文必須で同一行CHECKへ縮める案はB68の体験変更と一緒に再判断する。",
+      "joint_adoption_conditions": "B68/B72、空白正規化、B70枚数、B66/B92安定参照/B84公開範囲/B21画像条件、親の生存/可視性B76/B115、全許可書込経路を同時採用。",
+      "source_change_candidates": "04§1.3、05 posts/§4課題3、06§2.4、08 FR3のNULL/空白負例、11§4原則6、18章140/180。",
+      "missing_measurement_approval": "SQL NULL、trim、各投稿種別、削除/不可視親は未実測。終了形保証/SQL NULL/公開途中状態/競合/最後の画像除去と画像だけ方針は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 272,
+          "text": "| B71 | 空投稿をDBで拒否する条件 | 設計担当 | P1/G1通過前（未決） | B68, B72 | 画像だけ投稿の要件を先に整合 | CHECK式とFR3が一致 | 05課題3 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "text-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B70",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**`post_media.position`を0〜3、NOT NULL、`UNIQUE(post_id, position)`にする**案を第一推奨にする。4枠をDBの形で見せ、COUNT triggerや同時実行を教材へ増やさない。",
+      "alternative_tradeoff": "UIだけ4枚: DB保証なし。COUNT trigger: 同時追加の直列化が必要。1〜4: 可能だが配列indexとの変換が増える。",
+      "joint_adoption_conditions": "B82改名、post_id FK/NOT NULL、別親移動禁止B76、画像確定手順を同時採用。",
+      "source_change_candidates": "04§1.3、05 post_media/§4課題2、06§2.5、08 FR3画像0/1/4/5、11§4原則6、18章150/260。",
+      "missing_measurement_approval": "同時書込、NULL/範囲/重複/別親UPDATE、REST経路は未実測。0〜3と欠番許否は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 271,
+          "text": "| B70 | `post_media` 最大4枚のDB保証 | 設計担当 | P1/G1通過前（未決） | B21, B76 | 制約方式を実測比較 | 方式・SQL・負例が記録済み | 05課題2 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "image-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B72",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**reply参照とrepost参照の同時指定を禁止**し、通常/返信/無言repost/引用の4種へ閉じる。通知と画面の意味を一度に一つ学べる。",
+      "alternative_tradeoff": "引用付き返信を許す: UI、通知宛先、スレッド、FR5/6の追加判断が要る。UIだけ禁止: 改造clientが複合行を作る。",
+      "joint_adoption_conditions": "B68/B71本文条件、B74通知、B115親生存、CHECKのNULL表を同時採用。",
+      "source_change_candidates": "04投稿詳細/§1.3、05 posts/§4課題4、06§2.4/通知trigger、08 FR5/FR6、11§4原則6、18章140/180/200。",
+      "missing_measurement_approval": "参照NULL/有効/不可視/削除、通知の正負は未実測。複合投稿不採用はFR5/6承認が必要。",
+      "original_backlog_rows": [
+        {
+          "line": 273,
+          "text": "| B72 | リプライとリポストの同時指定 | 設計担当 | P1/G1通過前（未決） | B71 | 許否とDB制約を同時決定 | 正負例と制約が一致 | 05課題4 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "text-post",
+        "reply-and-repost"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B82",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**予約語を避けて`order`を`position`へ改名**する。初学者が引用符で止まらず、B70の「位置」と同じ語で理解できる。",
+      "alternative_tradeoff": "`order`維持＋常時引用: 移行不要だが教材/SQL全箇所で落とし穴。`sort_index`: 意味は通るが既存語との距離が増える。",
+      "joint_adoption_conditions": "B70の0〜3/一意性、05/06/type/教材snapshotの一括改名を同時採用。",
+      "source_change_candidates": "04§1.3、05 post_media、06§1.2/§2.5/U8、08 FR3/§5.9、11§4原則2/6、18章150/260。",
+      "missing_measurement_approval": "実SQL/REST/type/並べ替えは未実測。列改名とmigration時点は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 283,
+          "text": "| B82 | `post_media.order`の列名 | 実測担当＋設計担当 | P1/G1通過前（未決） | B8 | 引用案と改名案を実SQLで比較 | 05/06/教材コードが同名 | 04§10, 06U8, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "image-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B66",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**生成名object＋DBへbucket/object pathの安定参照を書戻し、表示時に採用公開範囲に応じたURLを解決して実画像を再読取**する。差替えた結果がURLでも識別でき、固定名cacheを初心者の隠れた失敗にしない。",
+      "alternative_tradeoff": "固定名上書き: URL不変で旧bytesが残り得る。query版付け: cache規則が別責務。URL導出: DB列を減らせるが拡張子/版/回収契約が要る。",
+      "joint_adoption_conditions": "B84公開範囲、B91許可列、B92書戻し、B85遅延commit後回収を同時採用。",
+      "source_change_candidates": "04プロフィール編集/保存確認、05 users URL列/Storage、06§1.2/§5.1〜5.3、08 FR2画像差替え、11§4見える変化、18章130/220/270/290。",
+      "missing_measurement_approval": "cache条件、旧/new URL、遅延commit、Web/native、旧object回収は未実測。URL方式と保持期間は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 206,
+          "text": "| B66 | **アバターの固定ファイル名と、差し替え後に古い画像が残るか** ★新規（2026-08-09） | **パートB の画像の章の実装PR前**（06 U12 と同じ席） | 06 §5.1 は `avatars` のパスを `<利用者のid>/avatar.<拡張子>` と**固定名**で定義し、§5.2 に上書きのポリシーを置いている。差し替え後に公開 URL が古い画像を返すかは、06 §5.3 の3つの未決（公開バケット／MIME・容量／孤児ファイル）のどれにも入っていない。08 §2 の FR2 観点は「画像を上げて表示に反映される」とだけ書くので、**そのままでは合格判定にならない**。反映されないなら、パスにファイル名を持たせるか URL に版を付けるかで 06 §5.1 の設計が変わる | 06 §5.1〜§5.3, 08 §2 FR2 |"
+        },
+        {
+          "line": 265,
+          "text": "| B66 | 実測担当＋設計担当 | B21, B84, B92 | 画像差替え後のURL・キャッシュ・保存規則が一致 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "profile-view-and-edit",
+        "image-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B84",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**教材用SNSのavatar/header/post画像はpublic read、owner-only write/delete、学習者所有の非機密画像だけ**を第一提案にする。公開SNSの表示が単純で、期限付きURLを先に教えずに済む。公開URLの残存と匿名readを明記する。",
+      "alternative_tradeoff": "private＋signed URL: 秘密性は上がるが期限/更新/一覧取得が全画像へ入る。認証readだけ: Web/共有画面の要件を別に決める。publicを安全と無条件宣言: 不可。",
+      "joint_adoption_conditions": "B6/B81匿名readが承認される場合の候補。匿名DB readを拒否するならB84はprivate認証読取/期限付きURLへ戻し、public画像だけ残す案はURL匿名閲覧を許す別承認が必要。B66 URL、B21 MIME/容量、B85回収、C5素材権利と同時採用。avatarsとpost-media用途は分ける。",
+      "source_change_candidates": "04§6/Web・画像画面、05 Storage/RLS共通、06§5/U12、08 FR2/FR3/Storage正負、11§4カメラ/Web節目、18章130/150/260/280/290。",
+      "missing_measurement_approval": "匿名/本人/他人read-write-delete、URL残存、cache、素材説明は未実測。公開範囲は正式承認が必要。",
+      "original_backlog_rows": [
+        {
+          "line": 285,
+          "text": "| B84 | Storageバケット公開範囲 | 設計担当 | P1/G1通過前（未決） | B6, B94 | 読取要件とポリシーを照合 | 公開設定・説明・試験が一致 | 06U12, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "profile-view-and-edit",
+        "image-post",
+        "web-platform-fixes"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B106",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**最初の購読章170でpostsをpublicationへ入れて確認し、200でnotificationsを追加**する。必要になった瞬間に設定→見える反映を結び、90で未使用設定を先取りしない。",
+      "alternative_tradeoff": "90で全部有効化: 表未導入・目的不明。200で一括: 170の購読が隠れた前提。dashboard手作業だけ: snapshot再現性が弱い。",
+      "joint_adoption_conditions": "B1/B61章順、B80配信契約、B105購読対象、migration/snapshotの再現方法を同時採用。",
+      "source_change_candidates": "04§3.1/§4依存、05対象tableとRLS、06§4.1〜4.2、08 H14/§5.14、11§4Realtime節目/原則5/6、18章170/200。",
+      "missing_measurement_approval": "publicationの設定/再現、初回受信、章開始snapshotは未実測。導入章と操作手段は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 307,
+          "text": "| B106 | Realtime有効化手順の章位置 | 設計担当 | P1/G1通過前（未決） | B1, B80, B105 | 最初の購読章と同時導入 | 前提操作が章順に先行 | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "following-timeline",
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B80",
+      "proposal_document": "material/decisions/20261004-Auth投稿基盤の採用提案.md",
+      "recommendation": "**INSERT購読はRLSで読める行だけを前提にし、notificationsはさらに`recipient_id` filterを付け、timeline対象集合は再取得で照合**する。初回/復帰/切断後は再取得＋id重複排除を行い、Realtimeを完全配送と教えない。DELETE/論理削除はイベントだけへ依存しない。",
+      "alternative_tradeoff": "filterだけ: 外し忘れで漏えい。イベントだけで整合: 取漏れ/重複。全UPDATE/DELETE購読: payload/RLS差と説明が増える。1台切替: 同時配信を証明しない。",
+      "joint_adoption_conditions": "B22/B108再取得順、B106有効化、B81 read範囲、B65/B110資源、postsは原INSERT-onlyの範囲を同時採用。",
+      "source_change_candidates": "04§3.1〜3.3、05 RLS/realtime対象、06§4.1〜4.4/U6、08 H13/H14/§5.14/§7.3、11§4Realtime節目、18章170/200/270。",
+      "missing_measurement_approval": "採用projectのRLS適用、filter、遅延/切断/重複/再取得、2画面同時性は未実測。配信種類と安全境界は未承認。",
+      "original_backlog_rows": [
+        {
+          "line": 281,
+          "text": "| B80 | Realtime insert/updateとRLS・filter | 実測担当 | P1/G1通過前（未決） | B81, B108 | 他者データを含む正負例で測る | 購読可否・filter条件・証拠が記録済み | 04§10, 06U6, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "following-timeline",
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B21",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "clientで早期案内し、Storage側でもMIME/bytes上限を拒否する二層。選択直後に理由が分かり、改造clientも境界を越えない",
+      "alternative_tradeoff": "clientのみは迂回可能。Storageのみは遅い拒否。専用変換serviceは章負荷が大きい",
+      "joint_adoption_conditions": "B104の実bytes、B84公開範囲、B70枚数。拒否後にDB参照を作らない",
+      "source_change_candidates": "04§1.2/1.3/E9、05 Storage、06§5.3、08§2/5.10、18の130/150/260/290",
+      "missing_measurement_approval": "両OS/Webで許可・形式違い・容量超過・偽MIME、object/DB事後状態。実測担当＋設計担当の原承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 161,
+          "text": "| B21 | **画像のサイズ・形式をサーバー側で止めるか** ★新規（2026-07-27） | P1 | 別ファミリーレビュー指摘。現在は画面入力の検証だけで、改造したクライアントは迂回できる。Storage の bucket 側で MIME と容量の上限を設定するかを決める | 01 非機能, 05 Storage |"
+        },
+        {
+          "line": 249,
+          "text": "| B21 | 実測担当＋設計担当 | B70, B104 | 形式・容量・検証層・負例が確定 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "profile-view-and-edit",
+        "image-post",
+        "camera-post",
+        "web-platform-fixes"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B104",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "URIを直接送らず、採用版ごとにbytesへ読み、長さ/MIME/signature確認後upload。学習者は「選択→送信→参照」を段階で理解できる",
+      "alternative_tradeoff": "WebのBlob例をnativeへ転用、base64固定、URI直渡しは0byte/容量増/OS差を隠す",
+      "joint_adoption_conditions": "B21、B84、B85。picker/cameraを同じ保存契約へ接続",
+      "source_change_candidates": "04§1.3/§10、06§5.4、08 H15/Storage、18の130/150/260/290",
+      "missing_measurement_approval": "iOS/Android/Webの同一画像で変換前後hash、upload/download一致。実測担当＋設計担当の承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 305,
+          "text": "| B104 | Storageへ渡すデータ形 | 実測担当＋設計担当 | P1/G1通過前（未決） | B21, B84 | Expoの画像結果から候補比較 | MIME・容量検証を含む手順が確定 | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "profile-view-and-edit",
+        "image-post",
+        "camera-post",
+        "web-platform-fixes"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B85",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "130でprofile画像の再確認/残置を最小導入、150で投稿・複数画像へ拡張、260で再利用。参照なしを同期確認できるobjectだけ回収",
+      "alternative_tradeoff": "即時削除は遅いcommitを消す。無期限残置は費用増。独立章は31章/B1を変える",
+      "joint_adoption_conditions": "B104のpath、B117のremove応答、B92参照、B27/B115削除境界。collectorは別判断",
+      "source_change_candidates": "04§1.3/§10、06§5.3/U13、08 Storage、18の130/150/260。独立章化するなら18/B1",
+      "missing_measurement_approval": "timeout/遅延commit/再起動/同時writer/cleanup失敗、章snapshot。設計担当の原承認とB1判断未達",
+      "original_backlog_rows": [
+        {
+          "line": 286,
+          "text": "| B85 | Storage孤児ファイルの処理 | 設計担当 | P1/G1通過前（未決） | B104, B117 | 失敗経路ごとに残置/削除を選ぶ | 章順・回収手順・試験が確定 | 04§10, 06U13 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "profile-view-and-edit",
+        "image-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B92",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "**bucket/object pathの安定参照＋users参照列への書戻し**を第一推奨。avatar/headerの保存済み参照を明示でき、旧参照を保持した回復が可能",
+      "alternative_tradeoff": "固定path導出は単純だがcache・同時差替え・rollbackが弱い。任意URL書戻しは他人pathを許す",
+      "joint_adoption_conditions": "B91で更新列、値のbucket/owner検証、B85孤児、B84公開範囲。列GRANTだけで値を守らない",
+      "source_change_candidates": "04プロフィール保存、05 users列、06§1.2/U21、08 FR2、18の130",
+      "missing_measurement_approval": "保存/差替え/timeout/他人prefix/cache/旧新object。原主体は設計担当。実測提出者の正式割当も未達",
+      "original_backlog_rows": [
+        {
+          "line": 293,
+          "text": "| B92 | StorageパスとプロフィールURLの同期 | 設計担当 | P1/G1通過前（未決） | B84, B85 | 書戻し案と導出案を比較しB91と同時設計 | 05列・更新順・失敗回復が一致 | 06U21 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "profile-view-and-edit"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B27",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "`posts`と`post_media/likes/post_hashtags`をDB側で削除済み親から隠し、bookmark/tag/timeline/detailも同じ集合へ。改造clientにも同じ意味",
+      "alternative_tradeoff": "画面除外はDBから読める。親だけ隠すと画像・いいね・タグが残る",
+      "joint_adoption_conditions": "B76親参照、B115削除後操作、B86観測。Storage public URLは別にB84/B85",
+      "source_change_candidates": "04§1.2/§8.2、05§5、06§2.4-.9、08§2/5.6、11の見える回復、18の170/180/220/240/250/270",
+      "missing_measurement_approval": "削除前後A/B、親子3表/bookmark、全画面、既知public URL。実測担当＋設計担当の承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 167,
+          "text": "| B27 | **削除済み投稿を DB 自身に隠させるか、画面側の絞り込みに任せるか** ★新規（2026-07-28） | P1 | Round 16 指摘。`05_DB設計書.md` §5 に「Phase 1 で確定」と書いたまま本台帳へ載せていなかった。**この台帳が未決定の唯一の正本だという前提を破っていた**（A1）。論理削除した投稿を SELECT ポリシーで弾くか、アプリ側の絞り込みに任せるかを決める。後者は改造したクライアントに素通しされる。**★ 2026-08-09 追記: 論点は `posts` だけではない。**「DB 側で隠す」を選ぶ場合、`post_media_select` / `likes_select` / `post_hashtags_select` の3本もあわせて直さないと、**削除済み投稿のいいね・タグ・画像は読めたまま残る**（06 §2.5・§2.6・§2.8・§2.9 が4か所で警告し、08 §5.6 の最終行に検証手順を置いた）。`posts_select` だけを直して決着扱いにしない | 05 §5, 06 §2.5・§2.6・§2.8・§2.9, 08 §5.6 |"
+        },
+        {
+          "line": 255,
+          "text": "| B27 | 実測担当＋設計担当 | B76, B115 | 親子表の表示・書込・更新の正負例が一致。06 U20は由来として保持 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "following-timeline",
+        "reply-and-repost",
+        "rls-denial-check",
+        "private-bookmarks",
+        "app-polish"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B76",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "通常のsecurity invoker policy内`exists`を第一推奨。本人成功、他人親/削除済み親拒否を機能の直後に見せる",
+      "alternative_tradeoff": "definer関数は権限/search_path監査が増える。アプリだけの親確認は迂回可能",
+      "joint_adoption_conditions": "B27、B70、B115。invokerで正当操作が通らない証拠が出た時だけ限定関数を再比較",
+      "source_change_candidates": "04§8.2、05 RLS、06§2.5/.6/.8/U2/U20、08§5.6-.9、18の150/180/190/220/240/250",
+      "missing_measurement_approval": "本人/他人/削除済み親、role/uid/DB state。実測担当＋設計担当の承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 277,
+          "text": "| B76 | 親を参照するRLS式の成立性 | 実測担当＋設計担当 | P1/G1通過前（未決） | B8, B70, B115 | 本人成功・他者拒否・削除済み親で実測 | SQL結果と採用方式が記録済み | 06U2, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "text-post",
+        "reply-and-repost",
+        "likes",
+        "rls-denial-check",
+        "hashtag-timeline",
+        "private-bookmarks"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B115",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "論理削除後は通常clientの編集・再削除・子追加を凍結。restoreは追加しない。利用者は「利用不可」を見て戻れる",
+      "alternative_tradeoff": "restoreは新要件。owner全UPDATEは本文/author/親を変えられる。cleanupまで全面禁止すると孤児回収不能",
+      "joint_adoption_conditions": "B27/B76/B91/B86。限定cleanupはB85対象だけ",
+      "source_change_candidates": "04削除回復、05 posts、06§2.4/U19/U20、08§5.6/§12、11の失敗回復、18の140/180/220/250",
+      "missing_measurement_approval": "select/update併用、削除前後、返却なし/select/count、owner/他人、DB事後値。実測担当＋設計担当の承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 316,
+          "text": "| B115 | 論理削除後に投稿者が再操作できる範囲 | 実測担当＋設計担当 | P1/G1通過前（未決） | B27, B76, B91 | select/update併用を実測 | 許可操作とポリシー正負例が確定 | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "text-post",
+        "reply-and-repost",
+        "rls-denial-check",
+        "private-bookmarks"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B86",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "既知対象＋API応答/件数＋独立DB事後状態の三点照合。エラーなし/0行を安全の学習材料にする",
+      "alternative_tradeoff": "`select()`配列長だけはSELECT policyと混ざる。0行=RLS拒否の固定文言は誤因",
+      "joint_adoption_conditions": "B76/B78。Storage応答はB117へ分離",
+      "source_change_candidates": "04共通mutation、06§6.3/U14、08§5.3-.6、11エラー先回り、18の140/180/190/220/250",
+      "missing_measurement_approval": "本人1行、他人既知行、不存在、SELECT不可、輸送失敗。実測担当の原判断未達",
+      "original_backlog_rows": [
+        {
+          "line": 287,
+          "text": "| B86 | RLS拒否時の0行応答の観測 | 実測担当 | P1/G1通過前（未決） | B76, B78 | `select()`有無とcount有無を測る | 応答・DB状態・判定手順が記録済み | 06U14, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "text-post",
+        "reply-and-repost",
+        "likes",
+        "rls-denial-check",
+        "private-bookmarks"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B28",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "原FR9のlike/reply/repost/followを全てDB triggerで生成。通常clientへnotification INSERTを許さず、200以後の新操作で観測",
+      "alternative_tradeoff": "アプリ生成は経路ごとの漏れ/偽装。一部triggerは説明と試験が分裂。過去操作backfillは別機能",
+      "joint_adoption_conditions": "B7/B74/B89/U11、B27削除対象。生成とRealtime配信を別証拠にする",
+      "source_change_candidates": "04§3.1/M17、05 notifications、06§3.2、08 FR9/§5.7、11最小導入、18の200",
+      "missing_measurement_approval": "4新規操作、取消/再操作、自己、重複、rollback、導入前後。設計担当の原承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 168,
+          "text": "| B28 | **通知を作る DB トリガーの実装範囲** ★新規（2026-07-28） | P1 | Round 16 指摘。B27 と同じ漏れ。どの操作（いいね・リプライ・リポスト・フォロー）まで DB のトリガーで通知行を作るかを決める。03 UC2 の方式の具体化にあたる | 05 §5, 03 UC2 |"
+        },
+        {
+          "line": 256,
+          "text": "| B28 | 設計担当 | B7, B74, B89 | 生成・取消・自己操作の全通知仕様が一致。06 U11は由来として保持 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B7",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "Phase 1はFR9の4種のみ。新規投稿のフォロワー通知は採らず、将来追加要件として残す。通知章の焦点を守る",
+      "alternative_tradeoff": "第5種はfan-out・通知量・B4/B60まで増える。timeline新着で通知履歴を代替したとも言わない",
+      "joint_adoption_conditions": "B28/B74を4種で一致。UC1の記述差を原承認で解消",
+      "source_change_candidates": "04通知表、05§4課題1、06§3.2、08 FR9、11の重い話を最小限、18の200",
+      "missing_measurement_approval": "4種対応表とUC1差分の局長判断。設計担当の原承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 147,
+          "text": "| B7 | UC1「新規投稿のフォロワー通知」を通知種別に含めるか | P1 | notifications.type に含めるか判断 | 05 §4課題1 |"
+        },
+        {
+          "line": 241,
+          "text": "| B7 | 設計担当 | B28, B74 | FR9・enum・トリガー・試験が一致 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B74",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "4種をtype/recipient/actor/post_id/遷移先へ一対一化。reply/repostは作られた子、followはpost_id NULLでprofileへ",
+      "alternative_tradeoff": "曖昧なactivity一種は遷移不能。followへ疑似post IDは意味を壊す。B7だけ第5種追加は欠落を生む",
+      "joint_adoption_conditions": "B7=4種、B28=4trigger、B89自己拒否、対象不可時の戻り先",
+      "source_change_candidates": "04通知画面、05 enum、06§3.2、08 FR9、11画面地図、18の200",
+      "missing_measurement_approval": "各type生成/遷移/NULL/対象削除、欠落余剰0。設計担当承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 275,
+          "text": "| B74 | `notifications.type` とFR9の照合 | 設計担当 | P1/G1通過前（未決） | B7, B28 | 一対一表を作る | 欠落・余剰0でテスト化可能 | 05課題6 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B89",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "DB制約とUIの両方で自己follow拒否。自分投稿のtimeline包含はB60のqueryで扱う",
+      "alternative_tradeoff": "自己follow許可は件数/通知/解除が不自然。UI非表示だけは改造clientを止めない",
+      "joint_adoption_conditions": "B28/B74の自己通知、B60のself集合。既存自己行の移行",
+      "source_change_candidates": "04 follows/通知、05 follows制約、06§2.6/U17、08 FR8/FR9、11の最初の結果、18の160/200",
+      "missing_measurement_approval": "A→B成功、A→A拒否、直接insert、通知0、既存行。設計担当承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 290,
+          "text": "| B89 | 自己フォローの許否 | 設計担当 | P1/G1通過前（未決） | B28, B74 | 通知仕様と同じ席で決める | 制約・通知・試験が一致 | 06U17 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "follow-relations",
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B60",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "following timelineを「自分＋follow中」と定義し、自己followなしで自分投稿を含める。140直後の成果が170でも見える",
+      "alternative_tradeoff": "followeeのみ案はFR4文言に近いが原08の自分投稿E2E期待を変更する必要がある。自己followで補う案はB89と衝突",
+      "joint_adoption_conditions": "B4 query、B10 fixture。145 own-post-list候補は別用途で保持しB1判断へ",
+      "source_change_candidates": "04 timeline/M11/M13、05方式メモ、06 timeline query、08 FR4/E2E、11初投稿節目、18の145候補/170/290/310",
+      "missing_measurement_approval": "self/followed/unfollowed、pagination重複、E2E、145導線。設計担当＋B1/G1承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 200,
+          "text": "| B60 | **自分の投稿を自分のタイムラインに含めるか** ★新規（2026-08-09） | **章分割表の凍結前（B1）** | 01 FR4 と 03 §2 は「フォロー中ユーザーの投稿」としか書いていない。「自分の投稿」と「タイムライン」が同じ行に現れるのは 08 §3.3 の E2E 初期案だけで、**そこは含まれる前提**、**08 §2 の FR4 観点は含まれない前提**で書かれている。B4（プッシュ型／プル型）の文面にもこの論点が無い。決まらないと E2E 1本の中身と FR4 の試験観点が同時に決まらず、プル型のクエリに自分を含めるかは B4 の SQL そのものになる | 01 FR4, 03 §2, 08 §2・§3.3, B4 |"
+        },
+        {
+          "line": 259,
+          "text": "| B60 | 設計担当 | B4, B10 | 自分の投稿の包含をSQL・E2E・FR4で同じにする |"
+        }
+      ],
+      "original_impact_chapters": [
+        "following-timeline"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B61",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "tagsは240、bookmarkは250で導入。140/150は本文・画像までで完成し、240で既存投稿backfill",
+      "alternative_tradeoff": "前倒しは画像投稿の最初の結果を重くする。DBだけ前倒しは見えない将来機能とRLS順を生む",
+      "joint_adoption_conditions": "18の240/250、B70/B73/B76/B83/B93。140/150のDB transactionへtagsを混ぜない",
+      "source_change_candidates": "04§1.2/1.3/8.2、05表、06§2.6/.8、08 FR11/12、11重い話を必要時だけ、18の140/150/240/250",
+      "missing_measurement_approval": "章snapshot、既存backfill、通常A/B RLS、未導入UIなし。設計担当＋B1/G1承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 201,
+          "text": "| B61 | **パートB の章から、パートC のテーブル（`hashtags` / `post_hashtags` / `bookmarks`）へ書き込む順序をどう解くか** ★新規（2026-08-09） | **章分割表の凍結前（B1）** | 04 §8.2 と 06 §2.6・§2.8 はこの3テーブルのポリシーを**パートC**に割り付けている（15 のパートC が「検索・ハッシュタグ・ブックマーク・カメラ」だから）。ところが 04 §1.3 の投稿作成の書き込み手順5 は `hashtags` / `post_hashtags` への書き込みを含み、投稿詳細の部品にはブックマークがある。**どちらもパートB。**「テーブルを作る章でそのテーブルのポリシーも一緒に書く」（05 §5・06 §0.3・04 §8.1 の3文書共通の決定）と両立しない。04 §1.3 は投稿作成画面についてだけ「パートB でいったん完成扱いにし、パートC で足す」を初期案で置いたが、タグとブックマークには手当てが無い | 04 §1.3・§8.2, 06 §2.6・§2.8, 15 パート構成 |"
+        },
+        {
+          "line": 260,
+          "text": "| B61 | 設計担当 | B1, B70, B73, B76 | パートB/Cの作成順とRLS導入順を一致させる |"
+        }
+      ],
+      "original_impact_chapters": [
+        "hashtag-timeline",
+        "private-bookmarks"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B73",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "投稿本文、username、display_nameを区別し、NULL usernameはその条件の一致なしとして扱う。利用者検索はusernameまたはdisplay_nameの期待集合を別に固定する。検索述語は`ILIKE`のcase-insensitive部分一致を意味の第一候補とし、同じpredicateを`pg_trgm` GIN索引で支援する案を推す。索引なし同queryと期待集合を揃え、日本語/短い語の計画と体感が成立した場合に限り採る",
+      "alternative_tradeoff": "索引なしILIKEは規模で遅くなり得る。similarity predicateと全文検索は結果の意味が別で、採るなら別の期待集合・閾値・要件承認が要る",
+      "joint_adoption_conditions": "B83はタグ正規化で別。B122のregion/件数/試行、B81読取範囲",
+      "source_change_candidates": "04検索画面、05§4課題5/index、06検索query、08 FR10/性能、11最初の結果、18の230",
+      "missing_measurement_approval": "同query索引あり/なしの集合/順序/query plan/端末体感/短語/空/失敗/RLS、%/_のliteral escape。意味の違うsimilarity/全文検索は別採否。設計担当の原承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 274,
+          "text": "| B73 | 検索方式と索引 | 設計担当 | P1/G1通過前（未決） | B83 | 候補を同じデータで実測 | 方式・索引・受入値が記録済み | 05課題5 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "search-posts-and-users"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B83",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "hashtagは表示値と`normalized_name`を分け、trim→先頭#除去→NFKC→採用DB版・collationで固定したcase変換の明示関数を第一推奨。unique/searchを正規値へ統一",
+      "alternative_tradeoff": "clientのみは端末差。表示値まで小文字化は表記を失う。正規化なしは見た目同一タグを重複",
+      "joint_adoption_conditions": "B73とは検索対象を分け、B93が同じ正規値を使用。採用Unicode例とDB版/collationを固定",
+      "source_change_candidates": "04投稿/hashtags、05列とUNIQUE、06 U9、08 FR11、11具体例、18の240",
+      "missing_measurement_approval": "両OS/Web/DBの正負Unicode fixture、表示、unique、検索。設計担当承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 284,
+          "text": "| B83 | ハッシュタグ正規化 | 設計担当 | P1/G1通過前（未決） | B73, B93 | 正規形と責務層を決める | 一意制約・検索・試験期待が一致 | 06U9, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "hashtag-timeline"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B93",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "UNIQUEな正規値に対し、invoker DB関数内でINSERT ON CONFLICT DO NOTHING→SELECT。UPDATE不可を維持し、両競合requestが同じIDを得る",
+      "alternative_tradeoff": "事前SELECT→INSERTはrace。DO UPDATEは不要権限/trigger副作用。client再試行は状態分裂",
+      "joint_adoption_conditions": "B83正規値、B76 post_hashtags、B61=240導入。関数EXECUTE/search_pathを監査",
+      "source_change_candidates": "04投稿手順5/§8.2、05 hashtags制約、06 U9、08 FR11、11エラー創作禁止、18の240",
+      "missing_measurement_approval": "barrier同時実行、最終1行、両ID、結付け、rollback/retry、権限。実測担当＋設計担当の承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 294,
+          "text": "| B93 | ハッシュタグの取得または作成 | 実測担当＋設計担当 | P1/G1通過前（未決） | B83 | 競合を含むupsert手順を試す | 同時実行でも一意で再現可能 | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "hashtag-timeline"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B77",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "notificationsは行RLSと列権限を分け、authenticatedのtable UPDATEを外して`read_at`列だけGRANT。本人は既読化でき、type等は守られる。DB側の値制御で未読NULL→server既読時刻に一度だけ移し、再更新は旧時刻を保持する。clientの未来/過去/NULL指定を時刻の正本にせず、未読戻し機能は追加しない",
+      "alternative_tradeoff": "RLSだけでは列を守れない。definer関数はsearch_path/EXECUTE監査が増えるためGRANT不成立時の次案",
+      "joint_adoption_conditions": "B78の3表比較、B74 type、B86観測",
+      "source_change_candidates": "04§8/通知、05 RLS表、06§2.7/U3/U4、08 FR9/§5.7、11最小セキュリティ、18の200/220。DB時刻制御をtriggerにするなら05と06§3 trigger一覧も同時変更",
+      "missing_measurement_approval": "本人read_at成功、server時刻/未来/過去/NULL/再更新/直接payload負例、本人type失敗、他人失敗、権限一覧。設計担当、05承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 278,
+          "text": "| B77 | 05の`notifications` RLS表是正 | 設計担当 | 05承認前（未決） | B8 | 行制限と列制限を分離して修正案化 | 05/06/08の文言が一致 | 04§10, 06U3, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B79",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "利用者のnotification DELETEを拒否し、既読化だけ許可。機能要件にない削除で履歴の意味を増やさない",
+      "alternative_tradeoff": "本人物理DELETEは取消UI/Realtime/保持が増える。論理削除列は新要件",
+      "joint_adoption_conditions": "B74の保持意味、B77 read_at。運営保持/削除は別判断として明記",
+      "source_change_candidates": "04通知画面、05 notifications、06 U5、08§5.11、11回復、18の200/220",
+      "missing_measurement_approval": "本人既知行DELETEのAPI/行残存、他人対照。設計担当承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 280,
+          "text": "| B79 | `notifications` deleteの許否 | 設計担当 | P1/G1通過前（未決） | B74 | 機能要件と保持方針を照合 | 許否とポリシーが一致 | 06U5, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B90",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "`public.users` DELETEを全authenticated clientへ拒否。退会をプロフィール行だけの削除にしない",
+      "alternative_tradeoff": "本人DELETEはAuth/関連行/画像を孤立。完全退会は別の要件追加",
+      "joint_adoption_conditions": "B8、B107、B86。将来退会は局長要件判断",
+      "source_change_candidates": "04 profile、05 users表、06§2.3/U18、08§5.5/5.11、11復帰、18の120/220",
+      "missing_measurement_approval": "本人既知行、API/行/Auth sessionの別観測。設計担当、05承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 291,
+          "text": "| B90 | `users` deleteの文書不一致 | 設計担当 | 05承認前（未決） | B8 | 要件にない操作を許可しない案で整合確認 | 05/06/08が同じ許否 | 06U18, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-session-and-profile-setup",
+        "rls-denial-check"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B107",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "隔離DBでgrant/policyを管理変異し、既存UID/未知UUIDのerror優先順を測ってusers INSERT禁止を動的に実演。誤因なら未証明",
+      "alternative_tradeoff": "静的policy確認＋posts代替は原のusers実演を閉じない。PK重複だけは偽PASS",
+      "joint_adoption_conditions": "B90、B86。変異後復元、role/grant/policy/constraintを同時記録",
+      "source_change_candidates": "04認証/RLS実演、05 users、06§2.3、08§5.5/§12、11本物のエラー、18の120/220",
+      "missing_measurement_approval": "error code/message/constraint、DB状態、変異で意図境界だけ変化。実測＋設計担当承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 308,
+          "text": "| B107 | `users` insert禁止の教材実演 | 実測担当＋設計担当 | P1/G1通過前（未決） | B90 | 主キー重複とRLS拒否を識別して測る | 誤因しない実演手順が確定 | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-session-and-profile-setup",
+        "rls-denial-check"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B111",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "正式G6 execごと・実行体ごとの使い捨てSupabase project。run IDにschema/seed/account/所有/破棄を束縛",
+      "alternative_tradeoff": "共有projectは混線。順次resetは残留。project内namespaceはAuth/Storage/Realtime分離が弱い",
+      "joint_adoption_conditions": "B2、B119。無料枠/メール上限を満たせない時はrun開始しない",
+      "source_change_candidates": "04開始資源、05/06全DB境界、08§6.2-.4、11独学開始条件、18全G6対象章",
+      "missing_measurement_approval": "作成/seed/独立/破棄/失効/費用の実run。G6担当承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 312,
+          "text": "| B111 | G6用Supabaseの準備と後片付け | G6担当 | P1/G1通過前（未決） | B2 | 専用の使い捨て環境を定義しB119と同時設計 | 所有・初期化・破棄・費用境界が明記 | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "rls-denial-check"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B112",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "章別G6 execは独立3体**3/3到達**。教材外補完/禁止入力/観測欠落はFAIL、infraはINVALIDとして新run",
+      "alternative_tradeoff": "2/3は一人の詰まりを合格にする。4体過半数はread規則の誤流用。2/2は揺らぎ検出が弱い",
+      "joint_adoption_conditions": "A5/B50/B111/B120。章validatorを実行前固定",
+      "source_change_candidates": "04章開始/完成、08§6.1/§12、10 G6、11独学完走、18全章の完成状態",
+      "missing_measurement_approval": "正式章で3独立exec。別にread4×2、B50軽重fixture各3中央値、正式D4の重い章制作工数。G6設計担当の原承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 313,
+          "text": "| B112 | G6実走体数と合否 | G6設計担当 | P1/G1通過前（未決） | A5, B50 | execの独立性と欠落検出を基準化 | 体数・失敗扱い・合否式が確定 | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "rls-denial-check"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B113",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "変更面ごと＋正式教材版で手動確認。実機/Auth/RLS/G6を別主体・別受領証にし、制作録画をG6へ転用しない",
+      "alternative_tradeoff": "全操作毎章は形骸化。パート末だけは発見が遅い。制作者だけは知識隔離なし",
+      "joint_adoption_conditions": "B112、B117。未分類変更面はFAIL",
+      "source_change_candidates": "04各操作の手動境界、08§4/6、10伴走loop、11独学エラー、18該当章",
+      "missing_measurement_approval": "RACI、頻度、schema、各種1回の欠落検出、両物理端末。テスト設計担当承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 314,
+          "text": "| B113 | 手動確認の主体と頻度 | テスト設計担当 | P1/G1通過前（未決） | B112 | 自動化不能操作を限定列挙 | 各操作に担当・頻度・証拠がある | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "rls-denial-check"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B117",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "Storage remove/moveは本人成功対照→他人操作→API＋元object＋移動先objectの三点照合",
+      "alternative_tradeoff": "SDK空配列だけは不存在/冪等/SELECT不可を区別不能。所有者再読取だけはcacheの穴",
+      "joint_adoption_conditions": "B84、B85、B104。public URL/cacheはmetadataと別",
+      "source_change_candidates": "04 Storage失敗、05 Storage、06§5、08 M5/§5.10、11見える回復、18の130/150/220",
+      "missing_measurement_approval": "SDK/API版、本人/他人、存在固定、move部分成功、metadata/cache。実測担当承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 318,
+          "text": "| B117 | Storage削除・移動拒否の応答 | 実測担当 | P1/G1通過前（未決） | B84 | API応答とStorage状態を同時確認 | 期待値と判定手順が記録済み | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "profile-view-and-edit",
+        "image-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B118",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "PRのL2/L3はSupabase local stackで隔離・再現し、保護branch/定期jobで使い捨てhosted projectとのparityを測る二層",
+      "alternative_tradeoff": "hostedのみはsecret/費用/待ち、localのみはprovider差、CIなしは回帰が遅い",
+      "joint_adoption_conditions": "B2/B111/B119。学習者へDockerを要求する意味にはしない",
+      "source_change_candidates": "04project構造、05/06 migration、08§1.4/§6、10 gate、11教材負荷分離、18の220",
+      "missing_measurement_approval": "local並行/cleanup、hosted parity、秘密非露出、正負L2/L3。Phase 2前の道具担当承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 319,
+          "text": "| B118 | DBテストのCI実行方式 | 道具担当 | Phase 2ゲート実装前 | B2, B111 | 分離した試験DBで最小構成を作る | CIで再現し秘密が漏れない | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "rls-denial-check"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B119",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "service roleは保護されたprovision/cleanup jobだけ。試験本体はA/B通常user session。G6/教材/app/artifact/fork PRへ渡さない",
+      "alternative_tradeoff": "service role試験はRLS迂回。メール確認無効はFR13試験にならない。長寿命A/Bは汚染",
+      "joint_adoption_conditions": "B111/B118。tokenをrun/project/期限へ束縛",
+      "source_change_candidates": "04秘密入力、05 key境界、06 auth/RLS、08§1.4/6.4、10受領証、11独学者へ非公開、18の220",
+      "missing_measurement_approval": "canary mask、fork負例、JWT role/uid、失効、ログ/artifact scan。Phase 2前のsecurity＋tool承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 320,
+          "text": "| B119 | L2/L3試験アカウントとsecret key境界 | セキュリティ担当＋道具担当 | Phase 2ゲート実装前 | B111, B118 | 制作CIだけの最小権限に限定 | 配置・マスク・失効・負例が確定 | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "rls-denial-check"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B120",
+      "proposal_document": "material/decisions/20261004-交流検索削除と検証の採用提案.md",
+      "recommendation": "filesystem namespace＋network deny/必要宛先allowlist＋固定操作broker＋run専用HOME/workspace。禁止path/任意argvを負例化",
+      "alternative_tradeoff": "空HOME/別cwdだけは同UIDでrepoへ届く。prompt禁止は隔離でない。別VMは強いが高コストな退路",
+      "joint_adoption_conditions": "A5/B112、依存は事前凍結。Supabase通信も章単位allowlist",
+      "source_change_candidates": "04開始資源、08§6.4、10 G6 input、11独学条件、18全G6対象章",
+      "missing_measurement_approval": "mount/network/process/broker transcript、禁止path/repo文字列、独立session。G6設計担当承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 321,
+          "text": "| B120 | G6実行体の公開repo隔離 | G6設計担当 | P1/G1通過前（未決） | A5, B112 | ネットワーク/入力制約で到達を防ぐ | 到達不能の検査と記録がある | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "rls-denial-check"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B1",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**構成B: 32章（145分離/110一章）**。145本人投稿一覧を追加し、110は状態別節を持つ一章に保つ。投稿後の結果確認と、後日自分の投稿を探す体験を分け、確実なM11欠落だけを直す",
+      "alternative_tradeoff": "31章同居案もM11明示で成立し得るが結果確認と一覧探索が同居する。33章はAuthを軽くできる可能性があるが、ID移行と全ゲート負担が増える",
+      "joint_adoption_conditions": "B10/B50/B75/C8、全84 ID、FR1〜15。110分割は未着手再確認とtombstone/supersedesが前提",
+      "source_change_candidates": "04依存、08章別受入、11学習負荷、15章数、18に145行・順序・依存・節目、10 G1は参照のみ",
+      "missing_measurement_approval": "31/32/33対応表、B50、工数、C8回答、局長承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 141,
+          "text": "| B1 | **章分割表の確定**（骨子15→凍結） | P1 | 15のパート構成（A0〜E）を親に、04の依存関係と「本来の開発フローの順序」から導出 → 10のG1で凍結。A9（テスト章）もここに載せる。**章数の目安は捨て試作の実測後に15へ記入する**（旧47〜58章は構成変更で無効） | 14, 10 G1 |"
+        },
+        {
+          "line": 236,
+          "text": "| B1 | 設計担当＋レビュー担当 | 固定入力のうち章境界・順序を変える未決（対応表で個別に追う） | G1に必要な章行・未決依存・実測根拠が揃い承認。S1開始条件ではない |"
+        }
+      ],
+      "original_impact_chapters": [
+        "app-navigation",
+        "text-post",
+        "search-posts-and-users",
+        "hashtag-timeline",
+        "app-polish"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B2",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**公開完成コード系統と非公開教材制作系統を分離**。公開側にExpo appと`supabase/` SQLを残し、PDF本文・review・個人情報を非公開にして学習者が迷わず再現できる",
+      "alternative_tradeoff": "全公開は教材本文/秘密漏洩、全非公開は公開コード方針違反、手コピーはG5乖離",
+      "joint_adoption_conditions": "B1/B94/B99/B111/B118、B9/C3/C6。C7は未回答のまま",
+      "source_change_candidates": "04構成/公開境界、08試験成果物、15配布説明、18snapshot/listing参照。05/06 SQLを公開成果から落とさない",
+      "missing_measurement_approval": "tree/manifest、秘密scan、PDF版対応、公開archive再現、正式承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 142,
+          "text": "| B2 | **実装リポジトリ／プロジェクト構造** ★抜け | P1 | **書き直し（2026-07-26）**。旧初期案の monorepo（`apps/web`=React+Vite, `apps/api`=NestJS）は前提ごと消滅。新初期案: **1リポジトリ・単一 Expo アプリ**（`app/`=Expo Router の画面, `supabase/`=マイグレーションと RLS ポリシー, `material/`同居）。**常駐する自前のアプリケーションサーバーが無くなったため**構造が大幅に単純になった。ただし `supabase/` 配下のマイグレーション・RLS ポリシー・トリガー・Storage ポリシーは**実行されるサーバー側のコードであり、本構成の認可の境界そのもの**である。レビュー・テスト・配布の対象から SQL を落とさない（2026-07-27 の別ファミリーレビュー指摘。旧文言「バックエンドのコードが存在しない」を訂正） | D1 |"
+        },
+        {
+          "line": 237,
+          "text": "| B2 | 設計担当 | B1と同時設計（前後関係ではない）, B94, B118 | `app/`・`supabase/`・教材・試験の配置が一意 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "supabase-connection"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B6",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**280 local診断→290所有HTTPS host公開**の二段階。local成功と公開体験を分け、Auth/画像/後片付けまで自分のURLで完了させる",
+      "alternative_tradeoff": "localのみはパートD未完、共用hostは所有/RLS/費用境界を変え、任意hostは再現性を失う",
+      "joint_adoption_conditions": "B81/B84/B94/B18、B5。公開実行は別承認",
+      "source_change_candidates": "04 Web/redirect/secret、08 FR1〜14 Web受入、11独学回復、15パートD、18の280/290/300/310",
+      "missing_measurement_approval": "host比較、HTTPS/Auth/停止削除、secret 0、局長の公開範囲承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 146,
+          "text": "| B6 | **Web 版の公開先**（パートD の Expo web 出力をどこに置くか） | P1 | **書き直し（2026-07-26）**。旧「早期公開体験」は構成変更で位置が変わった（早期＝スマホ実機に置き換わり、Web 公開はパートD へ移動）。HTTPS・秘密情報の扱い・後片付けの設計は残る論点 | 15 パートD |"
+        },
+        {
+          "line": 240,
+          "text": "| B6 | 局長（公開範囲）＋設計担当 | B81, B84 | 公開先・HTTPS・秘密情報・後片付けが確定 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "web-first-run",
+        "web-platform-fixes"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B10",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**通常UIで所有A/Bを作り、章ごとに最小fixtureを追加**。自分の操作で変化を作り、RLS証拠とseedを混同しない",
+      "alternative_tradeoff": "admin seed教材化は管理権限を先取り、共用accountは所有を壊し、大量datasetは学習体験を奪う",
+      "joint_adoption_conditions": "B1/B14/B109/B110/B116/C5。メール需要`2+rA+rB+e`と追加分を台帳化",
+      "source_change_candidates": "04開始条件、05/06対象行、08fixture/後片付け、11所有資源、18の100〜250開始資源",
+      "missing_measurement_approval": "A/B作成・権利・再実行・メール枠・harness境界の実測/承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 150,
+          "text": "| B10 | **デモ／シードデータ方針** ★新規 | **章分割表の凍結前（B1）**（2026-08-09 に P1 から置き直し。04 §4.5 制約4 と 08 §6.2 が独立に「B1 と同時でなければ決まらない」と結論したため。項目本文も元から「章順に食い込むため B1 と同時決定」と書いており、P1 のままだと自分の但し書きと食い違っていた） | 単一アカウントではタイムライン・検索・通知の章で「見える変化」が作れない。初期案: seedスクリプトを教材内で教える（章順に食い込むためB1と同時決定）。素材画像は権利処理済みのものに限る（C5と連動） | 敵対レビュー |"
+        },
+        {
+          "line": 243,
+          "text": "| B10 | 設計担当 | B1と同時設計（前後関係ではない）, B110, B116 | 必要データと投入章・権利・初期化が確定 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "following-timeline"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B50",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**3分をhard gateにせず報告値/改善trigger**。軽い章1本と重い章1本を本番書式の教材外fixtureで作り、独立exec各3体（3+3）の中央値を取る",
+      "alternative_tradeoff": "一律3分は根拠なし、軽重別閾値も分布なしでは恣意的",
+      "joint_adoption_conditions": "B1/B112/D4。fixtureは`material/`・`curriculum/`・配布外、原18 status不変。境界/hash変更時は各3体再測定し、正式章へ無断転用しない。B50の3+3は各章の正式G6 read/execを置換しない",
+      "source_change_candidates": "08測定受領証、11最初の結果、15の「3分」表現、18のB50依存。04/05/06は章境界が変わる場合のみ",
+      "missing_measurement_approval": "fixture未作成、3+3未実走、各章G6未実走、閾値未採用、局長承認未達",
+      "original_backlog_rows": [
+        {
+          "line": 190,
+          "text": "| B50 | **「3分で目に見える結果」を合否条件に採るか** ★新規（2026-08-06） | **本番1章目の凍結前（G2 より前）** | 15:45 の「3分」は**根拠が示されていない**。02:15 と 02:47 は出どころを 11 としているが 11 に該当記述が無い（grep 0件）。**実測が要る**: D4 の重い章1本と A0 相当の軽い章1本を本番書式で書き、G6 と同じ隔離条件（A5-1/2）の文脈ゼロ実行体3体に章頭から「最初の結果」までを実行させ、開始から画面に出るまでの実時間を記録して中央値を使う | 15:45, 11, D5-U1 |"
+        },
+        {
+          "line": 257,
+          "text": "| B50 | G6実測担当＋設計担当 | B112 | 軽重各3体の実測から合否条件を決定 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "live-reload",
+        "ts-values-and-types",
+        "ts-collections",
+        "ts-functions",
+        "ts-branches-and-loops",
+        "ts-classes-and-errors"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B65",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**購読需要を式で出してから公式plan/実測と比較**。A/B、2物理端末、G6並列、再接続残存channelを分け、quotaとbugを切り分ける",
+      "alternative_tradeoff": "想定100人=100接続、2端末成功=並列安全、全不達=bugはいずれも根拠なし",
+      "joint_adoption_conditions": "B22/B26/B105/B108/B110/B112。購読table確定後",
+      "source_change_candidates": "04購読責務、06publication/filter/cleanup、08quota故障分類、11必要資源、18の160/170/190/200依存",
+      "missing_measurement_approval": "採用plan値、最大式、段階負荷、cleanup実測、正式承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 205,
+          "text": "| B65 | **Supabase 無料枠の Realtime 上限に演習が当たるか** ★新規（2026-08-09） | **購読を書かせる章（通知・タイムライン）の実装PR前**（04 §4.1 E13 と同じ枠で測る） | 02 R3 と 01 §3 が触れている無料枠の制約は **DB 500MB / RAM 500MB だけ**で、同時接続の記述が無い（01 §3 の「同時接続〜100程度」は教材内アプリの想定規模であって Supabase の枠の話ではない）。08 §4 の H14（2台の間で即時に届く）と §7.4（2台目の端末）は1人が複数セッションを同時に張る前提で、G6 の実行体を並行で回すとさらに増える。**上限に当たると「エラーも出ず何も届かない」形で失敗し、06 §4.1 が警告した症状と区別できない** | 02 R3, 01 §3, 08 §4・§7.4, 06 §4.1 |"
+        },
+        {
+          "line": 264,
+          "text": "| B65 | 実測担当＋設計担当 | B22, B26, B110, B112 | 2台・Realtime・並行G6の最大同時セッションを実測し、無料枠上限による不達と実装不良を判別可能 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "follow-relations",
+        "likes",
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B105",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**`follows`を購読せずmutation応答＋再取得**。160で即時他端末反映を目標にせず、接続数と二重反映を減らす",
+      "alternative_tradeoff": "購読案は他端末即時性を得るがDELETE/RLS/filter/logout停止が増える",
+      "joint_adoption_conditions": "B22/B65/B80/B108。即時followが明示要件になれば再比較",
+      "source_change_candidates": "04画面更新契約、06購読表、08同一/別画面試験、18の160/170/200依存",
+      "missing_measurement_approval": "A/B比較、学習目標の必要性、接続数、局長/設計承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 306,
+          "text": "| B105 | `follows`を購読するか | 設計担当 | P1/G1通過前（未決） | B22, B28 | 見える変化に必要な購読だけ残す | 用途・開始停止・試験が確定 | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "follow-relations"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B108",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**subscribe確認→snapshot→PK統合、復帰時再snapshot**。generation不一致の古い応答と旧sessionを捨て、欠落/巻戻りを防ぐ",
+      "alternative_tradeoff": "fetch後subscribeは隙間、eventだけは切断欠落、無条件上書きはstale巻戻り",
+      "joint_adoption_conditions": "B22/B80/B95/B105/B65",
+      "source_change_candidates": "04状態所有、06開始停止/統合契約、08race matrix、18の170/190/200開始・終了状態",
+      "missing_measurement_approval": "race/切断/logout実測、channel 0重複、正式承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 309,
+          "text": "| B108 | 購読開始順と前面復帰時の張直し | 実測担当＋設計担当 | P1/G1通過前（未決） | B22, B80, B95 | 初回取得との競合を実測 | 取漏れ・上書きのない順序が記録済み | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "following-timeline",
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B110",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**160〜200を章×同時2session観点で選び、正式受入は必要行だけ2物理端末**。学習者代案は1物理＋simulator/Web等を比較するが正式証拠を代替しない",
+      "alternative_tradeoff": "全章2台は開始障壁、全て1台切替はdelivery/背景/別sessionを証明できない",
+      "joint_adoption_conditions": "B15/B26/B65/B105/B22/B80/B108。B105非購読なら160除外候補、購読なら160を戻す",
+      "source_change_candidates": "04状態/画面、08端末matrix、11開始資源、15必要資源、18の160〜200依存",
+      "missing_measurement_approval": "章×観点表、2物理端末実走、代案境界、正式承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 311,
+          "text": "| B110 | 2台目端末の用意方法 | 実機実測担当 | P1/G1通過前（未決） | B15, B26 | 実機2台の必要章だけに限定 | 対象章・端末所有・代替不可条件が明記 | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "follow-relations"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B116",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**所有A/Bと既知IDで通常clientの他人操作を220で試す**。本人成功、他人拒否、DB/Storage不変を対にし、0行と不存在を分ける",
+      "alternative_tradeoff": "UI非表示、dashboard/service role、所有不明利用者は通常RLS負例にならない",
+      "joint_adoption_conditions": "B10/B110/B86/B81。各RLS導入章の正負例を220で横断",
+      "source_change_candidates": "04拒否UI、05 policy対象、06操作契約、08正負例、11失敗回復、18の100〜220試験欄",
+      "missing_measurement_approval": "全table/Storage行列、既知対象、再実行、正式承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 317,
+          "text": "| B116 | 学習者が他人の行を触る試験経路 | テスト設計担当 | P1/G1通過前（未決） | B10, B110 | 専用の第二アカウントを使う | 各RLS負例の操作経路が再現可能 | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "rls-denial-check"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B122",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**region/回線/端末/mode/fixtureを固定し、cold 10・warm 30、中央値/p90/範囲を候補protocolにする**。悪い試行も母数に残す",
+      "alternative_tradeoff": "1回、warmのみ、混在平均、最速値は再測定不能",
+      "joint_adoption_conditions": "B23/B4/B10。回数はpilot分散と工数を見て採用前に固定",
+      "source_change_candidates": "06query観測、08性能protocol、11体感条件、18の170/230/270観測",
+      "missing_measurement_approval": "region/回数/除外規則/受入値の測定と正式承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 323,
+          "text": "| B122 | 性能測定のリージョン・回線・試行数 | 実測担当＋設計担当 | P1/G1通過前（未決） | B23 | 固定条件と集計方法を先に記録 | 再測定可能な条件と受入値が確定 | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "following-timeline",
+        "search-posts-and-users"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B114",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**Webとnativeの単位を分けた内部baseline**。WebはWCAG 2.2比較、iOS 44pt、Android 48dp候補に加え、label/focus/拡大/reader/失敗状態を導入章から確認する",
+      "alternative_tradeoff": "contrastだけ、自動scanだけ、単位の直換算、「配慮済み」は操作可能性を示さない",
+      "joint_adoption_conditions": "B1/B75/B87/B99。数値は相互換算せず法的適合を宣言しない",
+      "source_change_candidates": "04全UI状態、08画面×観点matrix、11読みやすさ/独学、15各パート受入、18の80以降のUI章",
+      "missing_measurement_approval": "実寸、VoiceOver/TalkBack、keyboard/zoom、小画面、基準承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 315,
+          "text": "| B114 | アクセシビリティ基準と対象画面 | 設計担当＋レビュー担当 | P1/G1通過前（未決） | B1 | 主要動線を先に対象化 | 基準値・画面・試験方法が確定 | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "app-navigation",
+        "camera-post",
+        "app-polish"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B99",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**読者が実行する同一chapter成果物を対象**。shared flowはWeb E2E、camera/Auth deep link/2端末Realtimeは同じSHAの物理端末証拠にする",
+      "alternative_tradeoff": "Webだけ、unitだけ、mock appだけはnative境界を失い、全手動は回帰性を失う",
+      "joint_adoption_conditions": "B2/B5/B15/B26/B110/B114。Web mirrorでFR15を代替しない",
+      "source_change_candidates": "04画面/機能、06DB状態、08FR E2E表、11学習成果、15修了、18の各章成果物/G6",
+      "missing_measurement_approval": "FR1〜15の成果物matrix、同一SHA、実camera/Auth/Realtime証拠、承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 300,
+          "text": "| B99 | E2Eを当てる成果物 | 設計担当 | P1/G1通過前（未決） | B2, B5 | 読者が実行する成果物を主対象にする | 対象・開始状態・CI位置が明記 | 04§10, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "app-polish",
+        "web-platform-fixes"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B81",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**匿名readをposts/users/post_media/Storage public objectに限定し、private表は0件/拒否**。公開画面とAPI/DB状態を対応させる",
+      "alternative_tradeoff": "全公開はbookmark/通知等を漏らし、全login必須も公開HTTPSのWeb体験と両立する。匿名閲覧を減らすので、その追加目標の採否を別に判断する",
+      "joint_adoption_conditions": "B6/B84/B94/B99。匿名readを拒否する採否ならB84 public bucketも再判断し、private認証read/期限付きURLを候補にする。公開bucketを残す場合は匿名DB拒否後も画像URLは公開とする明示の別承認が必要。削除済み/非公開候補も同じmatrixで扱う",
+      "source_change_candidates": "04公開画面、05公開列/表、06SELECT/Storage契約、08anon正負例、15パートD、18の280/290",
+      "missing_measurement_approval": "anon実測、Storage URL境界、B6 host上の証拠、公開範囲承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 282,
+          "text": "| B81 | `anon`読み取り範囲 | 設計担当 | P1/G1通過前（未決） | B6 | パートDの公開体験から逆算 | 対象表と`to`句が確定 | 06U7, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "rls-denial-check",
+        "search-posts-and-users",
+        "web-first-run"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B22",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**Realtimeは通知ではなく再取得契機として扱い、復帰時snapshotで収束**。購読前/切断中も最終DB集合へ戻れる体験を優先する",
+      "alternative_tradeoff": "eventだけは欠落、常時pollは負荷、手動reloadだけはRealtime章の価値を失う",
+      "joint_adoption_conditions": "B80/B108/B105/B65。各tableの正本集合/PKを確定",
+      "source_change_candidates": "04取得/復帰状態、06event契約、08欠落/重複/故障分類、11回復説明、18の170/190/200/270",
+      "missing_measurement_approval": "race/切断/復帰の欠落0・重複0、正式承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 162,
+          "text": "| B22 | **Realtime の取りこぼしをどう埋めるか** ★新規（2026-07-27） | P1 | 別ファミリーレビュー指摘。Realtime は全変更の配信を保証しない。購読開始前の初回取得・再接続後の再取得・重複排除を仕様に入れるかを決める | 01 FR9, 03, 04 |"
+        },
+        {
+          "line": 250,
+          "text": "| B22 | 実測担当＋設計担当 | B80, B108 | 取漏れと再接続の仕様・手順・試験が確定 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "following-timeline",
+        "likes",
+        "realtime-notifications"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B63",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**280はcode point候補、入力時CRLF→LF正規化**。`server_encoding=UTF8`とDB境界を確認し、UI/API/DBを同じ期待表へ揃える",
+      "alternative_tradeoff": "graphemeは自然だがDB契約変更が必要、UTF-16/byteは表示とDBに不一致",
+      "joint_adoption_conditions": "B71、B99。要件280自体は維持",
+      "source_change_candidates": "04入力/残数、05`varchar(280)`契約、06validation、08L1境界表、11表示説明、18の60/140/180",
+      "missing_measurement_approval": "CR/LF/CRLF、emoji/NFC/NFD 279/280/281、両UI/DB実測と承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 203,
+          "text": "| B63 | **本文280字の「数え方」の正** ★新規（2026-08-09） | **パートB の投稿の章の実装PR前**（B65 と同じ席。どちらも 05 の列定義に触る） | 08 §1.2 は「本文の文字数の数え方（280字）。絵文字・改行をどう数えるかで結果が変わる」を L1（ユニットテスト）の題材に挙げているが、**期待値をどう決めるかを書いていない**。05 の `posts.body varchar(280)` はコードポイント単位で、画面側の数え方と一致する保証が無い。**画面が通した投稿を DB が弾く**形になりうる。教材で最初に書かせるユニットテストがこれなので、期待値が決まらないと L1 が書けない | 08 §1.2, 05 posts.body |"
+        },
+        {
+          "line": 262,
+          "text": "| B63 | 設計担当＋実測担当 | B71 | 絵文字・改行を含む数え方がUI・DB・試験で一致 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "text-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "C8",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**推奨は6節目**: first-screen、Auth/profile、text-post、Realtime通知、RLS横断、app-polish。異なる高手戻り境界を局長が実物で止める",
+      "alternative_tradeoff": "3節目は中間欠陥が遅れ、7節目は最終受入と重複",
+      "joint_adoption_conditions": "B1/B99/B114。各packetにG3〜G6/open issue。C7は範囲外",
+      "source_change_candidates": "08節目受入、11学習成果、15パート境界、18の節目列。04/05/06はpacket参照のみ",
+      "missing_measurement_approval": "**実回答は未回答**。6節目は推奨にすぎず、局長回答・実物・受領証が未達",
+      "original_backlog_rows": [
+        {
+          "line": 507,
+          "text": "| C8 | **「節目の章」の指定（D6）** ★新規（2026-08-09） | **章分割表の凍結前（B1）** | **未回答。**D1-6 は章分割表の `節目` 列を「**D6（局長判断）で埋める。本決定では空欄のまま置く**」「局長判断キューへ」と定めたが、**16 の全文に「節目」が0件**で、キューに入っていなかった（起票漏れ）。10 §4 は「**節目の章のみ局長審査**」というゲート分岐を持ち、D15 の G4 受領証の様式も章分割表の行を引く。列を空欄のまま G1 で凍結すると、凍結の翌日に軽量改訂手続きで表を開け直すことになる。局長に聞くのは「どの章の完成品を自分の目で見たいか」だけでよい | D1-6, 10 §4, D15, B1 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "sns-technology-map",
+        "one-minute-demo"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B101",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**90章頭で理由→登録→専用project→URL/publishable key→費用/削除を一続きに案内**。宿題化せず独学者の停止点を減らす",
+      "alternative_tradeoff": "共用projectは所有を変え、付録は入口で止め、local Supabaseは環境負担を増やす",
+      "joint_adoption_conditions": "B14/B94/B109。個人本番projectを使わない",
+      "source_change_candidates": "04 setup/接続、08初回実走、11独学資源、15パートB入口、18の90開始カード",
+      "missing_measurement_approval": "最新UI初心者実走、分岐/後片付け、費用範囲承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 302,
+          "text": "| B101 | Supabaseアカウント登録案内 | 設計担当 | P1/G1通過前（未決） | B14 | 最新画面で手順を実走 | 初心者が補足なしで登録完了 | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "supabase-connection"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B102",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**実機主経路を保ち、失敗理由が該当した人だけOS別simulator退路**。容量・仮想化・撤退条件を先に見せる",
+      "alternative_tradeoff": "全員tool導入はA0を重くし、Web前倒しはnativeを代替せず、端末なし対象外は範囲変更",
+      "joint_adoption_conditions": "B5/B15/B26/B121。simulatorはB26/FR15証拠にしない",
+      "source_change_candidates": "04接続診断、08host別退路、11必要資源、15 A0、18の10/20/170/260注記",
+      "missing_measurement_approval": "clean host実走、容量/版/起動/撤退条件、掲載承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 303,
+          "text": "| B102 | シミュレータ退路の開発ツール案内 | 実測担当＋設計担当 | P1/G1通過前（未決） | B5, B15, B26 | OS別に最小手順を実測 | 必要版・容量・手順・撤退条件が記録済み | 04§10 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "expo-first-screen"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B11",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**B26を両OSで通したrelease manifestを固定**。Node、package manager、Expo SDK/Go、主要lock、template、OS、日付を記録しhosted変更は定期G6で検出する",
+      "alternative_tradeoff": "latestは再現不能、SDKだけ固定は不足、長期固定はExpo Go互換を失う",
+      "joint_adoption_conditions": "B15/B26/B5。P1終了時の安定候補を実測して選び、旧SDK54を現採用にしない。中断後再開は対応版/起動→session/login→所有project/snapshotを確認し、互換失効でB5代替が未成立なら停止。対応表・移行・更新trigger/担当をB11/B26/B5/B95と同時採用",
+      "source_change_candidates": "04依存表、08版matrix、11開始確認、15 A0、18の10/20/90/110/260/280",
+      "missing_measurement_approval": "具体版集合、両OS/Auth/RLS/Web再実走、更新trigger、正式承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 151,
+          "text": "| B11 | **依存バージョンの固定値と更新ポリシー** ★新規 | P1 | **書き直し（2026-07-26）**。Xcode / Android Studio / JDK のツールチェーン版という最大のリスク源が消えた（Expo Go は学習者側に開発ツールを要求しない）。残る対象は **Expo SDK のメジャー版**と Node の版、および **Supabase 側の仕様変更**（こちらは lockfile で止められず、リポジトリのHEADも変わらないためG5では検知できない → 定期的なG6再実走で検知する）。P1終了時点の安定版でピンし02に版の表を作る | 敵対レビュー, 14リスク表 |"
+        },
+        {
+          "line": 244,
+          "text": "| B11 | 設計担当＋実測担当 | B26 | 採用版・更新条件・再実走条件が記録済み |"
+        }
+      ],
+      "original_impact_chapters": [
+        "expo-first-screen",
+        "supabase-connection",
+        "web-first-run"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B121",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**Windowsをhost候補に含め、Android実機/Webを必須実走、iPhone Expo Go経路も別測定**。iOS simulator/署名build可とは書かない",
+      "alternative_tradeoff": "参考/対象外は購入者範囲を縮め、WSL必須はpath/LAN/file watcherを増やす",
+      "joint_adoption_conditions": "B15/B102/B5/B11。別build必須ならWindowsのiOS経路を再評価。中断後再開は対応版/起動→session/login→所有project/snapshotを確認し、互換失効でB5代替が未成立なら停止。対応表・移行・更新trigger/担当をB11/B26/B5/B95と同時採用",
+      "source_change_candidates": "04command/接続、08host matrix、11対象者資源、15対象host、18の10/20/110/260/280",
+      "missing_measurement_approval": "Windows native代表実走、WSL採否、対象範囲の局長承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 322,
+          "text": "| B121 | Windows環境の教材対象範囲 | 設計担当 | P1/G1通過前（未決） | B15, B102 | 必須/参考/対象外を明記 | 対応OS表と実走範囲が一致 | 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "expo-first-screen"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B15",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**host、target、simulator、制作受入を分離**。教材機能はiOS/Android、制作側は両物理端末、一学習者の基本は所有実機1台とする",
+      "alternative_tradeoff": "片OS/simulator受入は原範囲縮小、全読者2台必須は開始障壁",
+      "joint_adoption_conditions": "B11/B26/B102/B121/B5/B18。2台同時章はB110で限定",
+      "source_change_candidates": "04OS別挙動、08物理端末matrix、11対象者、15 A0/C、18の10/20/110/170/260/270/310",
+      "missing_measurement_approval": "OS/端末matrixと両実機Auth/camera/主要動線、局長範囲承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 155,
+          "text": "| B15 | **対応OS の範囲** ★新規（2026-07-26） | P1 | 旧 B3 から引き継いだ論点。Expo は Mac 無しでも Android 実機で完走できるが、iOS 実機で確認するには Mac が要るのか（Expo Go 経由なら不要）を確定し、08 の記述と揃える | 旧B3 |"
+        },
+        {
+          "line": 246,
+          "text": "| B15 | 局長（対象範囲）＋実測担当 | B26, B102, B121 | 対象OSと実走証拠が一致 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "expo-first-screen",
+        "live-reload",
+        "camera-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B26",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**B11候補の同一SHAをストア版Expo GoのiOS/Android各1台でQR起動→編集反映→再接続**。版を結果に合わせず実物から決める",
+      "alternative_tradeoff": "simulator、片OS、旧SDK54、別source、USBのみではQR主経路を証明しない",
+      "joint_adoption_conditions": "B11/B15。失敗原因でB102/B5へ分岐",
+      "source_change_candidates": "04 A0手順、08 H1/物理受入、11最初の成功、15 A0、18の10/20",
+      "missing_measurement_approval": "両物理端末の版/OS/時刻/画面/log証拠と正式版承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 166,
+          "text": "| B26 | **ストアの Expo Go が SDK 54 の企画を実際に開けるか（物理端末での確認）** ★新規（2026-07-28） | **本番1章目の凍結前** | Round 13 指摘。B17 は「決着」としたが、**物理端末で画面が出たことは一度も見ていない**（シミュレータのみ）。教材1章目の成功体験そのものなので、決着扱いのまま期限無しで置くのは危険。B17 から切り出して期限付きで開き直す | B17 / 03 |"
+        },
+        {
+          "line": 254,
+          "text": "| B26 | 実機実測担当 | B11, B15 | 物理iOS・Android各1台の表示と変更反映を記録 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "expo-first-screen",
+        "live-reload",
+        "camera-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B5",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**A0通常編集はExpo Go、210のresetでB18 custom schemeを採るならdevelopment buildが必須**。Expo Go Auth URLは公式標準とせず実験的代案。build自体を学習目的にせず、Windows/iPhone/署名/費用/配布の成立が未証明の間はB5/B18採用を止める",
+      "alternative_tradeoff": "全編Expo Goで復帰を変えるとFR13/14を損ない、最初からbuildは署名/queueを前倒し、全員配布buildはscope増",
+      "joint_adoption_conditions": "B15/B18/B26/B103/B121。暖/冷、確認/reset、同一/別端末matrixで判定",
+      "source_change_candidates": "04 deep link/権限、08 Auth matrix、11開始負担、15 A0/B、18の110/210/260と必要なら新章",
+      "missing_measurement_approval": "Expo Go対最小buildの両OS実測、章追加影響、局長到達範囲承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 145,
+          "text": "| B5 | **実機ビルド・配布をどこまでやらせるか**（Expo Go 止まりか、EAS Build まで） | P1 | **書き直し（2026-07-26）**。Capacitor のビルドパイプラインは消滅。新論点は「Expo Go で動かすところまでで教材を終えるか、EAS Build で自分の署名済みアプリを作るところまでやらせるか」。前者なら挫折ポイントゼロを維持でき、後者なら実務に近い | 02 §7, 03 §5 |"
+        },
+        {
+          "line": 239,
+          "text": "| B5 | 局長（範囲）＋実測担当 | B15, B18, B26 | 教材の到達点と両OSの実測が一致 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "auth-email-confirmation",
+        "camera-post"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B23",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**DB時間と操作→内容表示の二時計を同一fixtureで測る**。初回/追加読込、cold/warm、成功/空/失敗を分け、値は実測後に置く",
+      "alternative_tradeoff": "旧200ms、DBだけ、一回だけ、高速回線だけは体験を説明できない",
+      "joint_adoption_conditions": "B4/B10/B122。方式ごとに同じ期待表/fixture",
+      "source_change_candidates": "04 loading/retry、06query/計画、08性能protocol、11待ちの説明、15/18の170・270",
+      "missing_measurement_approval": "raw分布、第三者再実行、受入値、正式承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 163,
+          "text": "| B23 | **タイムライン取得の性能目安を何で測るか** ★新規（2026-07-27） | P1 | 別ファミリーレビュー指摘。旧「ローカル開発環境で200ms以内」は自前APIが手元で動いていた頃の残骸で、ホスト型 Supabase になった今は再現できない。**DB 側の実行時間**と**利用者の体感時間**を分けて測り、リージョンと回線条件を固定した端末実測値へ置き換える。数値そのものは捨て試作か Phase 1 の実測で決める（推測で置かない） | 01 §3, 08 項目9 |"
+        },
+        {
+          "line": 251,
+          "text": "| B23 | 実測担当＋設計担当 | B4, B10, B122 | 固定条件・試行数・集計・受入値が再測定可能 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "following-timeline"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B4",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**閲覧時に`follows`と`posts`を結ぶプル型**。fan-out表を増やさず、follow集合・削除・paginationを一つの読取契約で学べる",
+      "alternative_tradeoff": "プッシュ型は読取を軽くし得るがfan-out、unfollow整合、再構築、RLS、章を増やす",
+      "joint_adoption_conditions": "B10/B23/B60/B73/B122。目標規模で正しさと性能が成立すること",
+      "source_change_candidates": "04 timeline flow、05 schema/index、06SELECT契約、08集合/順序/perf、11見える変化、15 B、18の160/170/180",
+      "missing_measurement_approval": "A/B/C fixture比較、性能分布、自分投稿規則、設計承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 144,
+          "text": "| B4 | タイムライン生成 プッシュ型／プル型 | P1 | 初期案プル型（**Redis 補完は消滅**。05 §3 から該当記述を削除済み） | 05 §3 |"
+        },
+        {
+          "line": 238,
+          "text": "| B4 | 設計担当 | B10, B23, B60, B73 | SQL・性能条件・試験期待が同じ方式を指す |"
+        }
+      ],
+      "original_impact_chapters": [
+        "following-timeline"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B75",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**順序を持たないsemantic画面IDを正本、和名を表示名、旧番号をalias**。章ID/routeと分離し、画面を挿入しても教材と証拠を保つ",
+      "alternative_tradeoff": "連番は挿入で崩れ、和名だけは曖昧、route直結は実装変更で壊れる",
+      "joint_adoption_conditions": "B1/B87。04/06/08/18/FR1〜15をregistryで全対応",
+      "source_change_candidates": "04画面表、06data access、08受入ID、11本文表示名、15全画面図、18画面欄",
+      "missing_measurement_approval": "registry、legacy移行、重複/未対応0、設計承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 276,
+          "text": "| B75 | 画面ID体系 | 設計担当 | P1/G1通過前（未決） | B1 | 名称参照を軸に採番規則を選ぶ | 全画面と章行が一意に参照可能 | 04§10, 06U1 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "app-navigation"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    },
+    {
+      "decision_id": "B94",
+      "proposal_document": "material/decisions/20261004-章体験資源と性能の採用提案.md",
+      "recommendation": "**Expoの公開prefix環境変数でURL/publishable keyを読み、repoは値なしsample＋secret scan**。公開可能keyと`service_role`を明確に分ける",
+      "alternative_tradeoff": "config extraは展開差、直書きは差替え困難、毎回入力は誤り、secret storeは公開/秘密の理解を歪める",
+      "joint_adoption_conditions": "B2/B81/B84/B101。RLS負例を安全性証拠にする",
+      "source_change_candidates": "04設定/接続、05/06 RLS前提、08欠落/誤key/secret scan、11貼付回復、15 B/D、18の90/220/280",
+      "missing_measurement_approval": "採用時公式仕様、native/Web bundle、secret 0、RLS負例、正式承認が未達",
+      "original_backlog_rows": [
+        {
+          "line": 295,
+          "text": "| B94 | publishable keyの置き場 | 設計担当 | P1/G1通過前（未決） | B2 | Expoの公開設定として候補比較 | secret混入検査と手順が確定 | 04§10, 08§12 |"
+        }
+      ],
+      "original_impact_chapters": [
+        "supabase-connection",
+        "web-first-run"
+      ],
+      "adopted": false,
+      "original_sync_applied": false,
+      "verified_formal_closure": false
+    }
+  ],
+  "outside_scope_required": [
+    "C7",
+    "full Auth/D4/G6/QA/P1/G1 original objective and other backlog/authoring/approval requirements"
+  ],
+  "design_frozen": false,
+  "implementation_ready": false
+}

@@ -1,0 +1,2690 @@
+{
+  "scope": "whole-design-v7: 登録/初投稿/復帰の基礎26状態＋3追加候補 RESUME-01/RESULT-01/CLOSED-01。全体設計の未採用・未実測案。旧限定レビューは各snapshotの履歴。",
+  "sample_data": "fictional review-only, not real learner/real Auth result",
+  "visual_style": "temporary review sidecar only; brand/Expo styles unadopted",
+  "entries": [
+    {
+      "id": "AUTH-01",
+      "journey": "登録",
+      "chapter": "100",
+      "title": "アカウントを作成",
+      "copy": "メールアドレスとパスワードで登録します。",
+      "primary_action": "登録する",
+      "state": "未登録",
+      "condition": "本人が使えるメールを入力。AUTH-02は登録要求の受理確認後だけ、返答不明を受理済みへ進めない。passwordは一般draftとして保持しない。 登録要求中は登録するをdisabled、同じ要求contextと送信した入力を固定し重複登録/自動再試行なし。確定応答なしの進行中はAUTH-01に留まる。送信前の採用済みvalidation不成立はAUTH-01で安全な対象欄案内、送信なし。passwordを一般draftへ保持せず、パスワード以外の入力を保持。送信前不成立をサーバー拒否や受理済みと表示しない。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": "AUTH-02",
+      "target_candidates": [
+        {
+          "when": "同じ登録要求が進行中、確定応答なし、要求context/送信した入力を固定、登録disabled・新規要求なし",
+          "target": "AUTH-01"
+        },
+        {
+          "when": "登録要求開始前・進行中要求なし、採用済みvalidation不成立、安全な対象欄案内、password一般draft非保持、パスワード以外の入力保持、送信なし",
+          "target": "AUTH-01"
+        },
+        {
+          "when": "登録要求の受理を確認",
+          "target": "AUTH-02"
+        },
+        {
+          "when": "当該登録要求開始後の信頼した確定拒否、安全な項目別案内/項目案内なしを分類、password以外の本人入力を保持",
+          "target": "AUTH-15"
+        },
+        {
+          "when": "登録の返答不明、受理を未確認",
+          "target": "AUTH-10"
+        }
+      ]
+    },
+    {
+      "id": "AUTH-02",
+      "journey": "登録",
+      "chapter": "100/110",
+      "title": "登録の要求を受け付けました",
+      "copy": "確認メールが届いたら、メール内のリンクを開いてください。",
+      "primary_action": "ログインへ",
+      "state": "確認待ち",
+      "condition": "登録要求の受理を確認したときだけ。メール送信/到達/確認完了を断定しない。宛先確認/再送/変更は採用入口へ。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": "AUTH-03",
+      "target_candidates": [
+        {
+          "when": "本人がlogin入口を選んだ",
+          "target": "AUTH-03"
+        }
+      ]
+    },
+    {
+      "id": "AUTH-03",
+      "journey": "登録",
+      "chapter": "110/120候補",
+      "title": "ログイン",
+      "copy": "メールアドレスとパスワードを入力してください。",
+      "primary_action": "ログインする",
+      "state": "ログイン前",
+      "condition": "確認済み本人と章guard/元画面contextへ。既存設定済み本人を120未設定へ戻さない。同本人の結果未確認投稿は自動再送せず手動照合へ。拒否/確認前/一時不明は別案内。HTTPS/最小login前倒しは原FR13変更候補。 共通復帰条件に従い、settings読取不明を未設定へしない。旧contextを新本人へ移さない。 login応答の確認前確定はsession有無によらずgeneric拒否より先。資格情報の拒否を確定した場合のみAUTH-12、その他の確定拒否はAUTH-17へ。 共通の無効session判定は今回のlogin応答で得たsessionまたは元contextの実在したsessionの無効確定だけ。ログイン前にsessionがないこと自体を無効としない。 同じAuth要求が進行中はlogin送信disabled、要求contextを固定し重複loginをしない。元contextにsessionなし/進行中Auth要求なしで未ログイン確定ならAUTH-03。 追跡中の同じAuth要求はこの状態に留め、応答分類3件の後・共通unknownより前に評価。知らないうちにAUTH08へ移して拒否応答を失わない。共通無効/未ログインの通常login復帰は通常用途contextのみ、既知recovery用途は原用途別導線へ。 採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": "AUTH-07",
+      "target_candidates": [
+        {
+          "when": "今回の信頼したAuth応答でメール確認前を確定（sessionなしを含む。アカウントの有無を推測しない）",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "今回の信頼したAuth応答で資格情報の拒否を確定、確認前/回数制限/その他の拒否と区別（アカウント有無やどちらの誤りか推測なし）",
+          "target": "AUTH-12"
+        },
+        {
+          "when": "今回の信頼したAuth応答で資格情報拒否と確定できないその他の拒否（回数制限等）を確定、再送停止",
+          "target": "AUTH-17"
+        },
+        {
+          "when": "同じAuth要求が進行中、入力/context固定・login送信disabled、新規要求なし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "同Auth login要求のtransport応答不明、進行中要求ではなく開始済み結果不明。password非保持・自動再送なし、login用途を保持する",
+          "target": null,
+          "delegated_route": "EXIT-07 login用途のpreUID非秘密journal確認/中断。現在Auth不明はその後AUTH-08のguardへ。AUTH-10の登録用途へ混ぜない"
+        },
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "WREC本人postのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-07"
+        },
+        {
+          "when": "WREC本人profileのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-14"
+        },
+        {
+          "when": "WRECのtrusted terminal closed_unsaved reason=user_cancelled、現在owner/project/用途一致、本人が当該結果を確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "CLOSED-01"
+        },
+        {
+          "when": "現在Auth本人/通常用途/owner-project-profile typed key一致、WREC trusted committed successを確認済み、現在own users readが未成立/0行/不可視。保存成功と現在値readを別観測し、当該pending UIはterminal規則で終了。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-16",
+          "display_variant": "WREC-profile-success-current-read-unavailable"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象許可read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-05"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象表示不可、EXIT05条件成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "RESULT-01"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC profile trusted success、本人が当該未確認履歴の結果を確認、現在own users read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "adoption_guard": "EXIT-05 and OP/RET adopted/measured, exact trusted same-owner success; never unknown-save"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/post typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信本文/通常章より先に当該操作を確認する",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/profile typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信設定/通常章より先に当該操作を確認する",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の投稿未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の設定保存未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、採用WREC対象。正常本人server履歴のscope/全ページ/消去/版移行を含む網羅性をまだ信頼確認できない。先行する当該trusted terminal結果は表示してよいが、この未確認を新key保存へ通さない",
+          "target": "RESUME-01",
+          "adoption_guard": "正常本人権限でserver履歴を再構成/照合。空一覧だけで未知要求なしとしない。新規保存停止、非private中断。既知操作の結果確認は手動、旧本人へ情報を漏らさない"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、140〜160導入・170未導入、入力表示・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "POST-01"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、170以後導入、入力保持・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの元の投稿入力画面（履歴なしは当該章の安全な内部入口）"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、120以後導入、own users読取未成立/0行/不可視、入力保持。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信初回設定context、120以後導入、own users読取で設定未完を確定、入力表示・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、own users読取で設定完了を確定、入力保持・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み編集入力画面。編集未導入の120では保存済みの確認欄だけをAUTH-05へ表示し、保持入力は非表示で保持、勝手に初回設定へ戻さない"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、110のみ導入。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-07"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、users設定読取未成立/0行/不可視。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、own users読取で設定未完を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120まで導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、140〜160導入済み・170未導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "PROFILE-01"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、130のみ導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの130プロフィール（140投稿入口なし）"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、170以後導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み本人入口"
+        }
+      ],
+      "resume_contract_ref": "confirmed_resume_contract"
+    },
+    {
+      "id": "AUTH-04",
+      "journey": "登録",
+      "chapter": "120候補",
+      "title": "プロフィールを設定",
+      "copy": "表示名と表示IDを設定します。",
+      "primary_action": "保存する",
+      "state": "入力中",
+      "condition": "username必須は第一候補/未採用。重複/拒否は入力を保持し、保存済み表示へ通さない。保護列を書込しない。 Auth/用途/本人guardを先行し、旧本人の遅延結果で進めない。 submission_boundary_contractに従う。投稿送信/設定保存の開始済み中断は結果未確認として元owner/contextに保持し、未送信扱いに戻さない。同本人通常用途の復帰は投稿POST-03/設定AUTH-11、自動送信/保存なし。要求開始前と確実に分かる停止だけ未送信。 保存要求中は保存するをdisabledにし、送信した入力をその保存の照合対象として固定。途中で変更された入力を同じ照合対象へ差し替えず、重複保存しない。 要求開始前・進行中要求なしの採用済みvalidation不成立はAUTH-04に留め、本人入力を保持し安全な対象欄案内、送信なし。保存できなかったとは案内しない。 採用WREC操作は共通guard後にtyped terminalを先行分類する。旧非WRECの値確認/拒否/rollback分岐でWRECを終了しない。 新しいkeyでの作成/保存はnew_mutation_entry_contractを必須とする。同keyの結果確認やactive待ちをこの新key許可へ混ぜない。 PROFILE01/POST05/CLOSED01/RESULT01からの新規入力選択は空欄の入力画面への遷移だけ。key/admission/予約を作らず元入力を複製しない。POST01の投稿、AUTH04の保存を本人が明示選択し、validation/Auth/用途/本人を確認して比較入力と画像/revisionを凍結した時点で、当該keyのadmissionと予約を一度だけ原子的に確認する。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": "AUTH-05",
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同owner/project/操作種/key一致、採用実測済みWREC操作、trusted committed closed_unsaved(reason=rejected)を確認",
+          "target": "AUTH-14"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同owner/project/操作種/key一致、採用実測済みWREC操作、trusted committed closed_unsaved(reason=user_cancelled)を確認",
+          "target": "CLOSED-01"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同owner/project/操作種/key一致、採用実測済みWREC操作、trusted committed successを確認、現在own users readが未成立/0行/不可視",
+          "target": "AUTH-16",
+          "display_variant": "WREC-profile-success-current-read-unavailable"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同owner/project/操作種/key一致、採用実測済みWREC操作、trusted committed successを確認、現在own users read成立。操作成功と表示する現在値は別観測",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同owner/project/操作種/key一致、採用実測済みWREC操作、当該typed terminal未確認。拒否/rollback/closure応答不明/値一致/不存在だけでは終了しない。当該登録/保存が開始済みで、登録返答不明/開始有無不明/保存返答不明、または拒否・rollbackを観測したがclosure未確認の場合。進行中保存の応答待ちだけ、および登録も保存も未開始の入力/validationはこの結果照合分岐の対象外",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "共通Auth/用途/本人guard通過、同じ設定保存要求が進行中・確定応答なし、captured入力/context固定、保存disabled・新規要求なし",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "共通Auth/用途/本人guard通過、設定保存要求開始前・進行中要求なし、採用済みvalidation不成立、本人入力保持・安全な対象欄案内・送信なし",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "非WREC/legacy操作だけ、原採用済みtrusted終了/照合条件に従う。現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、同本人の当該更新の保存値を再読取で確認",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "非WREC/legacy操作だけ、原採用済みtrusted終了/照合条件に従う。現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、競合/入力拒否/権限拒否を確認（当該要求開始後の信頼した確定拒否だけ）",
+          "target": "AUTH-14"
+        },
+        {
+          "when": "非WREC/legacy操作だけ、原採用済みtrusted終了/照合条件に従う。現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、返答不明/0行/保存値を未確認",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "共通Auth/用途/現在本人guard通過、採用WREC対象で新しいkeyの保存/投稿を本人が明示選択。進行中の当該要求や同key回復ではない。server履歴網羅性/未確認操作なし/原子的new-key admissionをまだ信頼確認できない",
+          "target": "RESUME-01",
+          "adoption_guard": "new_mutation_entry_contract。新key作成/送信は停止、同keyの結果確認は別途許可。"
+        }
+      ],
+      "new_mutation_entry_contract_ref": "new_mutation_entry_contract",
+      "new_mutation_entry_scope": "本人のsubmit時にvalidation/Auth確認とcaptured入力freeze→当該keyの原子的admission/予約を一度確認。その後は同key保存/回復、再admissionなし。"
+    },
+    {
+      "id": "AUTH-05",
+      "journey": "登録",
+      "chapter": "120候補",
+      "title": "設定を確認",
+      "copy": "現在の表示名と表示IDです。",
+      "primary_action": "プロフィールへ",
+      "state": "現在値確認（保存成功案内は別条件）",
+      "condition": "同本人の当該更新の保存値を再読取で確認、または通常login後にown users読取で設定完了を確定した場合。120は確認欄に留まり、未導入130profile/170timelineへ飛ばさない。 編集未導入の120では保持中の未保存入力を確認欄へ表示せず非表示のまま保持。確認欄には許可readで確認した保存済み値だけを表示、未保存入力の保存操作を置かない。復元/編集開始は別の原採否。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": null,
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同本人設定完了確認、120まで導入",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同本人設定完了確認、130のみ導入",
+          "target": null,
+          "delegated_route": "既存全IAの130プロフィール（140投稿入口なし）"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同本人設定完了確認、140〜160導入・170未導入",
+          "target": "PROFILE-01"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同本人設定完了確認、170以後導入",
+          "target": null,
+          "delegated_route": "既存全IA NAV-08/09の170以後タイムライン"
+        }
+      ],
+      "primary_visibility_condition": "130以後導入かつ当該設定完了を通常許可readで確認。120のみでは主操作なし。",
+      "primary_action_variants": [
+        {
+          "when": "130〜160導入・170未導入、同本人設定完了を通常許可readで確認",
+          "action": "プロフィールへ",
+          "target": null,
+          "delegated_route": "130は原profile、140〜160はPROFILE-01"
+        },
+        {
+          "when": "170以後導入、同本人設定完了を通常許可readで確認",
+          "action": "タイムラインへ",
+          "target": null,
+          "delegated_route": "既存全IA NAV-08/09の170以後タイムライン"
+        }
+      ],
+      "copy_variants": [
+        {
+          "when": "同owner/contextで保存成功を信頼して確認。WREC予約操作は当該typed terminal success、現在値は別の許可readで表示",
+          "copy": "設定の保存を確認しました。以下は現在の設定値です。"
+        },
+        {
+          "when": "pendingと無関係な通常own users読取。過去要求の因果成功を主張しない",
+          "copy": "現在の表示名と表示IDです。"
+        }
+      ],
+      "pending_guard": "未確認WREC操作の値一致だけではAUTH-05へ遷移/settleせず、AUTH-11のcurrent_values_infoへ。",
+      "state_variants": [
+        {
+          "when": "当該同owner操作の採用されたtrusted保存成功を確認、WRECはterminal success",
+          "state": "保存成功確認済み"
+        },
+        {
+          "when": "pendingと無関係な正常本人読取",
+          "state": "現在値確認"
+        }
+      ]
+    },
+    {
+      "id": "PROFILE-01",
+      "journey": "登録",
+      "chapter": "140（130再利用）",
+      "title": "プロフィール",
+      "copy": "自分のプロフィールです。",
+      "primary_action": "投稿を作成",
+      "state": "通常表示",
+      "condition": "140導入後の入口だけ。130時点では投稿ボタンを未導入と扱う。 共通Auth/用途/本人変更guardを先行。表示profileと現在本人の一致を確認、旧本人表示では進めない。 本人の結果未確認投稿contextが残る間、投稿作成/送信は照合へ戻す。新しい投稿や結果確定を捏造せず、未確認本文/記録を上書きしない。 未確認contextがあるだけで表示を照合へ戻さない。本人が新規作成または確認入口を選ぶ時だけPOST-03へ。 R1等確認済み・対象利用不可は結果未確認に含めず、本人の新規作成/確認操作では先にEXIT-05/RESULT-01候補へ。閉じる条件成立前にPOST-01や未確認POST-03/04を開かない。 新しいkeyでの作成/保存はnew_mutation_entry_contractを必須とする。同keyの結果確認やactive待ちをこの新key許可へ混ぜない。 この画面の新規入力選択は純粋な入力画面への移動で、key/予約生成なし。admissionはsubmit時だけ。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": "POST-01",
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない、本人が新規作成/確認入口を選ぶ時だけ（profile表示だけでは遷移しない）",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "adoption_guard": "EXIT-05, OP/RET and same-owner trusted success protocol adopted/measured; candidate only"
+        },
+        {
+          "when": "共通Authguard通過、現在Auth本人確認済み・通常用途、同一ownerの結果未確認投稿contextが残る、本文/記録保持・新規送信なし、本人が投稿を作成を選んだ時だけ（表示だけでは遷移しない）",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・表示profileが本人、140〜160導入・170未導入、本人が投稿を作成を選ぶ。この選択は空欄の未送信入力画面への移動だけで、key/予約/admissionを作らない。POST01 submit時に元入力を固定しnew_mutation_entry_contractを実行する",
+          "target": "POST-01"
+        }
+      ],
+      "conditional_notices": [
+        {
+          "when": "同一ownerの結果未確認投稿contextが残る。profileは通常表示を維持。保存結果自体未確認の場合だけ、R1等確認済み利用不可を含めない",
+          "copy": "確認できていない投稿があります。",
+          "action": "投稿結果を確認",
+          "target": "POST-03"
+        }
+      ],
+      "new_mutation_entry_contract_ref": "new_mutation_entry_contract",
+      "new_mutation_entry_scope": "入力画面への移動は予約なし。実際のPOST01 submit時に契約を実行する。"
+    },
+    {
+      "id": "POST-01",
+      "journey": "初投稿",
+      "chapter": "140",
+      "title": "投稿を作成",
+      "copy": "今日の学びをひとこと。",
+      "primary_action": "投稿する",
+      "state": "入力中",
+      "condition": "140は本文のみ、280の文字単位B63未採用。画像150、返信180、いいね190等の操作を先出ししない。 Auth/用途/本人guardを先行し、旧本人の遅延結果で進めない。 本人の結果未確認投稿contextが残る間、投稿作成/送信は照合へ戻す。新しい投稿や結果確定を捏造せず、未確認本文/記録を上書きしない。 前の投稿の保存完了/終了済みを確定して新規作成へ入る場合は空欄。前contextの保持本文を新投稿へ自動復元しない。 R1等確認済み・対象利用不可は結果未確認に含めず、本人の新規作成/確認操作では先にEXIT-05/RESULT-01候補へ。閉じる条件成立前にPOST-01や未確認POST-03/04を開かない。 新しいkeyでの作成/保存はnew_mutation_entry_contractを必須とする。同keyの結果確認やactive待ちをこの新key許可へ混ぜない。 PROFILE01/POST05/CLOSED01/RESULT01からの新規入力選択は空欄の入力画面への遷移だけ。key/admission/予約を作らず元入力を複製しない。POST01の投稿、AUTH04の保存を本人が明示選択し、validation/Auth/用途/本人を確認して比較入力と画像/revisionを凍結した時点で、当該keyのadmissionと予約を一度だけ原子的に確認する。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": "POST-02",
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "adoption_guard": "EXIT-05, OP/RET and same-owner trusted success protocol adopted/measured; candidate only"
+        },
+        {
+          "when": "共通Authguard通過、現在Auth本人確認済み・通常用途、同一ownerの結果未確認投稿contextが残る、本文/記録保持・新規送信なし",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、採用済み入力validation通過、現在本人/通常用途を確認。採用WRECで新しいkeyを作る場合はnew_mutation_entry_contractの網羅性/未確認なし/原子的admissionを信頼確認した時だけ。未確認なら先行RESUME-01",
+          "target": "POST-02"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、送信前の入力不成立、本文保持/安全な対象欄案内、送信なし",
+          "target": "POST-01"
+        },
+        {
+          "when": "共通Auth/用途/現在本人guard通過、採用WREC対象で新しいkeyの保存/投稿を本人が明示選択。進行中の当該要求や同key回復ではない。server履歴網羅性/未確認操作なし/原子的new-key admissionをまだ信頼確認できない",
+          "target": "RESUME-01",
+          "adoption_guard": "new_mutation_entry_contract。新key作成/送信は停止、同keyの結果確認は別途許可。"
+        }
+      ],
+      "new_mutation_entry_contract_ref": "new_mutation_entry_contract",
+      "new_mutation_entry_scope": "本人のsubmit時にvalidation/Auth確認とcaptured入力freeze→当該keyの原子的admission/予約を一度確認。その後は同key保存/回復、再admissionなし。"
+    },
+    {
+      "id": "POST-02",
+      "journey": "初投稿",
+      "chapter": "140",
+      "title": "投稿を送信中",
+      "copy": "送信結果を待っています。",
+      "primary_action": "送信中…",
+      "state": "送信中",
+      "condition": "重複送信を防ぐ。未測定timeout値/完了保証をUIへ固定しない。 Auth/本人/用途を結果より先に分類。遅延結果は現在本人と当該入力/結果owner/contextが一致すると確認した場合のみ表示、旧本人の結果で画面を進めない。 submission_boundary_contractに従う。投稿送信/設定保存の開始済み中断は結果未確認として元owner/contextに保持し、未送信扱いに戻さない。同本人通常用途の復帰は投稿POST-03/設定AUTH-11、自動送信/保存なし。要求開始前と確実に分かる停止だけ未送信。 採用WREC操作は共通guard後にtyped terminalを先行分類する。旧非WRECの値確認/拒否/rollback分岐でWRECを終了しない。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": null,
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同owner/project/操作種/key一致、採用実測済みWREC操作、trusted committed closed_unsaved(reason=rejected)を確認",
+          "target": "POST-07"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同owner/project/操作種/key一致、採用実測済みWREC操作、trusted committed closed_unsaved(reason=user_cancelled)を確認",
+          "target": "CLOSED-01"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同owner/project/操作種/key一致、採用実測済みWREC操作、trusted committed successを確認、本人の対象許可readが未成立/0行/不可視",
+          "target": "RESULT-01",
+          "adoption_guard": "EXIT-05 same-owner trusted post success; post only"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同owner/project/操作種/key一致、採用実測済みWREC操作、trusted committed successを確認、本人の対象許可read成立。操作成功と表示する現在値は別観測",
+          "target": "POST-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同owner/project/操作種/key一致、採用実測済みWREC操作、当該typed terminal未確認。拒否/rollback/closure応答不明/値一致/不存在だけでは終了しない。当該登録/保存が開始済みで、登録返答不明/開始有無不明/保存返答不明、または拒否・rollbackを観測したがclosure未確認の場合。進行中保存の応答待ちだけ、および登録も保存も未開始の入力/validationはこの結果照合分岐の対象外",
+          "target": "POST-03"
+        },
+        {
+          "when": "共通Auth/用途/本人guard通過、同じ投稿要求が進行中・確定応答なし、当該trusted terminalなし。captured入力/context固定、送信disabled、新規要求なし。WREC/legacy共通",
+          "target": "POST-02"
+        },
+        {
+          "when": "非WREC/legacy操作だけ、原採用済みtrusted終了/照合条件に従う。現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、当該保存と本人の許可readを確認",
+          "target": "POST-05"
+        },
+        {
+          "when": "非WREC/legacy操作だけ、原採用済みtrusted終了/照合条件に従う。現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、書込拒否/validation rollbackを確認",
+          "target": "POST-07"
+        },
+        {
+          "when": "非WREC/legacy操作だけ、原採用済みtrusted終了/照合条件に従う。現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、返答不明/0行/保存値未確認。進行中要求の応答待ちだけは除外しPOST-02に留まる",
+          "target": "POST-03"
+        }
+      ]
+    },
+    {
+      "id": "POST-03",
+      "journey": "復帰",
+      "chapter": "140",
+      "title": "投稿できたか確認できていません",
+      "copy": "投稿できたか、まだ確認できていません。入力の保持状況を確認してから再開できます。",
+      "primary_action": "保存結果を確認",
+      "state": "結果未確認",
+      "condition": "採用した本人/操作のread-only照合。勝手な作成・新key・画像回収なし。 Auth/本人/用途を結果より先に分類。遅延結果は現在本人と当該入力/結果owner/contextが一致すると確認した場合のみ表示、旧本人の結果で画面を進めない。 副操作でも共通Auth/用途/本人guardを先行。離脱は送信/DB変更/取消/破棄ではない。本人の本文と結果未確認contextを保持し、本人の新規作成/送信はPOST-03へ戻す。照合/保持寿命はOP/RET原採用待ちで自動解消を約束しない。 照合未成立はEXIT-04候補へ。安全離脱だけでは新規送信を再開しない。独立新key/空欄へ進む案は重複保証が異なる比較代案で、原採否/必要再承認なしに遷移を有効化しない。元入力の自動複製/旧key再利用/不明を失敗へ確定しない。 R2以外（R1等）の信頼した成功確認・対象利用不可はEXIT-05/RESULT-01候補へ。未確認POST-04/R2終了済みPOST-06で代用せず、OP/RET採用・実測と本人の閉じる操作を要する。 R1等確認済み・対象利用不可は結果未確認に含めず、本人の新規作成/確認操作では先にEXIT-05/RESULT-01候補へ。閉じる条件成立前にPOST-01や未確認POST-03/04を開かない。 副操作でも確認済み/利用不可への分類変化を先に判定し、結果未確認のまま離脱した扱いにしない。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": "POST-04",
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
+          "target": "POST-07",
+          "reason": "rejected"
+        },
+        {
+          "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=user_cancelled)。宣言/timeoutだけでは進めない",
+          "target": "CLOSED-01",
+          "reason": "user_cancelled"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "adoption_guard": "EXIT-05, OP/RET and same-owner trusted success protocol adopted/measured; candidate only"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、当該保存をまだ確認できない",
+          "target": "POST-04"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、当該本人/操作の保存済みと許可readを確認",
+          "target": "POST-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、R2採用、本人の終了済み操作を確認",
+          "target": "POST-06"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/context、R2以外の採用済み照合で保存完了だけ確定し対象が削除/不可視/読取未成立",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01の最小結果へ。未確認POST-04/R2 POST-06で代用しない。OP/RET採用・実測を要する",
+          "adoption_guard": "EXIT-05, OP/RET and same-owner trusted success protocol adopted/measured; candidate only"
+        }
+      ],
+      "secondary_action": "元の画面へ",
+      "secondary_demo_next_state": "PROFILE-01",
+      "secondary_actions": [
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "action": "確認済みの結果を見る",
+          "adoption_guard": "EXIT-05, OP/RET and same-owner trusted success protocol adopted/measured; candidate only"
+        },
+        {
+          "when": "共通Authguard通過、現在Auth本人確認済み・通常用途・同一ownerの未確認投稿context、140〜160導入・170未導入",
+          "action": "元の画面へ",
+          "target": "PROFILE-01"
+        },
+        {
+          "when": "共通Authguard通過、現在Auth本人確認済み・通常用途・同一ownerの未確認投稿context、170以後導入",
+          "action": "元の画面へ",
+          "target": null,
+          "delegated_route": "原全IAの当該章の安全な元入口（履歴なしも既知の内部入口）。未確認投稿context保持、本人の新作成は照合へ戻す"
+        }
+      ],
+      "whole_design_exit_contract_ref": "EXIT-04",
+      "secondary_exit_candidate": {
+        "action": "中断する",
+        "target": "RESUME-01",
+        "guard": "whole-design EXIT contract; no mutation or authentication-success assumption"
+      },
+      "retention_notice_guard": "Display retained text/media only after reading same-owner/context input and verifying actual availability; otherwise show missing/unavailable input without declaring save failure",
+      "conditional_input_notice": {
+        "when": "verified same-owner/context input actually readable",
+        "copy": "入力した内容は残しています。",
+        "otherwise": "入力を復元できるか確認してください。保存結果とは別に確認します。"
+      },
+      "operation_recovery_candidates": [
+        {
+          "action": "同じ操作を再試行",
+          "guard": "WREC-01 adopted/measured, actual frozen captured input available, verified same owner/normal purpose/typed original key; lock returns prior result or saves once; no changed input, fresh key or automatic replay",
+          "target_candidates": [
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
+              "target": "POST-07",
+              "reason": "rejected"
+            },
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=user_cancelled)。宣言/timeoutだけでは進めない",
+              "target": "CLOSED-01",
+              "reason": "user_cancelled"
+            },
+            {
+              "when": "同owner/type/key trusted success＋現在値/対象の許可read条件",
+              "target": "POST-05"
+            },
+            {
+              "when": "post trusted successだが対象を表示不可、EXIT05条件成立",
+              "target": "RESULT-01",
+              "delegated_route": "EXIT05同owner/正常用途/信頼成功"
+            },
+            {
+              "when": "要求/中止/closure結果まだunknown",
+              "target": "POST-03"
+            }
+          ],
+          "terminal_target_precedence": "Auth/用途/本人guard後、trusted terminal closed_rejected/cancelled/successをgeneric unknownより先に分類。phase terminalなら未確認分岐に当てない。"
+        },
+        {
+          "action": "この操作を中止して結果を確定",
+          "guard": "WREC採用・実測後、本人の明示中止は元入力あり/なし両方で可能。同owner/project/typed key lock後、successなら成功結果を返し取消不可、reservedだけclosed_unsavedへ不可逆commit、既terminal再open/legacy/read不存在fence不可。既知typed keyの未登録は、本人が終了を明示した時だけcancel-before-registrationで閉じる（B回復案。最小identity保持/旧writer失効/quota上限が条件）。中止返答不明もterminal確認までunknown/pending維持。",
+          "target_candidates": [
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
+              "target": "POST-07",
+              "reason": "rejected"
+            },
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=user_cancelled)。宣言/timeoutだけでは進めない",
+              "target": "CLOSED-01",
+              "reason": "user_cancelled"
+            },
+            {
+              "when": "同owner/type/key trusted success＋現在値/対象の許可read条件",
+              "target": "POST-05"
+            },
+            {
+              "when": "post trusted successだが対象を表示不可、EXIT05条件成立",
+              "target": "RESULT-01",
+              "delegated_route": "EXIT05同owner/正常用途/信頼成功"
+            },
+            {
+              "when": "要求/中止/closure結果まだunknown",
+              "target": "POST-03"
+            }
+          ],
+          "terminal_target_precedence": "Auth/用途/本人guard後、trusted terminal closed_rejected/cancelled/successをgeneric unknownより先に分類。phase terminalなら未確認分岐に当てない。"
+        }
+      ]
+    },
+    {
+      "id": "POST-04",
+      "journey": "復帰",
+      "chapter": "140",
+      "title": "まだ確認できません",
+      "copy": "保存できたかは、まだ確認できていません。ここで中断できます。",
+      "primary_action": "もう一度確認",
+      "state": "確認未成立",
+      "condition": "receipt不存在だけで未保存にしない。同内容再試行は別採用契約が成立した場合の明示操作候補、mockでは入口を実装済みにしない。 Auth/本人/用途を結果より先に分類。遅延結果は現在本人と当該入力/結果owner/contextが一致すると確認した場合のみ表示、旧本人の結果で画面を進めない。 副操作でも共通Auth/用途/本人guardを先行。離脱は送信/DB変更/取消/破棄ではない。本人の本文と結果未確認contextを保持し、本人の新規作成/送信はPOST-03へ戻す。照合/保持寿命はOP/RET原採用待ちで自動解消を約束しない。 照合未成立はEXIT-04候補へ。安全離脱だけでは新規送信を再開しない。独立新key/空欄へ進む案は重複保証が異なる比較代案で、原採否/必要再承認なしに遷移を有効化しない。元入力の自動複製/旧key再利用/不明を失敗へ確定しない。 R2以外（R1等）の信頼した成功確認・対象利用不可はEXIT-05/RESULT-01候補へ。未確認POST-04/R2終了済みPOST-06で代用せず、OP/RET採用・実測と本人の閉じる操作を要する。 R1等確認済み・対象利用不可は結果未確認に含めず、本人の新規作成/確認操作では先にEXIT-05/RESULT-01候補へ。閉じる条件成立前にPOST-01や未確認POST-03/04を開かない。 副操作でも確認済み/利用不可への分類変化を先に判定し、結果未確認のまま離脱した扱いにしない。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": "POST-04",
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
+          "target": "POST-07",
+          "reason": "rejected"
+        },
+        {
+          "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=user_cancelled)。宣言/timeoutだけでは進めない",
+          "target": "CLOSED-01",
+          "reason": "user_cancelled"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "adoption_guard": "EXIT-05, OP/RET and same-owner trusted success protocol adopted/measured; candidate only"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、当該保存をまだ確認できない",
+          "target": "POST-04"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、当該本人/操作の保存済みと許可readを確認",
+          "target": "POST-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、R2採用、本人の終了済み操作を確認",
+          "target": "POST-06"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/context、R2以外の採用済み照合で保存完了だけ確定し対象が削除/不可視/読取未成立",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01の最小結果へ。未確認POST-04/R2 POST-06で代用しない。OP/RET採用・実測を要する",
+          "adoption_guard": "EXIT-05, OP/RET and same-owner trusted success protocol adopted/measured; candidate only"
+        }
+      ],
+      "secondary_action": "元の画面へ",
+      "secondary_demo_next_state": "PROFILE-01",
+      "secondary_actions": [
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "action": "確認済みの結果を見る",
+          "adoption_guard": "EXIT-05, OP/RET and same-owner trusted success protocol adopted/measured; candidate only"
+        },
+        {
+          "when": "共通Authguard通過、現在Auth本人確認済み・通常用途・同一ownerの未確認投稿context、140〜160導入・170未導入",
+          "action": "元の画面へ",
+          "target": "PROFILE-01"
+        },
+        {
+          "when": "共通Authguard通過、現在Auth本人確認済み・通常用途・同一ownerの未確認投稿context、170以後導入",
+          "action": "元の画面へ",
+          "target": null,
+          "delegated_route": "原全IAの当該章の安全な元入口（履歴なしも既知の内部入口）。未確認投稿context保持、本人の新作成は照合へ戻す"
+        }
+      ],
+      "whole_design_exit_contract_ref": "EXIT-04",
+      "secondary_exit_candidate": {
+        "action": "中断する",
+        "target": "RESUME-01",
+        "guard": "whole-design EXIT contract; no mutation or authentication-success assumption"
+      },
+      "retention_notice_guard": "Display retained text/media only after reading same-owner/context input and verifying actual availability; otherwise show missing/unavailable input without declaring save failure",
+      "conditional_input_notice": {
+        "when": "verified same-owner/context input actually readable",
+        "copy": "入力した内容は残しています。",
+        "otherwise": "入力を復元できるか確認してください。保存結果とは別に確認します。"
+      },
+      "operation_recovery_candidates": [
+        {
+          "action": "同じ操作を再試行",
+          "guard": "WREC-01 adopted/measured, actual frozen captured input available, verified same owner/normal purpose/typed original key; lock returns prior result or saves once; no changed input, fresh key or automatic replay",
+          "target_candidates": [
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
+              "target": "POST-07",
+              "reason": "rejected"
+            },
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=user_cancelled)。宣言/timeoutだけでは進めない",
+              "target": "CLOSED-01",
+              "reason": "user_cancelled"
+            },
+            {
+              "when": "同owner/type/key trusted success＋現在値/対象の許可read条件",
+              "target": "POST-05"
+            },
+            {
+              "when": "post trusted successだが対象を表示不可、EXIT05条件成立",
+              "target": "RESULT-01",
+              "delegated_route": "EXIT05同owner/正常用途/信頼成功"
+            },
+            {
+              "when": "要求/中止/closure結果まだunknown",
+              "target": "POST-04"
+            }
+          ],
+          "terminal_target_precedence": "Auth/用途/本人guard後、trusted terminal closed_rejected/cancelled/successをgeneric unknownより先に分類。phase terminalなら未確認分岐に当てない。"
+        },
+        {
+          "action": "この操作を中止して結果を確定",
+          "guard": "WREC採用・実測後、本人の明示中止は元入力あり/なし両方で可能。同owner/project/typed key lock後、successなら成功結果を返し取消不可、reservedだけclosed_unsavedへ不可逆commit、既terminal再open/legacy/read不存在fence不可。既知typed keyの未登録は、本人が終了を明示した時だけcancel-before-registrationで閉じる（B回復案。最小identity保持/旧writer失効/quota上限が条件）。中止返答不明もterminal確認までunknown/pending維持。",
+          "target_candidates": [
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
+              "target": "POST-07",
+              "reason": "rejected"
+            },
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=user_cancelled)。宣言/timeoutだけでは進めない",
+              "target": "CLOSED-01",
+              "reason": "user_cancelled"
+            },
+            {
+              "when": "同owner/type/key trusted success＋現在値/対象の許可read条件",
+              "target": "POST-05"
+            },
+            {
+              "when": "post trusted successだが対象を表示不可、EXIT05条件成立",
+              "target": "RESULT-01",
+              "delegated_route": "EXIT05同owner/正常用途/信頼成功"
+            },
+            {
+              "when": "要求/中止/closure結果まだunknown",
+              "target": "POST-04"
+            }
+          ],
+          "terminal_target_precedence": "Auth/用途/本人guard後、trusted terminal closed_rejected/cancelled/successをgeneric unknownより先に分類。phase terminalなら未確認分岐に当てない。"
+        }
+      ]
+    },
+    {
+      "id": "POST-05",
+      "journey": "初投稿",
+      "chapter": "140",
+      "title": "投稿",
+      "copy": "保存した投稿です。",
+      "primary_action": "元の画面へ",
+      "state": "保存確認済み",
+      "condition": "本人/対象/操作を確認した許可readで本文を表示する最小詳細。全文SNSの180返信や190いいね等は描かない。 保存済みからの戻り先も原採用済み章と実際の既知入口で分け、170以後を140専用mockへ戻さない。 当該同owner/contextの照合結果が確定した後に当該pending UI状態だけを解除し、新規作成を再開可能にする。操作照合記録/使用済みkeyを削除しない。他の未確認contextを一括解除しない。 POST-05、またはR2採用時のPOST-06として当該操作の終了条件を確定した場合、その操作で保持していた本文を新しい投稿の未送信入力へ自動継承しない。元contextだけを終了し、次の新規POST-01は空欄で開く。R1等の確認済み/対象利用不可はEXIT-05/RESULT-01の採用・実測後、本人が閉じた時だけ元pending UIを終了し、次のPOST-01は空欄にする。他contextの入力を消さず、receipt/usedkeyは保持。拒否確定後の編集候補保持とは区別する。 新しいkeyでの作成/保存はnew_mutation_entry_contractを必須とする。同keyの結果確認やactive待ちをこの新key許可へ混ぜない。 この画面の新規入力選択は純粋な入力画面への移動で、key/予約生成なし。admissionはsubmit時だけ。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": null,
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同一owner/contextの保存確認、140〜160導入・170未導入の本人profile入口から来た、または元入口不明で既知の安全なprofile入口を選ぶ",
+          "target": "PROFILE-01"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同一owner/contextの保存確認、170以後の導入済み入口から来た",
+          "target": null,
+          "delegated_route": "既存全IAの当該章の安全な元入口（履歴なし時も既知の内部入口）。自動再送なし"
+        }
+      ],
+      "WREC_pending_end_guard": "WREC予約を持つ操作では同owner/project/typed keyのlock内でcommit済みsuccessまたはclosed_unsavedをtrusted観測した後だけ当該pending UIを終了。確定拒否もclosed_unsaved(reason=rejected)commit確認が必要。rollback/closure返答不明/Authや制限の非terminal事象はpending維持。non-WREC/legacyは原採用済み終了条件に従い遡及しない。",
+      "new_mutation_entry_contract_ref": "new_mutation_entry_contract",
+      "new_mutation_entry_scope": "入力画面への移動は予約なし。実際のPOST01 submit時に契約を実行する。"
+    },
+    {
+      "id": "POST-06",
+      "journey": "復帰",
+      "chapter": "140",
+      "title": "投稿は現在利用できません",
+      "copy": "投稿の保存処理は完了していますが、現在は表示できません。",
+      "primary_action": "元の画面へ",
+      "state": "R2終了済み候補",
+      "condition": "R2採用時の本人最小receipt。元本文/画像/入力一致は表示/証明しない。復元/自動再投稿なし。 戻り先はPOST-05と同じ本人/用途/章guard、140〜160の既知profile入口または170以後原全IAの安全な元入口。 当該同owner/contextの照合結果が確定した後に当該pending UI状態だけを解除し、新規作成を再開可能にする。操作照合記録/使用済みkeyを削除しない。他の未確認contextを一括解除しない。 POST-05、またはR2採用時のPOST-06として当該操作の終了条件を確定した場合、その操作で保持していた本文を新しい投稿の未送信入力へ自動継承しない。元contextだけを終了し、次の新規POST-01は空欄で開く。R1等の確認済み/対象利用不可はEXIT-05/RESULT-01の採用・実測後、本人が閉じた時だけ元pending UIを終了し、次のPOST-01は空欄にする。他contextの入力を消さず、receipt/usedkeyは保持。拒否確定後の編集候補保持とは区別する。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": null,
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同一owner/contextの保存確認、140〜160導入・170未導入の本人profile入口から来た、または元入口不明で既知の安全なprofile入口を選ぶ",
+          "target": "PROFILE-01"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・同一owner/contextの保存確認、170以後の導入済み入口から来た",
+          "target": null,
+          "delegated_route": "既存全IAの当該章の安全な元入口（履歴なし時も既知の内部入口）。自動再送なし"
+        }
+      ],
+      "WREC_pending_end_guard": "WREC予約を持つ操作では同owner/project/typed keyのlock内でcommit済みsuccessまたはclosed_unsavedをtrusted観測した後だけ当該pending UIを終了。確定拒否もclosed_unsaved(reason=rejected)commit確認が必要。rollback/closure返答不明/Authや制限の非terminal事象はpending維持。non-WREC/legacyは原採用済み終了条件に従い遡及しない。"
+    },
+    {
+      "id": "AUTH-06",
+      "journey": "復帰",
+      "chapter": "全章共通",
+      "title": "ログインし直してください",
+      "copy": "続けるには、もう一度ログインしてください。",
+      "primary_action": "ログインへ",
+      "state": "session無効確定",
+      "condition": "session無効を確定した場合のみ。一時不明はAUTH-08、本人変更確定はAUTH-09。recovery等の用途違いは採用した用途別導線へ戻す別条件で、通常loginへ一括転送しない。旧draft/key/画像を新本人へ自動表示/再送しない。 submission_boundary_contractに従う。投稿送信/設定保存の開始済み中断は結果未確認として元owner/contextに保持し、未送信扱いに戻さない。同本人通常用途の復帰は投稿POST-03/設定AUTH-11、自動送信/保存なし。要求開始前と確実に分かる停止だけ未送信。 再認証前はpendingの存在/内容を表示せずowner/contextに非表示で保持。信頼したlogin後に現在本人とcaptured ownerの一致/通常用途を確認してPOST-03/AUTH-11へ進んだ時だけ結果未確認を案内する。別ownerはAUTH-09隔離。自動送信/元操作続行を約束しない。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": "AUTH-03",
+      "target_candidates": [
+        {
+          "when": "session無効を確定して通常login入口へ戻る",
+          "target": "AUTH-03"
+        }
+      ]
+    },
+    {
+      "id": "AUTH-07",
+      "journey": "登録",
+      "chapter": "110候補",
+      "title": "ログインしています",
+      "copy": "現在のアカウントでログインしています。メール確認は完了しています。",
+      "primary_action": "ログイン状態を確認",
+      "demo_next_state": "AUTH-07",
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "WREC本人postのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-07"
+        },
+        {
+          "when": "WREC本人profileのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-14"
+        },
+        {
+          "when": "WRECのtrusted terminal closed_unsaved reason=user_cancelled、現在owner/project/用途一致、本人が当該結果を確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "CLOSED-01"
+        },
+        {
+          "when": "現在Auth本人/通常用途/owner-project-profile typed key一致、WREC trusted committed successを確認済み、現在own users readが未成立/0行/不可視。保存成功と現在値readを別観測し、当該pending UIはterminal規則で終了。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-16",
+          "display_variant": "WREC-profile-success-current-read-unavailable"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象許可read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-05"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象表示不可、EXIT05条件成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "RESULT-01"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC profile trusted success、本人が当該未確認履歴の結果を確認、現在own users read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "adoption_guard": "EXIT-05 and OP/RET adopted/measured, exact trusted same-owner success; never unknown-save"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/post typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信本文/通常章より先に当該操作を確認する",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/profile typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信設定/通常章より先に当該操作を確認する",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の投稿未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の設定保存未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、採用WREC対象。正常本人server履歴のscope/全ページ/消去/版移行を含む網羅性をまだ信頼確認できない。先行する当該trusted terminal結果は表示してよいが、この未確認を新key保存へ通さない",
+          "target": "RESUME-01",
+          "adoption_guard": "正常本人権限でserver履歴を再構成/照合。空一覧だけで未知要求なしとしない。新規保存停止、非private中断。既知操作の結果確認は手動、旧本人へ情報を漏らさない"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、140〜160導入・170未導入、入力表示・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "POST-01"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、170以後導入、入力保持・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの元の投稿入力画面（履歴なしは当該章の安全な内部入口）"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、120以後導入、own users読取未成立/0行/不可視、入力保持。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信初回設定context、120以後導入、own users読取で設定未完を確定、入力表示・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、own users読取で設定完了を確定、入力保持・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み編集入力画面。編集未導入の120では保存済みの確認欄だけをAUTH-05へ表示し、保持入力は非表示で保持、勝手に初回設定へ戻さない"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、110のみ導入。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-07"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、users設定読取未成立/0行/不可視。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、own users読取で設定未完を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120まで導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、140〜160導入済み・170未導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "PROFILE-01"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、130のみ導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの130プロフィール（140投稿入口なし）"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、170以後導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み本人入口"
+        }
+      ],
+      "state": "110認証済み表示",
+      "condition": "110の最小login前倒し候補。確認した現在本人のメールアドレスをこのprivate認証状態欄にだけ表示する。public profile/別本人の表示ラベルへ流用しない。120未導入は本人設定へ進めず原110/120同期採否待ち。 共通復帰条件に従い、settings読取不明を未設定へしない。旧contextを新本人へ移さない。 採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
+      "adopted": false,
+      "executed": false,
+      "account_label_candidate": "確認済みの現在Auth本人のメールアドレス（private状態欄のみ）",
+      "resume_contract_ref": "confirmed_resume_contract"
+    },
+    {
+      "id": "AUTH-08",
+      "journey": "復帰",
+      "chapter": "全章共通",
+      "title": "ログイン状態を確認できません",
+      "copy": "いまのログイン状態を確認できませんでした。もう一度確認してください。",
+      "primary_action": "ログイン状態を確認",
+      "demo_next_state": "AUTH-08",
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "WREC本人postのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-07"
+        },
+        {
+          "when": "WREC本人profileのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-14"
+        },
+        {
+          "when": "WRECのtrusted terminal closed_unsaved reason=user_cancelled、現在owner/project/用途一致、本人が当該結果を確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "CLOSED-01"
+        },
+        {
+          "when": "現在Auth本人/通常用途/owner-project-profile typed key一致、WREC trusted committed successを確認済み、現在own users readが未成立/0行/不可視。保存成功と現在値readを別観測し、当該pending UIはterminal規則で終了。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-16",
+          "display_variant": "WREC-profile-success-current-read-unavailable"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象許可read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-05"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象表示不可、EXIT05条件成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "RESULT-01"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC profile trusted success、本人が当該未確認履歴の結果を確認、現在own users read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "adoption_guard": "EXIT-05 and OP/RET adopted/measured, exact trusted same-owner success; never unknown-save"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/post typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信本文/通常章より先に当該操作を確認する",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/profile typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信設定/通常章より先に当該操作を確認する",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の投稿未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の設定保存未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、採用WREC対象。正常本人server履歴のscope/全ページ/消去/版移行を含む網羅性をまだ信頼確認できない。先行する当該trusted terminal結果は表示してよいが、この未確認を新key保存へ通さない",
+          "target": "RESUME-01",
+          "adoption_guard": "正常本人権限でserver履歴を再構成/照合。空一覧だけで未知要求なしとしない。新規保存停止、非private中断。既知操作の結果確認は手動、旧本人へ情報を漏らさない"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、140〜160導入・170未導入、入力表示・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "POST-01"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、170以後導入、入力保持・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの元の投稿入力画面（履歴なしは当該章の安全な内部入口）"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、120以後導入、own users読取未成立/0行/不可視、入力保持。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信初回設定context、120以後導入、own users読取で設定未完を確定、入力表示・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、own users読取で設定完了を確定、入力保持・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み編集入力画面。編集未導入の120では保存済みの確認欄だけをAUTH-05へ表示し、保持入力は非表示で保持、勝手に初回設定へ戻さない"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、110のみ導入。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-07"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、users設定読取未成立/0行/不可視。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、own users読取で設定未完を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120まで導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、140〜160導入済み・170未導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "PROFILE-01"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、130のみ導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの130プロフィール（140投稿入口なし）"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、170以後導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み本人入口"
+        }
+      ],
+      "state": "一時認証不明",
+      "condition": "結果未確認の本人再照合場面の例。未loginと断定せずlogout/保存/再送なし。同じ本人のprivate draftを隔離して保持し他本人へ表示しない。復帰先は元画面context、mockの例は確認不能継続のAUTH-08。 回線障害/ログアウト/待ち時間を断定しない。投稿からの場面では旧本文をprivateに隔離保持し、別本人へ表示しない。 共通復帰条件に従い、settings読取不明を未設定へしない。旧contextを新本人へ移さない。 submission_boundary_contractに従う。投稿送信/設定保存の開始済み中断は結果未確認として元owner/contextに保持し、未送信扱いに戻さない。同本人通常用途の復帰は投稿POST-03/設定AUTH-11、自動送信/保存なし。要求開始前と確実に分かる停止だけ未送信。 確認継続不能は未採用EXIT-01/RESUME-01候補。非private表示へ中断し、未知操作を未送信へ戻さない。logoutは別の明示Auth操作で、原採用と保存除去実測を要する。 採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
+      "adopted": false,
+      "executed": false,
+      "resume_contract_ref": "confirmed_resume_contract",
+      "whole_design_exit_contract_ref": "EXIT-01",
+      "secondary_exit_candidate": {
+        "action": "中断する",
+        "target": "RESUME-01",
+        "guard": "whole-design EXIT contract; no mutation or authentication-success assumption"
+      }
+    },
+    {
+      "id": "AUTH-09",
+      "journey": "復帰",
+      "chapter": "全章共通",
+      "title": "アカウントが切り替わりました",
+      "copy": "別のアカウントでログインしています。このアカウントで続けてください。",
+      "primary_action": "アカウントを確認",
+      "demo_next_state": "AUTH-07",
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "WREC本人postのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-07"
+        },
+        {
+          "when": "WREC本人profileのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-14"
+        },
+        {
+          "when": "WRECのtrusted terminal closed_unsaved reason=user_cancelled、現在owner/project/用途一致、本人が当該結果を確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "CLOSED-01"
+        },
+        {
+          "when": "現在Auth本人/通常用途/owner-project-profile typed key一致、WREC trusted committed successを確認済み、現在own users readが未成立/0行/不可視。保存成功と現在値readを別観測し、当該pending UIはterminal規則で終了。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-16",
+          "display_variant": "WREC-profile-success-current-read-unavailable"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象許可read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-05"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象表示不可、EXIT05条件成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "RESULT-01"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC profile trusted success、本人が当該未確認履歴の結果を確認、現在own users read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "adoption_guard": "EXIT-05 and OP/RET adopted/measured, exact trusted same-owner success; never unknown-save"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/post typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信本文/通常章より先に当該操作を確認する",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/profile typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信設定/通常章より先に当該操作を確認する",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の投稿未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の設定保存未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、採用WREC対象。正常本人server履歴のscope/全ページ/消去/版移行を含む網羅性をまだ信頼確認できない。先行する当該trusted terminal結果は表示してよいが、この未確認を新key保存へ通さない",
+          "target": "RESUME-01",
+          "adoption_guard": "正常本人権限でserver履歴を再構成/照合。空一覧だけで未知要求なしとしない。新規保存停止、非private中断。既知操作の結果確認は手動、旧本人へ情報を漏らさない"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、140〜160導入・170未導入、入力表示・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "POST-01"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、170以後導入、入力保持・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの元の投稿入力画面（履歴なしは当該章の安全な内部入口）"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、120以後導入、own users読取未成立/0行/不可視、入力保持。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信初回設定context、120以後導入、own users読取で設定未完を確定、入力表示・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、own users読取で設定完了を確定、入力保持・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み編集入力画面。編集未導入の120では保存済みの確認欄だけをAUTH-05へ表示し、保持入力は非表示で保持、勝手に初回設定へ戻さない"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、110のみ導入。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-07"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、users設定読取未成立/0行/不可視。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、own users読取で設定未完を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120まで導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、140〜160導入済み・170未導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "PROFILE-01"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、130のみ導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの130プロフィール（140投稿入口なし）"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、170以後導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み本人入口"
+        }
+      ],
+      "state": "本人変更確定",
+      "condition": "旧未送信入力は元本人に戻っても自動復元しない。送信/保存開始済み結果未確認contextは旧ownerに結び付けて隔離、新本人へ表示/再送しない。保持条件の範囲内で元本人が通常用途へ戻れば投稿POST-03/設定AUTH-11で手動照合する（自動再送なし）。別本人session成立をlogoutへ勝手に変えない。共通復帰条件で現在本人/用途/章/users読取/元contextを分類。隔離済みcontextを本人変更として再検出しない。保持寿命/明示復元は別採否、永久保持/自動復元を約束しない。submission_boundary_contractの開始済みphaseは未送信へ戻さない。 元context本人と現在本人の不一致を入力/pendingの有無と独立に分類。画面出現や本文から旧入力/結果未確認の存在を示唆せず、隔離は非表示で行う。元context本人が不明なら不一致と断定しない。 採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
+      "adopted": false,
+      "executed": false,
+      "account_label_candidate": "確認した現在Auth本人のメールアドレス（private状態欄のみ、旧本人なし）",
+      "resume_contract_ref": "confirmed_resume_contract"
+    },
+    {
+      "id": "AUTH-10",
+      "journey": "登録",
+      "chapter": "100",
+      "title": "登録結果を確認できません",
+      "copy": "登録が受け付けられたかは、まだ確認できていません。確認メールが届いていれば、リンクを開いた後にログインしてください。",
+      "primary_action": "ログインへ",
+      "demo_next_state": "AUTH-03",
+      "target_candidates": [
+        {
+          "when": "本人がメール確認後に既知loginを選ぶ",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "結果は未確認のまま",
+          "target": "AUTH-10"
+        }
+      ],
+      "state": "登録返答不明",
+      "condition": "登録要求の返答不明をメール送信/受理済みにしない。passwordは保持せず、登録を自動再実行しない。宛先/再送の正式復帰方式はB14/B88の原採用前。既知loginの確認でも完了を捏造しない。",
+      "adopted": false,
+      "executed": false,
+      "whole_design_exit_contract_ref": "EXIT-07",
+      "secondary_exit_candidate": {
+        "action": "中断する",
+        "target": "RESUME-01",
+        "guard": "Nonsecret preUID purpose/request journal; no password or automatic Auth replay"
+      }
+    },
+    {
+      "id": "AUTH-11",
+      "journey": "登録",
+      "chapter": "120",
+      "title": "設定の保存結果を確認できていません",
+      "copy": "入力の保持状況と、操作の結果を別に確認します。",
+      "primary_action": "保存結果を確認",
+      "demo_next_state": "AUTH-11",
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
+          "target": "AUTH-14",
+          "reason": "rejected"
+        },
+        {
+          "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=user_cancelled)。宣言/timeoutだけでは進めない",
+          "target": "CLOSED-01",
+          "reason": "user_cancelled"
+        },
+        {
+          "when": "現在Auth本人/通常用途/owner-project-profile typed key一致、WREC trusted committed successを確認済み、現在own users readが未成立/0行/不可視。保存成功と現在値readを別観測し、当該pending UIはterminal規則で終了",
+          "target": "AUTH-16",
+          "display_variant": "WREC-profile-success-current-read-unavailable"
+        },
+        {
+          "when": "現在Auth本人/通常用途/当該owner-context一致。WREC予約操作はtyped trusted terminal success確認＋own usersの現在値許可read、値一致だけでは進めない。non-WRECは原採用済みtrusted終了条件を要しWREC証拠を偽装しない。",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、保存値の確認が未成立",
+          "target": "AUTH-11"
+        }
+      ],
+      "state": "profile保存未確認",
+      "condition": "現在本人/既知対象の許可readで保存値を照合。投稿operation receiptの成立をprofileへ流用しない。不一致/0行は未確認のまま、再送や成功へ自動遷移しない。 Auth/本人/用途を結果より先に分類。遅延結果は現在本人と当該入力/結果owner/contextが一致すると確認した場合のみ表示、旧本人の結果で画面を進めない。 照合未成立はEXIT-02/RESUME-01の中断候補と120B86診断へ。未知結果と読める本人入力を保持し、自動再送しない。profile用WREC-01の同key明示再試行/lock内中止確定は原採用・実測後の候補で、未成立のまま利用可能としない。",
+      "adopted": false,
+      "executed": false,
+      "whole_design_exit_contract_ref": "EXIT-02",
+      "secondary_exit_candidate": {
+        "action": "中断する",
+        "target": "RESUME-01",
+        "guard": "whole-design EXIT contract; no mutation or authentication-success assumption"
+      },
+      "retention_notice_guard": "Display retained text/media only after reading same-owner/context input and verifying actual availability; otherwise show missing/unavailable input without declaring save failure",
+      "conditional_input_notice": {
+        "when": "verified same-owner/context input actually readable",
+        "copy": "入力した内容は残しています。",
+        "otherwise": "入力を復元できるか確認してください。保存結果とは別に確認します。"
+      },
+      "operation_recovery_candidates": [
+        {
+          "action": "同じ操作を再試行",
+          "guard": "WREC-01 adopted/measured, actual frozen captured input available, verified same owner/normal purpose/typed original key; lock returns prior result or saves once; no changed input, fresh key or automatic replay",
+          "target_candidates": [
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
+              "target": "AUTH-14",
+              "reason": "rejected"
+            },
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=user_cancelled)。宣言/timeoutだけでは進めない",
+              "target": "CLOSED-01",
+              "reason": "user_cancelled"
+            },
+            {
+              "when": "現在Auth本人/通常用途/owner-project-profile typed key一致、WREC trusted committed successを確認済み、現在own users readが未成立/0行/不可視。保存成功と現在値readを別観測し、当該pending UIはterminal規則で終了",
+              "target": "AUTH-16",
+              "display_variant": "WREC-profile-success-current-read-unavailable"
+            },
+            {
+              "when": "同owner/type/key trusted success＋現在値/対象の許可read条件",
+              "target": "AUTH-05"
+            },
+            {
+              "when": "要求/中止/closure結果まだunknown",
+              "target": "AUTH-11"
+            }
+          ],
+          "terminal_target_precedence": "Auth/用途/本人guard後、trusted terminal closed_rejected/cancelled/successをgeneric unknownより先に分類。phase terminalなら未確認分岐に当てない。"
+        },
+        {
+          "action": "この操作を中止して結果を確定",
+          "guard": "WREC採用・実測後、本人の明示中止は元入力あり/なし両方で可能。同owner/project/typed key lock後、successなら成功結果を返し取消不可、reservedだけclosed_unsavedへ不可逆commit、既terminal再open/legacy/read不存在fence不可。既知typed keyの未登録は、本人が終了を明示した時だけcancel-before-registrationで閉じる（B回復案。最小identity保持/旧writer失効/quota上限が条件）。中止返答不明もterminal確認までunknown/pending維持。",
+          "target_candidates": [
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=rejected)。closure未確認ならunknown維持",
+              "target": "AUTH-14",
+              "reason": "rejected"
+            },
+            {
+              "when": "現在本人/通常用途/owner-project-typed key一致、採用実測済みWRECでtrusted committed closed_unsaved(reason=user_cancelled)。宣言/timeoutだけでは進めない",
+              "target": "CLOSED-01",
+              "reason": "user_cancelled"
+            },
+            {
+              "when": "現在Auth本人/通常用途/owner-project-profile typed key一致、WREC trusted committed successを確認済み、現在own users readが未成立/0行/不可視。保存成功と現在値readを別観測し、当該pending UIはterminal規則で終了",
+              "target": "AUTH-16",
+              "display_variant": "WREC-profile-success-current-read-unavailable"
+            },
+            {
+              "when": "同owner/type/key trusted success＋現在値/対象の許可read条件",
+              "target": "AUTH-05"
+            },
+            {
+              "when": "要求/中止/closure結果まだunknown",
+              "target": "AUTH-11"
+            }
+          ],
+          "terminal_target_precedence": "Auth/用途/本人guard後、trusted terminal closed_rejected/cancelled/successをgeneric unknownより先に分類。phase terminalなら未確認分岐に当てない。"
+        }
+      ],
+      "diagnostic_candidate": {
+        "action": "確認手順を見る",
+        "guard": "B86 response/DB-state/procedure diagnosis available in120 for observed zero rows/mismatch; do not reclassify returned-zero rows as affected-zero or trusted refusal",
+        "target": null,
+        "delegated_route": "120 own chapter diagnostics; unknown preserved until WREC terminal proof or adopted original result proof"
+      },
+      "current_values_info": {
+        "when": "own users readで現在値が期待値と一致するが当該WREC操作terminal未確認",
+        "copy": "現在の値は一致していますが、この操作の結果はまだ確認できていません。",
+        "target": "AUTH-11",
+        "pending_ended": false
+      }
+    },
+    {
+      "id": "AUTH-12",
+      "journey": "登録",
+      "chapter": "110/120以後",
+      "title": "ログインできませんでした",
+      "copy": "メールアドレスとパスワードをもう一度入力してください。",
+      "primary_action": "ログインする",
+      "demo_next_state": "AUTH-12",
+      "target_candidates": [
+        {
+          "when": "今回の信頼したAuth応答でメール確認前を確定（sessionなしを含む。アカウントの有無を推測しない）",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "今回の信頼したAuth応答で資格情報の拒否を確定、確認前/回数制限/その他の拒否と区別（アカウント有無やどちらの誤りか推測なし）",
+          "target": "AUTH-12"
+        },
+        {
+          "when": "今回の信頼したAuth応答で資格情報拒否と確定できないその他の拒否（回数制限等）を確定、再送停止",
+          "target": "AUTH-17"
+        },
+        {
+          "when": "同じAuth要求が進行中、入力/context固定・login送信disabled、新規要求なし",
+          "target": "AUTH-12"
+        },
+        {
+          "when": "同Auth login要求のtransport応答不明、進行中要求ではなく開始済み結果不明。password非保持・自動再送なし、login用途を保持する",
+          "target": null,
+          "delegated_route": "EXIT-07 login用途のpreUID非秘密journal確認/中断。現在Auth不明はその後AUTH-08のguardへ。AUTH-10の登録用途へ混ぜない"
+        },
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "WREC本人postのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-07"
+        },
+        {
+          "when": "WREC本人profileのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-14"
+        },
+        {
+          "when": "WRECのtrusted terminal closed_unsaved reason=user_cancelled、現在owner/project/用途一致、本人が当該結果を確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "CLOSED-01"
+        },
+        {
+          "when": "現在Auth本人/通常用途/owner-project-profile typed key一致、WREC trusted committed successを確認済み、現在own users readが未成立/0行/不可視。保存成功と現在値readを別観測し、当該pending UIはterminal規則で終了。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-16",
+          "display_variant": "WREC-profile-success-current-read-unavailable"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象許可read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-05"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象表示不可、EXIT05条件成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "RESULT-01"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC profile trusted success、本人が当該未確認履歴の結果を確認、現在own users read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "adoption_guard": "EXIT-05 and OP/RET adopted/measured, exact trusted same-owner success; never unknown-save"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/post typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信本文/通常章より先に当該操作を確認する",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/profile typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信設定/通常章より先に当該操作を確認する",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の投稿未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の設定保存未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、採用WREC対象。正常本人server履歴のscope/全ページ/消去/版移行を含む網羅性をまだ信頼確認できない。先行する当該trusted terminal結果は表示してよいが、この未確認を新key保存へ通さない",
+          "target": "RESUME-01",
+          "adoption_guard": "正常本人権限でserver履歴を再構成/照合。空一覧だけで未知要求なしとしない。新規保存停止、非private中断。既知操作の結果確認は手動、旧本人へ情報を漏らさない"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、140〜160導入・170未導入、入力表示・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "POST-01"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、170以後導入、入力保持・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの元の投稿入力画面（履歴なしは当該章の安全な内部入口）"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、120以後導入、own users読取未成立/0行/不可視、入力保持。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信初回設定context、120以後導入、own users読取で設定未完を確定、入力表示・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、own users読取で設定完了を確定、入力保持・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み編集入力画面。編集未導入の120では保存済みの確認欄だけをAUTH-05へ表示し、保持入力は非表示で保持、勝手に初回設定へ戻さない"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、110のみ導入。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-07"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、users設定読取未成立/0行/不可視。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、own users読取で設定未完を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120まで導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、140〜160導入済み・170未導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "PROFILE-01"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、130のみ導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの130プロフィール（140投稿入口なし）"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、170以後導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み本人入口"
+        }
+      ],
+      "state": "認証拒否確認",
+      "condition": "拒否のAuth応答を確認した場合のgeneric案内。アカウント存在やどちらのcredentialが誤りかを断定しない。passwordを永続保持しない。 共通復帰条件に従い、settings読取不明を未設定へしない。旧contextを新本人へ移さない。 login応答の確認前確定はsession有無によらずgeneric拒否より先。資格情報の拒否を確定した場合のみAUTH-12、その他の確定拒否はAUTH-17へ。 AUTH-12は資格情報拒否を確定した場合のみ。回数制限等/その他拒否はAUTH-17、再送停止。 共通の無効session判定は今回のlogin応答で得たsessionまたは元contextの実在したsessionの無効確定だけ。ログイン前にsessionがないこと自体を無効としない。 同じAuth要求が進行中はlogin送信disabled、要求contextを固定し重複loginをしない。元contextにsessionなし/進行中Auth要求なしで未ログイン確定ならAUTH-03。 追跡中の同じAuth要求はこの状態に留め、応答分類3件の後・共通unknownより前に評価。知らないうちにAUTH08へ移して拒否応答を失わない。共通無効/未ログインの通常login復帰は通常用途contextのみ、既知recovery用途は原用途別導線へ。 採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
+      "adopted": false,
+      "executed": false,
+      "resume_contract_ref": "confirmed_resume_contract"
+    },
+    {
+      "id": "AUTH-13",
+      "journey": "登録",
+      "chapter": "110/120以後",
+      "title": "メール確認が必要です",
+      "copy": "確認メールのリンクを開いてから、もう一度ログインしてください。",
+      "primary_action": "ログインへ",
+      "demo_next_state": "AUTH-03",
+      "target_candidates": [
+        {
+          "when": "本人が確認後のlogin入口を選ぶ",
+          "target": "AUTH-03"
+        }
+      ],
+      "state": "確認前を確定",
+      "condition": "Auth応答/自身の確認待ち開始状態で確認前を確定した場合のみ。単なる認証拒否や返答不明をこの原因へ決めつけない。宛先/再送/変更は採用した確認待ち入口で別保持。",
+      "adopted": false,
+      "executed": false
+    },
+    {
+      "id": "AUTH-14",
+      "journey": "登録",
+      "chapter": "120",
+      "title": "設定を保存できませんでした",
+      "copy": "入力の保持状況と、操作の結果を別に確認します。",
+      "primary_action": "入力を見直す",
+      "demo_next_state": null,
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、入力validationで安全な項目別案内を受け取れた",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/context、120初回設定の権限拒否/項目別案内なし",
+          "target": null,
+          "delegated_route": "未採用EXIT-03: 120のB86三点診断へ。Auth/通常用途/本人行読取とwrite policy/確定拒否を分ける。診断/修正後の本人明示新保存まで送信停止。"
+        }
+      ],
+      "state": "profile拒否確認",
+      "condition": "120初回設定の確定拒否だけ。安全な項目別validation案内がある時だけ入力見直しへ。権限拒否/案内なしは入力が原因としない。120では入力と確定拒否を保持し、EXIT-03候補の状態確認/B86診断または中断を提示。read成功をwrite権限証明にしない。transport不明/0行はAUTH-11。Auth/用途/本人guard先行、通常結果は現在本人と当該入力/結果owner/context一致後のみ。raw error/他人秘密を出さない。 当該同owner/contextの信頼した確定拒否で保存不成立を確認できた場合も、当該pending UIだけを解除する。結果不明/単なる通信エラーでは解除しない。操作履歴/usedkeyは保持し、元要求を未送信へ巻き戻さない。入力は次の編集候補として保持し、再送を本人が選ぶ場合は新しい操作として扱う（旧key再利用/自動送信なし、既存guard/拒否制限を引き継ぐ）。 当該要求開始後の信頼した確定拒否だけを表示。要求開始前の入力不成立は元入力画面の対象欄案内で、ここへ進めない。",
+      "adopted": false,
+      "executed": false,
+      "primary_action_variants": [
+        {
+          "when": "入力validationで安全な項目別案内を受け取れた",
+          "action": "入力を見直す",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "120初回設定の権限拒否/項目別案内なし、本人入力保持・送信停止",
+          "action": null,
+          "target": null,
+          "delegated_route": "EXIT-03の120B86診断/中断候補へ。送信停止のまま未完、mock未描画。"
+        }
+      ],
+      "primary_visibility_condition": "安全な項目別validation案内を受け取れた場合のみ。120初回設定の権限拒否/案内なしは主操作なし。",
+      "whole_design_exit_contract_ref": "EXIT-03",
+      "secondary_exit_candidate": {
+        "action": "中断する",
+        "target": "RESUME-01",
+        "guard": "whole-design EXIT contract; no mutation or authentication-success assumption"
+      },
+      "retention_notice_guard": "Display retained text/media only after reading same-owner/context input and verifying actual availability; otherwise show missing/unavailable input without declaring save failure",
+      "conditional_input_notice": {
+        "when": "verified same-owner/context input actually readable",
+        "copy": "入力した内容は残しています。",
+        "otherwise": "入力を復元できるか確認してください。保存結果とは別に確認します。"
+      },
+      "WREC_pending_end_guard": "WREC予約を持つ操作では同owner/project/typed keyのlock内でcommit済みsuccessまたはclosed_unsavedをtrusted観測した後だけ当該pending UIを終了。確定拒否もclosed_unsaved(reason=rejected)commit確認が必要。rollback/closure返答不明/Authや制限の非terminal事象はpending維持。non-WREC/legacyは原採用済み終了条件に従い遡及しない。"
+    },
+    {
+      "id": "POST-07",
+      "journey": "復帰",
+      "chapter": "140",
+      "title": "投稿が受け付けられませんでした",
+      "copy": "入力の保持状況と、操作の結果を別に確認します。",
+      "primary_action": "前の画面へ",
+      "demo_next_state": null,
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、入力validationで安全な項目別案内を受け取れた",
+          "target": "POST-01"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途・当該入力と結果の同一owner/contextを確認したうえで、権限拒否/項目別案内なし",
+          "target": null,
+          "delegated_route": "既存全IAの当該章の安全な元入口。本人draft保持、入力修正を促さずmutation再送停止"
+        }
+      ],
+      "state": "投稿拒否確認",
+      "condition": "確定した拒否だけを表示。安全な項目案内を受け取れたvalidationだけ入力見直しへ。権限拒否/案内なしは入力が原因とせず、既存の安全な元入口へ戻りdraft保持/再送停止。transport不明/0行は結果未確認へ。raw error/他人秘密を表示しない。前の画面へは上記条件付き既存IAへ委譲し、mockの絵は未定義のため切り替えない。 Auth/本人/用途を結果より先に分類。遅延結果は現在本人と当該入力/結果owner/contextが一致すると確認した場合のみ表示、旧本人の結果で画面を進めない。 当該同owner/contextの信頼した確定拒否で保存不成立を確認できた場合も、当該pending UIだけを解除する。結果不明/単なる通信エラーでは解除しない。操作履歴/usedkeyは保持し、元要求を未送信へ巻き戻さない。入力は次の編集候補として保持し、再送を本人が選ぶ場合は新しい操作として扱う（旧key再利用/自動送信なし、既存guard/拒否制限を引き継ぐ）。",
+      "adopted": false,
+      "executed": false,
+      "primary_action_variants": [
+        {
+          "when": "入力validationで安全な項目別案内を受け取れた",
+          "action": "入力を見直す",
+          "target": "POST-01"
+        },
+        {
+          "when": "権限拒否/項目別案内なし",
+          "action": "前の画面へ",
+          "target": null,
+          "delegated_route": "既存全IAの当該章の安全な元入口。本人draft保持、入力修正を促さずmutation再送停止"
+        }
+      ],
+      "retention_notice_guard": "Display retained text/media only after reading same-owner/context input and verifying actual availability; otherwise show missing/unavailable input without declaring save failure",
+      "conditional_input_notice": {
+        "when": "verified same-owner/context input actually readable",
+        "copy": "入力した内容は残しています。",
+        "otherwise": "入力を復元できるか確認してください。保存結果とは別に確認します。"
+      },
+      "WREC_pending_end_guard": "WREC予約を持つ操作では同owner/project/typed keyのlock内でcommit済みsuccessまたはclosed_unsavedをtrusted観測した後だけ当該pending UIを終了。確定拒否もclosed_unsaved(reason=rejected)commit確認が必要。rollback/closure返答不明/Authや制限の非terminal事象はpending維持。non-WREC/legacyは原採用済み終了条件に従い遡及しない。"
+    },
+    {
+      "id": "AUTH-15",
+      "journey": "登録",
+      "chapter": "100",
+      "title": "登録が受け付けられませんでした",
+      "copy": "入力の誤りとは限りません。パスワードは保持しません。",
+      "primary_action": "登録画面へ戻る",
+      "demo_next_state": null,
+      "target_candidates": [
+        {
+          "when": "入力validationで安全な項目別案内を受け取れた、入力保持",
+          "target": "AUTH-01"
+        },
+        {
+          "when": "項目別案内のない確定拒否、入力保持・自動再送なし",
+          "target": null,
+          "delegated_route": "原採用済みの登録入口の拒否/送信停止状態。B14/B88未採用/回復未確認の間は送信停止、mock未描画。"
+        }
+      ],
+      "state": "登録拒否確認",
+      "condition": "当該登録要求開始後の信頼した確定拒否の案内。提供された安全な項目別説明を添える候補で、既存account有無/生error/秘密を漏らさない。transport不明はAUTH-10、rate-limit等の正式待機/再開はB14/B88原採用待ち。 項目案内なしを入力の誤りとしない。採用前の待ち時間/再試行回数を断定しない。 項目案内なしの拒否ではpassword再入力を促さず、制限contextを保つ送信停止入口へ委譲。回復条件B14/B88未採用/未確認なら再送しない。次操作は未採用EXIT-06/RESUME-01候補。server制限を正としてpreUID補助記録を保持し、採用前条件§6の100/110確認手順へ。 当該要求開始後の信頼した確定拒否だけを表示。要求開始前の入力不成立は元入力画面の対象欄案内で、ここへ進めない。",
+      "adopted": false,
+      "executed": false,
+      "primary_action_variants": [
+        {
+          "when": "入力validationで安全な項目別案内を受け取れた",
+          "action": "入力を見直す",
+          "target": "AUTH-01"
+        },
+        {
+          "when": "rate-limit等を含む項目別案内のない確定拒否",
+          "action": "登録画面へ戻る",
+          "target": null,
+          "delegated_route": "原採用済みの登録入口の拒否/送信停止状態。B14/B88未採用/回復未確認の間は送信停止、mock未描画。"
+        }
+      ],
+      "copy_variants": [
+        {
+          "when": "安全な項目別validation案内がある",
+          "copy": "案内された入力欄を確認してください。パスワードは保持しません。パスワードはもう一度入力してください。"
+        }
+      ],
+      "whole_design_exit_contract_ref": "EXIT-06",
+      "secondary_exit_candidate": {
+        "action": "中断する",
+        "target": "RESUME-01",
+        "guard": "whole-design EXIT contract; no mutation or authentication-success assumption"
+      },
+      "retention_notice_guard": "Only show retained non-password input after actual read in originating authorized context; never turn unavailable input into proof of refusal/unsent; no password/token/secret URL persistence",
+      "conditional_input_notice": {
+        "when": "originating permitted context and non-password input actually readable",
+        "copy": "確認できた入力内容は残しています。",
+        "otherwise": "入力を復元できるか確認してください。要求の結果や送信制限とは別に確認します。",
+        "display_contract": "排他的な保持案内の正本。読めた場合だけwhen/copy、読めなければotherwise。どちらでもpassword/token/秘密URLを保持しない。main/variantsは保持を断言しない。"
+      }
+    },
+    {
+      "id": "AUTH-16",
+      "journey": "復帰",
+      "chapter": "120以後",
+      "title": "プロフィールを確認できません",
+      "copy": "プロフィールの設定状態を確認できませんでした。もう一度確認してください。",
+      "primary_action": "プロフィールを確認",
+      "demo_next_state": "AUTH-16",
+      "target_candidates": [
+        {
+          "when": "ログイン状態一時不明",
+          "target": "AUTH-08"
+        },
+        {
+          "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+          "target": "AUTH-06"
+        },
+        {
+          "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+          "target": "AUTH-03"
+        },
+        {
+          "when": "現在Auth本人を確認し、メール確認前を確定",
+          "target": "AUTH-13"
+        },
+        {
+          "when": "recovery等の用途違いを確定",
+          "target": null,
+          "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+        },
+        {
+          "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+          "target": "AUTH-09"
+        },
+        {
+          "when": "WREC本人postのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-07"
+        },
+        {
+          "when": "WREC本人profileのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-14"
+        },
+        {
+          "when": "WRECのtrusted terminal closed_unsaved reason=user_cancelled、現在owner/project/用途一致、本人が当該結果を確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "CLOSED-01"
+        },
+        {
+          "when": "現在Auth本人/通常用途/owner-project-profile typed key一致、WREC trusted committed successを確認済み、現在own users readが未成立/0行/不可視。保存成功と現在値readを別観測し、当該pending UIはterminal規則で終了。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-16",
+          "display_variant": "WREC-profile-success-current-read-unavailable"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象許可read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "POST-05"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象表示不可、EXIT05条件成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "RESULT-01"
+        },
+        {
+          "when": "同owner/project/通常用途のWREC profile trusted success、本人が当該未確認履歴の結果を確認、現在own users read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+          "target": "RESULT-01",
+          "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+          "adoption_guard": "EXIT-05 and OP/RET adopted/measured, exact trusted same-owner success; never unknown-save"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/post typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信本文/通常章より先に当該操作を確認する",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途・owner/project/profile typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信設定/通常章より先に当該操作を確認する",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の投稿未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "POST-03"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、同本人の設定保存未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+          "target": "AUTH-11"
+        },
+        {
+          "when": "現在Auth本人/通常用途を確認、採用WREC対象。正常本人server履歴のscope/全ページ/消去/版移行を含む網羅性をまだ信頼確認できない。先行する当該trusted terminal結果は表示してよいが、この未確認を新key保存へ通さない",
+          "target": "RESUME-01",
+          "adoption_guard": "正常本人権限でserver履歴を再構成/照合。空一覧だけで未知要求なしとしない。新規保存停止、非private中断。既知操作の結果確認は手動、旧本人へ情報を漏らさない"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、140〜160導入・170未導入、入力表示・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "POST-01"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、170以後導入、入力保持・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの元の投稿入力画面（履歴なしは当該章の安全な内部入口）"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、120以後導入、own users読取未成立/0行/不可視、入力保持。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信初回設定context、120以後導入、own users読取で設定未完を確定、入力表示・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、own users読取で設定完了を確定、入力保持・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み編集入力画面。編集未導入の120では保存済みの確認欄だけをAUTH-05へ表示し、保持入力は非表示で保持、勝手に初回設定へ戻さない"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、110のみ導入。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-07"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、users設定読取未成立/0行/不可視。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-16"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120以後導入、own users読取で設定未完を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-04"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、120まで導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "AUTH-05"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、140〜160導入済み・170未導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": "PROFILE-01"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、130のみ導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの130プロフィール（140投稿入口なし）"
+        },
+        {
+          "when": "通常用途を確認、確認済み現在本人、170以後導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+          "target": null,
+          "delegated_route": "既存全IAの導入済み本人入口"
+        }
+      ],
+      "resume_contract_ref": "confirmed_resume_contract",
+      "state": "users設定読取未成立",
+      "condition": "現在Auth本人のlogin成立とusers設定読取を別にする。読取失敗/0行/不可視を未作成/設定未完と断定せず入力formへ通さない。現在本人/own usersの通常許可readを再評価し原採用済みの章/contextへ。admin/service roleをUIへ渡さない。 確認継続不能は未採用EXIT-01/RESUME-01候補。非private表示へ中断し、未知操作を未送信へ戻さない。logoutは別の明示Auth操作で、原採用と保存除去実測を要する。 採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
+      "account_label_candidate": "確認済み現在Auth本人のメールアドレス（private状態欄のみ）",
+      "adopted": false,
+      "executed": false,
+      "whole_design_exit_contract_ref": "EXIT-01",
+      "secondary_exit_candidate": {
+        "action": "中断する",
+        "target": "RESUME-01",
+        "guard": "whole-design EXIT contract; no mutation or authentication-success assumption"
+      },
+      "copy_variants": [
+        {
+          "when": "現在Auth本人/通常用途/owner-project-profile typed key一致、WREC trusted committed successを確認済み、現在own users readが未成立/0行/不可視。保存成功と現在値readを別観測し、当該pending UIはterminal規則で終了",
+          "copy": "設定の保存は確認しました。現在の設定値はまだ読み取れません。",
+          "state": "保存成功確認・現在値読取未成立",
+          "pending_ended": true,
+          "guard": "同profile typed keyのtrusted terminal success、現在本人/用途一致、他contextは解除しない。usedkey/履歴保持、再保存へ自動遷移なし。"
+        }
+      ],
+      "WREC_pending_end_guard": "WREC予約を持つ操作では同owner/project/typed keyのlock内でcommit済みsuccessまたはclosed_unsavedをtrusted観測した後だけ当該pending UIを終了。確定拒否もclosed_unsaved(reason=rejected)commit確認が必要。rollback/closure返答不明/Authや制限の非terminal事象はpending維持。non-WREC/legacyは原採用済み終了条件に従い遡及しない。"
+    },
+    {
+      "id": "AUTH-17",
+      "journey": "登録",
+      "chapter": "110/120以後",
+      "title": "いまはログインできません",
+      "copy": "いまはログインできません。入力の誤りとは限りません。パスワードは保持しません。",
+      "primary_action": "ログイン画面へ戻る",
+      "state": "資格情報以外の認証拒否確認",
+      "condition": "信頼したAuth応答の確定拒否だけ。資格情報拒否と確定できない回数制限等を含む。再送/自動再試行を停止、待ち時間や回数を捏造しない。Auth03へ戻っても自動送信なし。アカウント有無/生errorを漏らさずpasswordは保持しない。採用済み制限回復条件の確定前は再送しない。 戻る先は送信停止を引き継ぐAUTH-18。戻るだけで再送制限を解除しない。 B14/B88の採用済み回復条件が必要。未採用EXIT-06候補で中断と100/110確認手順へ。server制限を正に、preUID補助記録を保持。記録消失を回復証拠にしない。本人に秘密の内部条件達成を求めない。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": "AUTH-18",
+      "target_candidates": [
+        {
+          "when": "本人がlogin画面へ戻る入口を選ぶ、同じ拒否/制限中contextを保持、入力送信なし",
+          "target": "AUTH-18"
+        }
+      ],
+      "whole_design_exit_contract_ref": "EXIT-06",
+      "secondary_exit_candidate": {
+        "action": "中断する",
+        "target": "RESUME-01",
+        "guard": "whole-design EXIT contract; no mutation or authentication-success assumption"
+      },
+      "retention_notice_guard": "Only show retained non-password input after actual read in originating authorized context; never turn unavailable input into proof of refusal/unsent; no password/token/secret URL persistence",
+      "conditional_input_notice": {
+        "when": "originating permitted context and non-password input actually readable",
+        "copy": "確認できた入力内容は残しています。",
+        "otherwise": "入力を復元できるか確認してください。要求の結果や送信制限とは別に確認します。",
+        "display_contract": "排他的な保持案内の正本。読めた場合だけwhen/copy、読めなければotherwise。どちらでもpassword/token/秘密URLを保持しない。main/variantsは保持を断言しない。"
+      }
+    },
+    {
+      "id": "AUTH-18",
+      "journey": "登録",
+      "chapter": "110/120以後",
+      "title": "ログイン",
+      "copy": "いまはログインできません。パスワードは保持しません。",
+      "primary_action": "ログインする",
+      "state": "拒否後の送信停止中",
+      "condition": "AUTH-17の確定拒否/制限中contextを同じlogin入口へ引き継ぐ。ログインするはdisabled、Auth要求/自動再試行なし。採用済みの安全な回復条件が確認できるまで解除しない。条件が未採用なら未確認のまま、時刻/秒数/回数を捏造しない。passwordは保持せず、原採用された再開案内だけを安全な状態欄に表示する候補。email書換/画面離脱/別本人で制限を勝手に消さない。 B14/B88の採用済み回復条件が必要。未採用EXIT-06候補で中断と100/110確認手順へ。server制限を正に、preUID補助記録を保持。記録消失を回復証拠にしない。本人に秘密の内部条件達成を求めない。",
+      "adopted": false,
+      "executed": false,
+      "demo_next_state": null,
+      "target_candidates": [
+        {
+          "when": "拒否/制限の再開条件が未採用/未確認、入力保持・送信停止",
+          "target": "AUTH-18"
+        },
+        {
+          "when": "原採用済みの安全な回復条件が確認できた、再開を本人が選ぶ、自動送信なし",
+          "target": "AUTH-03"
+        }
+      ],
+      "whole_design_exit_contract_ref": "EXIT-06",
+      "secondary_exit_candidate": {
+        "action": "中断する",
+        "target": "RESUME-01",
+        "guard": "whole-design EXIT contract; no mutation or authentication-success assumption"
+      },
+      "retention_notice_guard": "Only show retained non-password input after actual read in originating authorized context; never turn unavailable input into proof of refusal/unsent; no password/token/secret URL persistence",
+      "conditional_input_notice": {
+        "when": "originating permitted context and non-password input actually readable",
+        "copy": "確認できた入力内容は残しています。",
+        "otherwise": "入力を復元できるか確認してください。要求の結果や送信制限とは別に確認します。",
+        "display_contract": "排他的な保持案内の正本。読めた場合だけwhen/copy、読めなければotherwise。どちらでもpassword/token/秘密URLを保持しない。main/variantsは保持を断言しない。"
+      }
+    }
+  ],
+  "adopted": false,
+  "implementation_ready": false,
+  "transition_model": "target_candidatesは上から先行guardを優先評価。全通常SNS表示/入力/結果は現在Auth本人確認済み・通常用途・入力/結果の同一owner/contextを条件とする。認証変化と遅延結果が同時ならAuth分類が優先、分類中mutationなし。demo_next_stateは成立時の絵の一例。",
+  "confirmed_resume_contract": {
+    "scope": "現在Auth状態・本人・用途を先に分類し、同本人のcontextと原採用済み導入章へ手動復帰。分類中mutationなし",
+    "ordered_outcomes": [
+      {
+        "when": "ログイン状態一時不明",
+        "target": "AUTH-08"
+      },
+      {
+        "when": "通常用途contextを確定、元contextに実在したsessionの無効を確定",
+        "target": "AUTH-06"
+      },
+      {
+        "when": "通常login入口の用途contextを確定、信頼した再確認でsessionなしを確定、元contextにも実在sessionなし（login前/起動時）、進行中Auth要求なし、password非保持・自動loginなし",
+        "target": "AUTH-03"
+      },
+      {
+        "when": "現在Auth本人を確認し、メール確認前を確定",
+        "target": "AUTH-13"
+      },
+      {
+        "when": "recovery等の用途違いを確定",
+        "target": null,
+        "delegated_route": "既存全IAの用途別Auth復帰、通常保存停止"
+      },
+      {
+        "when": "元contextの本人と確認済み現在本人の不一致を確認、入力/pending存在とは独立に分類、旧contextを非表示で隔離し新本人へ移さない（隔離済みなら再検出しない）",
+        "target": "AUTH-09"
+      },
+      {
+        "when": "WREC本人postのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+        "target": "POST-07"
+      },
+      {
+        "when": "WREC本人profileのtrusted terminal closed_unsaved reason=rejected、現在本人/用途一致、当該結果を本人が確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+        "target": "AUTH-14"
+      },
+      {
+        "when": "WRECのtrusted terminal closed_unsaved reason=user_cancelled、現在owner/project/用途一致、本人が当該結果を確認する。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+        "target": "CLOSED-01"
+      },
+      {
+        "when": "現在Auth本人/通常用途/owner-project-profile typed key一致、WREC trusted committed successを確認済み、現在own users readが未成立/0行/不可視。保存成功と現在値readを別観測し、当該pending UIはterminal規則で終了。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+        "target": "AUTH-16",
+        "display_variant": "WREC-profile-success-current-read-unavailable"
+      },
+      {
+        "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象許可read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+        "target": "POST-05"
+      },
+      {
+        "when": "同owner/project/通常用途のWREC post trusted success、本人が当該未確認履歴の結果を確認、対象表示不可、EXIT05条件成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+        "target": "RESULT-01"
+      },
+      {
+        "when": "同owner/project/通常用途のWREC profile trusted success、本人が当該未確認履歴の結果を確認、現在own users read成立。採用実測済みWREC、当該owner/project/操作種/typed keyとcommit済み結果の一致を確認",
+        "target": "AUTH-05"
+      },
+      {
+        "when": "現在Auth本人確認済み・通常用途、同一ownerのR1等確認済み・対象利用不可の未完contextが残る、新規作成/送信を再開しない",
+        "target": "RESULT-01",
+        "delegated_route": "未採用EXIT-05/RESULT-01候補。同owner/通常用途の信頼した成功記録を確認し、最小結果を表示。本人が閉じるまでPOST-01を開かず、未確認POST-03/04で代用しない。閉じても原記録/usedkeyを保持。",
+        "adoption_guard": "EXIT-05 and OP/RET adopted/measured, exact trusted same-owner success; never unknown-save"
+      },
+      {
+        "when": "現在Auth本人/通常用途・owner/project/post typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信本文/通常章より先に当該操作を確認する",
+        "target": "POST-03"
+      },
+      {
+        "when": "現在Auth本人/通常用途・owner/project/profile typed key一致、正常本人履歴または端末記録の登録応答不明/終了未確認reserved/開始有無不明。未送信設定/通常章より先に当該操作を確認する",
+        "target": "AUTH-11"
+      },
+      {
+        "when": "現在Auth本人/通常用途を確認、同本人の投稿未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+        "target": "POST-03"
+      },
+      {
+        "when": "現在Auth本人/通常用途を確認、同本人の設定保存未確認contextを手動照合（本人変更で隔離済みでも、保持条件内で元owner/通常用途へ戻れば手動照合・自動再送なし）",
+        "target": "AUTH-11"
+      },
+      {
+        "when": "現在Auth本人/通常用途を確認、採用WREC対象。正常本人server履歴のscope/全ページ/消去/版移行を含む網羅性をまだ信頼確認できない。先行する当該trusted terminal結果は表示してよいが、この未確認を新key保存へ通さない",
+        "target": "RESUME-01",
+        "adoption_guard": "正常本人権限でserver履歴を再構成/照合。空一覧だけで未知要求なしとしない。新規保存停止、非private中断。既知操作の結果確認は手動、旧本人へ情報を漏らさない"
+      },
+      {
+        "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、140〜160導入・170未導入、入力表示・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+        "target": "POST-01"
+      },
+      {
+        "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信本文context、170以後導入、入力保持・自動送信なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+        "target": null,
+        "delegated_route": "既存全IAの元の投稿入力画面（履歴なしは当該章の安全な内部入口）"
+      },
+      {
+        "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、120以後導入、own users読取未成立/0行/不可視、入力保持。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+        "target": "AUTH-16"
+      },
+      {
+        "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信初回設定context、120以後導入、own users読取で設定未完を確定、入力表示・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+        "target": "AUTH-04"
+      },
+      {
+        "when": "本人変更による隔離済み未送信contextではない、現在Auth本人確認済み・通常用途、同一ownerの未送信設定context、own users読取で設定完了を確定、入力保持・自動保存なし。採用WREC対象は先行するserver履歴網羅性を確認済みで未確認操作なし。当該入力が未送信と信頼確認でき、登録応答不明/終了未確認reserved/開始不明を含まない",
+        "target": null,
+        "delegated_route": "既存全IAの導入済み編集入力画面。編集未導入の120では保存済みの確認欄だけをAUTH-05へ表示し、保持入力は非表示で保持、勝手に初回設定へ戻さない"
+      },
+      {
+        "when": "通常用途を確認、確認済み現在本人、110のみ導入。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+        "target": "AUTH-07"
+      },
+      {
+        "when": "通常用途を確認、確認済み現在本人、120以後導入、users設定読取未成立/0行/不可視。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+        "target": "AUTH-16"
+      },
+      {
+        "when": "通常用途を確認、確認済み現在本人、120以後導入、own users読取で設定未完を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+        "target": "AUTH-04"
+      },
+      {
+        "when": "通常用途を確認、確認済み現在本人、120まで導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+        "target": "AUTH-05"
+      },
+      {
+        "when": "通常用途を確認、確認済み現在本人、140〜160導入済み・170未導入、own users読取で設定完了を確定。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+        "target": "PROFILE-01"
+      },
+      {
+        "when": "通常用途を確認、確認済み現在本人、130のみ導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+        "target": null,
+        "delegated_route": "既存全IAの130プロフィール（140投稿入口なし）"
+      },
+      {
+        "when": "通常用途を確認、確認済み現在本人、170以後導入、設定完了を読取確認。採用WREC対象はserver履歴の網羅性を確認済み、未確認操作なし。入力contextがなくても既存章/read条件で通常入口へ進める。未送信入力の証明は入力復帰分岐だけに要する",
+        "target": null,
+        "delegated_route": "既存全IAの導入済み本人入口"
+      }
+    ],
+    "rules": "Auth一時不明/無効/未ログイン確定/確認前/用途違い/未処理本人変更を通常復帰より先に分類。本人変更の旧未送信入力は一時隔離し元本人に戻っても自動復元/再送なし、明示復元/寿命は別採否。送信/保存開始済み結果未確認contextは旧ownerに結び付けたまま隔離し、新本人へ表示/再送しない。保持条件の範囲内で元本人が通常用途へ戻った場合はPOST-03/AUTH-11で手動照合、自動再送なし。pending contextは確認済み現在本人との一致/通常用途を確認後だけ扱う。users読取失敗は未設定ではない。分類中mutationなし。 本人変更で隔離済み未送信contextは明示復元採否まで非表示・未送信復帰分岐の対象外とし、現在本人の通常章入口へ。開始済みpendingは同じ隔離flagでも元owner復帰時に手動照合する。 sessionなし自体を無効としない。元contextにsessionが実在した無効確定はAUTH-06、実在sessionがなく未ログイン確定はAUTH-03。進行中Auth要求は重複送信せず、不明の分類を保持。 共通の無効/未ログインで通常loginへ戻すのは通常用途contextだけ。既知recovery用途を通常loginへ一括転送しない。Auth03/12の追跡Auth要求は同じ状態で送信disabledに留め、確定応答の3分類を失わない。 投稿未確認/結果未確認contextは保存結果自体が未確認のものだけを指し、R1等の保存完了確認済み・対象利用不可の未完contextを含まない。後者は別の確認済み結果として保持し、全復帰/新規作成/副操作入口で未確認より先にEXIT-05/RESULT-01候補へ。採用・実測前にPOST-01を利用可能とせず、未確認の案内で代用しない。 採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
+    "server_history_guard": "採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
+    "discovery_order": "共通Auth/用途/本人guard後に正常本人server履歴と端末記録を照合し、trusted terminal→未確認登録/予約/保存→未送信/通常章を分類する。履歴取得不能でも既知trusted terminalの表示を隠さず、新保存の許可は別に停止する。"
+  },
+  "submission_boundary_contract": {
+    "before_dispatch": "Auth/用途/本人guardと入力validationを先行し、要求開始前と確実に判定できる停止だけ未送信contextを保持。 採用WREC対象は正常本人server履歴の網羅性と未確認操作を先に確認する。登録返答不明/終了未確認reserved/開始不明は未送信へ分類しない。端末未dispatch証拠は端末限定案内だけで全経路未開始とはしない。",
+    "after_dispatch": "要求を開始する直前にcaptured入力owner/contextと送信開始済み・結果未確認phaseを結び付ける。開始済み/到達不明からAuth無効/一時不明/本人変更/用途違いへ中断しても、未送信へ戻さない。",
+    "resume": "採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。 同本人/通常用途に戻ったら、投稿の送信開始済み未確認はPOST-03、設定保存開始済み未確認はAUTH-11を章/未送信入力より先に判定。別本人には旧contextを隔離して表示/再送しない。",
+    "settle": "WREC予約を持つ操作では同owner/project/typed keyのlock内でcommit済みsuccessまたはclosed_unsavedをtrusted観測した後だけ当該pending UIを終了。確定拒否もclosed_unsaved(reason=rejected)commit確認が必要。rollback/closure返答不明/Authや制限の非terminal事象はpending維持。non-WREC/legacyは原採用済み終了条件に従い遡及しない。 当該同owner/contextの採用済み照合で結果と採用した終了条件まで確定した場合のみ当該pending UIを解除。R1等の確認済み/対象利用不可は採用済みEXIT-05のRESULT-01へ分類し、本人が閉じた時だけ当該pending UIを終了する候補。遅延結果を他人へ表示/別contextに適用しない。操作照合記録やusedkeyは削除しない。 非WREC/legacyに限り、原採用済みの当該同owner/contextの信頼した確定拒否で保存不成立を確認できた場合も、当該pending UIだけを解除する。結果不明/単なる通信エラーでは解除しない。操作履歴/usedkeyは保持し、元要求を未送信へ巻き戻さない。入力は次の編集候補として保持し、再送を本人が選ぶ場合は新しい操作として扱う（旧key再利用/自動送信なし、既存guard/拒否制限を引き継ぐ）。 POST-05、またはR2採用時のPOST-06として当該操作の終了条件を確定した場合、その操作で保持していた本文を新しい投稿の未送信入力へ自動継承しない。元contextだけを終了し、次の新規POST-01は空欄で開く。R1等の確認済み/対象利用不可はEXIT-05/RESULT-01の採用・実測後、本人が閉じた時だけ元pending UIを終了し、次のPOST-01は空欄にする。他contextの入力を消さず、receipt/usedkeyは保持。拒否確定後の編集候補保持とは区別する。",
+    "boundary": "設計のphase契約だけで、送信/DB/保持寿命/照合の実装・実測ではない。",
+    "auth_request_boundary": "preUID Auth journal separate from owner-bound mutation record; no passwords/tokens/secret URLs; explicit purpose-based confirmation after unknown, no auto replay; EXIT-07 distinct from EXIT-06",
+    "unresolved_suspend": "Unknown remains unknown; same-op reconciliation and normal-owner server discovery are adoption/readiness prerequisites; no unknown-to-failure or automatic fresh-key path. 採用WRECではserver履歴網羅性の確認をlocal未送信/通常章より先に行い、登録不明/終了未確認reservedを旧入力へ戻さない。",
+    "profile_reconstruction": "Separate typed profile history proposed in WREC-01, not post receipt. Current users state alone is not causal proof of lost save request.",
+    "same_operation_recovery": "Under adopted/measured WREC-01, explicit frozen same-key/input retry or lock-linearized fence can settle an unknown operation. Never automatically resend or roll unknown into a fresh-key operation.",
+    "WREC_terminal_precedence": "WREC予約を持つ操作では同owner/project/typed keyのlock内でcommit済みsuccessまたはclosed_unsavedをtrusted観測した後だけ当該pending UIを終了。確定拒否もclosed_unsaved(reason=rejected)commit確認が必要。rollback/closure返答不明/Authや制限の非terminal事象はpending維持。non-WREC/legacyは原採用済み終了条件に従い遡及しない。",
+    "reservation_unknown": "未開始を確かめた同一端末経路だけ: この端末からは、まだ保存要求を送っていません。同じ操作の状態を確認しています。再起動/記録喪失後は未送信を断言せず結果確認へ。",
+    "new_key_admission": "正常本人server履歴の網羅性を確認し、未確認操作なしを信頼確認する。登録/予約の新keyを作る前にserverで同owner/projectのadmission判定と予約確定を競合経路に対し原子的に行う追加契約候補。全new-key writerは同じ入口へ統一し、事前client readだけでは許可しない。採用方式の排他/transaction/lock順序と再起動/複数端末競合を原04/05/06/08採否と実測へ返す。既存API/SQLではない。 網羅性/未確認操作なし/当該new-key admissionの成立を信頼確認できなければRESUME-01/当該結果確認へ。旧未確認を失敗扱いせず、新keyを自動再作成しない。",
+    "new_key_admission_phase": "PROFILE01/POST05/CLOSED01/RESULT01からの新規入力選択は空欄の入力画面への遷移だけ。key/admission/予約を作らず元入力を複製しない。POST01の投稿、AUTH04の保存を本人が明示選択し、validation/Auth/用途/本人を確認して比較入力と画像/revisionを凍結した時点で、当該keyのadmissionと予約を一度だけ原子的に確認する。 登録要求開始後の返答不明/遅延応答は元keyに固定し、new-key分岐へ戻さない。"
+  },
+  "whole_design_extension": {
+    "version": "whole-design-v7",
+    "native_path": "material/decisions/20261004-SNS教材の設計判断パッケージ.md",
+    "scope": "whole-design-v7: EXIT-01..07/WREC, base26 +3 extension candidates",
+    "precedence": "v7 conditional adopted contracts replace unresolved exits; Auth/purpose/owner guards and WREC terminal precedence come first. No adoption/runtime readiness.",
+    "existing_state_count": 26,
+    "added_candidate_variants": [
+      "RESUME-01",
+      "RESULT-01",
+      "CLOSED-01"
+    ],
+    "implementation_ready": false,
+    "new_intent_alternative": {
+      "adopted": false,
+      "enabled": false,
+      "not_first_candidate": true,
+      "risk": "different keys may duplicate same content; OP-13 and original requirements need explicit adoption/reapproval"
+    },
+    "WREC-01": {
+      "status": "unassigned original contract candidate; no existing API or implementation",
+      "typed_operations": [
+        "post_save",
+        "profile_save"
+      ],
+      "before_save": "normal-owner server reservation confirmed; no save dispatch before registration proof",
+      "recovery": "explicit exact same-key/input retry under adopted lock or lock-linearized success/closed-unsaved fence",
+      "client_loss": "private normal-owner unacknowledged server history incl confirmation marks; completeness/concurrency/purge/legacy migration measured before adoption",
+      "automatic_offline_queue": false,
+      "adopted": false,
+      "executed": false,
+      "linearization": "All reservation retries/save/fence/delayed/allowed DML or RPC paths share owner/project/typed-key lock and reread state. reserved -> success | closed_unsaved mutually exclusive irreversible. Terminal keys never reopened; legacy keys and mere absence reads cannot fence. A known typed key that is unregistered closes only when the owner explicitly terminates it (cancel-before-registration, B recovery plan adopted as version 3; conditions: keep minimal identity, revoke old writers, cap quota). DB receipt atomic with post/profile mutation; Storage separate.",
+      "pending_end": "WREC予約を持つ操作では同owner/project/typed keyのlock内でcommit済みsuccessまたはclosed_unsavedをtrusted観測した後だけ当該pending UIを終了。確定拒否もclosed_unsaved(reason=rejected)commit確認が必要。rollback/closure返答不明/Authや制限の非terminal事象はpending維持。non-WREC/legacyは原採用済み終了条件に従い遡及しない。",
+      "fence_input_requirement": "none: unknown registered reserved operation can be explicitly closed regardless of retained input. Under version 3, a known typed key with no server record can also be explicitly closed by the owner (cancel-before-registration). Retained exact input required only for retry.",
+      "closed_reason_enum": [
+        "user_cancelled",
+        "rejected"
+      ],
+      "terminal_targets": {
+        "closed_unsaved:rejected:post": "POST-07",
+        "closed_unsaved:rejected:profile": "AUTH-14",
+        "closed_unsaved:user_cancelled": "CLOSED-01",
+        "unknown": "元の結果未確認画面、terminal分類を先行"
+      },
+      "profile_success_read_unavailable": "AUTH-16 trusted-success variant; original save pending ended by terminal rule, current own users read remains unresolved; not AUTH-11 unknown",
+      "resume_and_before_new_save": "採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
+      "device_local_dispatch_evidence": "未開始を確かめた同一端末経路だけ: この端末からは、まだ保存要求を送っていません。同じ操作の状態を確認しています。再起動/記録喪失後は未送信を断言せず結果確認へ。",
+      "immediate_save_result_classification": "AUTH04/POST02のWREC個別分岐にtrusted terminal5 outcomesを先行。拒否/rollbackだけで終了せず、非WREC/legacyの旧個別行をWRECへ適用しない。",
+      "registration_recovery": "採用時は同typed key/同lockでの予約再試行・結果再読取の安全性と出口を実測。terminalを再openしない。単なる不存在read/legacyへfenceなし。既知typed keyの不存在は、本人が終了を明示した時だけ閉じる（B回復案）。key/context喪失時の回復は未設計。未採用では利用不可。",
+      "discovery_order": "共通Auth/用途/本人guard後に正常本人server履歴と端末記録を照合し、trusted terminal→未確認登録/予約/保存→未送信/通常章を分類する。履歴取得不能でも既知trusted terminalの表示を隠さず、新保存の許可は別に停止する。",
+      "new_key_admission": {
+        "scope": "採用実測済みWRECの新しいkeyによるpost_save/profile_saveを作る本人の明示操作前だけ。同keyの既知結果表示/明示回復、active要求待ち、単なる閲覧は別。",
+        "requirement": "正常本人server履歴の網羅性を確認し、未確認操作なしを信頼確認する。登録/予約の新keyを作る前にserverで同owner/projectのadmission判定と予約確定を競合経路に対し原子的に行う追加契約候補。全new-key writerは同じ入口へ統一し、事前client readだけでは許可しない。採用方式の排他/transaction/lock順序と再起動/複数端末競合を原04/05/06/08採否と実測へ返す。既存API/SQLではない。",
+        "unconfirmed": "網羅性/未確認操作なし/当該new-key admissionの成立を信頼確認できなければRESUME-01/当該結果確認へ。旧未確認を失敗扱いせず、新keyを自動再作成しない。",
+        "same_key_continuation": "POST01/AUTH04のsubmitで元入力をfreezeし予約を確認した後の当該keyだけが対象。new-key admissionを再実行せず、自身のreservedを未確認の他操作と混同しない。exact input/key/owner/purpose確認後に元lockでstate再読取、trusted terminal優先、reservedだけ一度保存。",
+        "adopted": false,
+        "executed": false,
+        "reservation_timing": "PROFILE01/POST05/CLOSED01/RESULT01からの新規入力選択は空欄の入力画面への遷移だけ。key/admission/予約を作らず元入力を複製しない。POST01の投稿、AUTH04の保存を本人が明示選択し、validation/Auth/用途/本人を確認して比較入力と画像/revisionを凍結した時点で、当該keyのadmissionと予約を一度だけ原子的に確認する。",
+        "submit_phases": [
+          "未送信の編集（key/予約なし）",
+          "本人のsubmit選択とvalidation/Auth確認、captured入力の固定",
+          "当該keyのadmission/予約要求（この時点から登録結果確認contextを保持）",
+          "登録返答不明なら保存未開始・照合/中断、元keyを保持し別keyを自動生成しない",
+          "登録成立を信頼確認した元のforeground要求だけ保存へ。同keyがreservedになった後はnew-key admissionを繰り返さない",
+          "登録不明phaseを経た遅延応答/再起動/元foreground終了後は自動保存せず、本人が同key続行を選び同入力/owner/用途/lock内stateを再確認する"
+        ]
+      }
+    },
+    "Web_logout_input_policy": {
+      "private_input": "remove and verify removal for local logout",
+      "minimal_metadata": "owner-bound non-content only, browser-profile inspection is outside UI isolation confidentiality guarantee",
+      "removal_failure": "nonprivate pause, no completed claim",
+      "adopted": false
+    }
+  },
+  "extension_entries": [
+    {
+      "id": "RESUME-01",
+      "title": "ここで中断できます",
+      "copy": "ここで中断できます。再開するときに現在の状態を確認します。",
+      "primary_action": "現在の状態を確認",
+      "state": "中断・現在状態は要確認",
+      "guard": "Auth本人不明時は本人名/本文/本人付き未確認保存操作の存在を表示しない。UID前の非秘密Auth要求の状態は現行の起点context/用途と表示許可を確認した時だけ条件付き案内。本人付きjournalは本人確認後のみ。mutation/自動再送なし。",
+      "target_candidates": [
+        {
+          "when": "Auth/purpose/identity verified",
+          "target": null,
+          "delegated_route": "confirmed_resume_contract: owned pending first, WREC-01 same-key retry/fence only if adopted/measured; no automatic replay"
+        },
+        {
+          "when": "registration request outcome unknown",
+          "target": "AUTH-10",
+          "delegated_route": "EXIT-07 purpose-specific confirmation, never classify as confirmed quota"
+        },
+        {
+          "when": "login/reset/confirmation request outcome unknown",
+          "target": null,
+          "delegated_route": "EXIT-07: preserve existing purpose-specific Auth state, normal login or recovery remains separate; no registration replay or false quota classification"
+        }
+      ],
+      "secondary_action": "中断を続ける",
+      "secondary_target": "RESUME-01",
+      "private_conditional_actions": [],
+      "adopted": false,
+      "executed": false,
+      "conditional_notices": [
+        {
+          "when": "known dispatched operation in a same-owner normal-purpose journal, or authorized nonsecret preUID request journal; display permission verified; never during pure read failure/unknown identity",
+          "copy": "中断しても、送った操作は取り消されません。",
+          "guard": "Do not expose existence of private mutations while Auth identity is unknown"
+        }
+      ]
+    },
+    {
+      "id": "RESULT-01",
+      "title": "保存操作は完了しています",
+      "copy": "投稿は今は表示できません。保存した操作の結果だけを表示しています。",
+      "primary_action": "閉じる",
+      "state": "保存確定・対象利用不可",
+      "guard": "verified current owner/normal purpose, trusted own success receipt for exact operation; EXIT-05/OP/RET adopted/measured; no raw input revival or deletion reason inference",
+      "target_candidates": [
+        {
+          "when": "current same owner/purpose guard passes; user closes",
+          "target": null,
+          "delegated_route": "introduced chapter safe own entry, pending UI for this operation only ended; new POST-01 blank when user separately chooses; server receipt/usedkey/history retained"
+        },
+        {
+          "when": "Auth/current owner unknown or changed",
+          "target": "RESUME-01",
+          "delegated_route": "hide private result, retain record bound to original owner; no close applied as new owner"
+        }
+      ],
+      "adopted": false,
+      "executed": false,
+      "condition": " 投稿post_save専用。profile成功の着地には流用しない。 新しい操作は本人が別途選択した時だけ、new_mutation_entry_contractを通す。旧操作を閉じただけで新保存を許可しない。 入力画面への移動では新key/admission/予約を作らず、実際のsubmit時にだけ固定入力で契約を実行する。",
+      "new_mutation_entry_contract_ref": "new_mutation_entry_contract",
+      "new_operation_target_candidates": [
+        {
+          "when": "本人が別の新規入力を明示選択、現在Auth/用途/本人と章入口を確認。保存要求はまだ開始しない",
+          "target": null,
+          "delegated_route": "postは空欄の入力画面へ、profileは現在値と別の明示編集へ。key/予約/admissionは作らず、POST01/AUTH04 submit時に元入力を固定してnew_mutation_entry_contractを実行する。旧入力を複製しない。"
+        }
+      ],
+      "new_mutation_entry_scope": "入力画面への移動は予約なし。submit時に契約を実行する。"
+    },
+    {
+      "id": "CLOSED-01",
+      "title": "保存せずに終了しました",
+      "copy": "この操作は保存せずに終了しました。",
+      "primary_action": "閉じる",
+      "state": "WREC未保存終了確認済み",
+      "guard": "WREC採用実測済み、現在本人/通常用途/owner-project-typed key一致、同lock内committed closed_unsaved(reason=user_cancelled)をtrusted観測。success/legacy/単なる不存在/応答不明/closure未commitの未登録をこの表示にしない。B回復案のcancel-before-registrationで閉じた既知keyは、commit済みtrusted receiptを観測した時だけこの表示にする。Storage bytesの不存在や自動削除を意味しない。",
+      "target_candidates": [
+        {
+          "when": "本人が閉じる、共通guard通過",
+          "target": null,
+          "delegated_route": "当該pending UIのみ終了、closed key/server履歴を保持。profileは導入済み現在設定/安全な章入口、postは既知本人入口へ。次の新投稿は本人が別途選ぶ新key/空欄。元入力を自動複製/復元しない。UI確認印の失敗でもterminal再openなし。"
+        },
+        {
+          "when": "現在Auth/本人不明または変更",
+          "target": "RESUME-01",
+          "delegated_route": "元ownerに保持し私的結果を非表示、別本人でcloseを適用しない"
+        }
+      ],
+      "adopted": false,
+      "executed": false,
+      "new_mutation_entry_contract_ref": "new_mutation_entry_contract",
+      "condition": " 新しい操作は本人が別途選択した時だけ、new_mutation_entry_contractを通す。旧操作を閉じただけで新保存を許可しない。 入力画面への移動では新key/admission/予約を作らず、実際のsubmit時にだけ固定入力で契約を実行する。",
+      "new_operation_target_candidates": [
+        {
+          "when": "本人が別の新規入力を明示選択、現在Auth/用途/本人と章入口を確認。保存要求はまだ開始しない",
+          "target": null,
+          "delegated_route": "postは空欄の入力画面へ、profileは現在値と別の明示編集へ。key/予約/admissionは作らず、POST01/AUTH04 submit時に元入力を固定してnew_mutation_entry_contractを実行する。旧入力を複製しない。"
+        }
+      ],
+      "new_mutation_entry_scope": "入力画面への移動は予約なし。submit時に契約を実行する。"
+    }
+  ],
+  "new_mutation_entry_contract": {
+    "scope": "採用実測済みWRECの新しいkeyによるpost_save/profile_saveを作る本人の明示操作前だけ。同keyの既知結果表示/明示回復、active要求待ち、単なる閲覧は別。",
+    "requirement": "正常本人server履歴の網羅性を確認し、未確認操作なしを信頼確認する。登録/予約の新keyを作る前にserverで同owner/projectのadmission判定と予約確定を競合経路に対し原子的に行う追加契約候補。全new-key writerは同じ入口へ統一し、事前client readだけでは許可しない。採用方式の排他/transaction/lock順序と再起動/複数端末競合を原04/05/06/08採否と実測へ返す。既存API/SQLではない。",
+    "unconfirmed": "網羅性/未確認操作なし/当該new-key admissionの成立を信頼確認できなければRESUME-01/当該結果確認へ。旧未確認を失敗扱いせず、新keyを自動再作成しない。",
+    "same_key_continuation": "POST01/AUTH04のsubmitで元入力をfreezeし予約を確認した後の当該keyだけが対象。new-key admissionを再実行せず、自身のreservedを未確認の他操作と混同しない。exact input/key/owner/purpose確認後に元lockでstate再読取、trusted terminal優先、reservedだけ一度保存。",
+    "adopted": false,
+    "executed": false,
+    "reservation_timing": "PROFILE01/POST05/CLOSED01/RESULT01からの新規入力選択は空欄の入力画面への遷移だけ。key/admission/予約を作らず元入力を複製しない。POST01の投稿、AUTH04の保存を本人が明示選択し、validation/Auth/用途/本人を確認して比較入力と画像/revisionを凍結した時点で、当該keyのadmissionと予約を一度だけ原子的に確認する。",
+    "submit_phases": [
+      "未送信の編集（key/予約なし）",
+      "本人のsubmit選択とvalidation/Auth確認、captured入力の固定",
+      "当該keyのadmission/予約要求（この時点から登録結果確認contextを保持）",
+      "登録返答不明なら保存未開始・照合/中断、元keyを保持し別keyを自動生成しない",
+      "登録成立を信頼確認した元のforeground要求だけ保存へ。同keyがreservedになった後はnew-key admissionを繰り返さない",
+      "登録不明phaseを経た遅延応答/再起動/元foreground終了後は自動保存せず、本人が同key続行を選び同入力/owner/用途/lock内stateを再確認する"
+    ]
+  }
+}

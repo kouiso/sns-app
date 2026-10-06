@@ -1,0 +1,61 @@
+{
+  "at_utc": "2026-10-04T03:50:11.139962+00:00",
+  "version": "candidate-v7-final-phase",
+  "status": "candidate_sync_applied_external_review_unavailable",
+  "external": {
+    "gemini": {
+      "receipt": {
+        "model": "gemini-3.8-flash",
+        "effort": "medium",
+        "started_at": "2026-10-04T03:45:57.970538+00:00",
+        "finished_at": "2026-10-04T03:47:12.492571+00:00",
+        "exit_code": 1,
+        "timed_out": false,
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "2b048add33a1f305a45dd29462d1bc91c5ce6ef13d9aa79ba233c7dbfc9ebdd3",
+        "prompt_sha256": "8b813f11f07e02db63c13110fc062b6d933b7bc1c8d5b16ffce72883bc9d61cd",
+        "isolation": "Read-only tool restriction and temporary HOME, not OS isolation or G6 proof"
+      },
+      "review_result": "not_obtained_empty_raw",
+      "error": "Error during droid execution: There was an issue with your request. Please switch to a different model and try again."
+    },
+    "claude": {
+      "receipt": {
+        "model": "claude-opus-5-5",
+        "effort": "medium",
+        "started_at": "2026-10-04T03:45:57.971203+00:00",
+        "finished_at": "2026-10-04T03:47:05.127202+00:00",
+        "exit_code": 1,
+        "timed_out": false,
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "fad8f66aeacbb10de2413f23cc9a2c5e9c8f4475be77c3d03ae85b15f5faebf2",
+        "prompt_sha256": "8b813f11f07e02db63c13110fc062b6d933b7bc1c8d5b16ffce72883bc9d61cd",
+        "isolation": "Read-only tool restriction and temporary HOME, not OS isolation or G6 proof"
+      },
+      "review_result": "not_obtained_empty_raw",
+      "error": "Error during droid execution: 402 {\"detail\":\"You've reached your weekly Droid Core usage limit (resets in 4 days).\\nReload Extra Usage credits or wait for your limits to reset.\",\"status\":402,\"title\":\"Payment Required\",\"displayToUser\":true}"
+    }
+  },
+  "native_review_status": "limited_phase_accept_mandatory0",
+  "master_sha256": "10fceaf6ec5b967a98d1b3cf536eb2820d9b0568b869cf909cb118c7297dceb9",
+  "screen_copy_sha256": "d8c1c73c651ddf625f42cdc62da7dd784cd9d64f55d48eac05d3ea23ed58f110",
+  "contracts_sha256": "134c8348ae095f5978c2300326ca3917632713e41641eaa8c15374afd58b4966",
+  "candidate_sync_applied": true,
+  "original_sync_applied": false,
+  "adopted": false,
+  "implementation_ready": false,
+  "goal_complete": false,
+  "fallback_inventory": {
+    "gemini_cli": "command -v exit1, absent from PATH",
+    "claude_cli": "2.1.280, auth status loggedIn false, firstParty",
+    "charged_usage_reload_authorized": false
+  },
+  "prior_reviews_not_reused_as_current_acceptance": true,
+  "updated_at_utc": "2026-10-04T03:58:42.366665+00:00",
+  "native_review_path": "material/evidence/20261004-whole-design/review-candidate-sync-v7-phase/gpt-independent-review.md",
+  "native_scope": "reservation phase synchronization only; previous findings maintained, not new full whole review",
+  "native_sha256": "9f17d25bccc1befb3a14a33c7fafe786b19d1debd5ffaba045c74527346668fb",
+  "final_external_review_status": "not_obtained; r3 failed before final phase repair, current final phase has no Gemini/Claude review",
+  "final_external_mandatory_counts": null,
+  "optional_chapter_preference": "B32 first candidate retained; async user preference question has no received reply, not approval or measurement"
+}

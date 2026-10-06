@@ -1,0 +1,211 @@
+{
+  "version": "whole-design-v7",
+  "status": "consolidated_design_candidate_unadopted_unmeasured",
+  "design_packet_path": "material/decisions/20261004-SNS教材の設計判断パッケージ.md",
+  "source_hashes": {
+    "material/decisions/20261004-学習体験の推奨構成と採用条件.md": "2d93169dcc8600130c413133d50961104ce0a1241fd59b7d3514def0379c9688",
+    "material/decisions/20261004-章境界と開始終了復帰の比較案.md": "15b52076332ceac0da092652f0f86c44135f3b54751934d534c5dc41167770ad",
+    "material/decisions/20261004-学習の連続性と画面データ条件の接続案.md": "cf4ff4552c6da4e3876ceb46cef3f19d0803e34ff2277a3c5e3d0161fa2a7b09",
+    "material/evidence/20261004-learning-continuity/contracts.json": "415cefb53ae490841a3f8f644a7cc47b1221d7210c5e6ba28fc164106a7b6190",
+    "material/evidence/20261004-design-adoption/84-adoption-proposal-index.json": "9de2ad2641180ef78a6fed4c5b4929cc35b84230ec7fb954dcd083a6f67e8351",
+    "material/decisions/20261004-採用前条件と独学復帰の設計.md": "da707b76fab1971b5cf11cac070548b0d87a8def105861d22254ad25412aee82",
+    "material/decisions/20261004-投稿返答喪失と操作照合の設計案.md": "a7f84ba466fe0af4703a1f09011d3aafdbb7d9ce301d6977092ffe0ff7eeb377",
+    "material/evidence/20261004-auth-resource-binding/binding-contracts.json": "47bda10260404d137b1deef3b8000209732acf83789fb8279e4d3bf198a0307d",
+    "material/decisions/20261004-メール需要と相手役準備の設計案.md": "9a40c98d9b3e74d46147f5400f972ce6c0d415529b8e5ae94458487041451ecc",
+    "material/decisions/20261004-SNS全体の画面と復帰の設計案.md": "5f450853b24356a08bf6fe5ed99dab4f19182b88271c81cec37c53f43a3736ec",
+    "material/01_要件定義書.md": "ca7ac8fd8a447a4f813ce8b4597473f44ff15b433505e08ae8755b0d85574c61",
+    "material/03_基本設計書.md": "7eb96ef15094abf10c96af59dade0b165c3189ec0176e8a03df6eeeb50aa7b16",
+    "material/04_詳細設計書.md": "c297797c6534c1f692999ed970e3d0ac5319c59386d0904e797dd0a6dbc42037",
+    "material/05_DB設計書.md": "773a983bd3490a3bd09132baceab9912393c932a01c1692e93a6f165d9fa2e82",
+    "material/06_API設計書.md": "c801ca63b2f559de8a1a7d496cf973153bc2c34519948ceabd3342ba8f274e7a",
+    "material/08_テスト計画書.md": "5a6c20f348de4b7a213cf8bc35d388679694f4d997857bfde392b562116ec66a",
+    "material/10_教材制作フロー.md": "c1f03057e33f40301d9250867facfce7feeb896321c615c5584d3b25dc0a7a27",
+    "material/11_ターゲット・ペルソナ・UX定義.md": "c8617b90ac7fe8b6ce607bdb67869004dabe9729c6204c052770390bda50d0d8",
+    "material/16_決定バックログ.md": "33b1459e8353871a22e9a3a9f8ac21d2aa9579069f6619351e43bf104db12cb8",
+    "material/18_章分割表.md": "1b5ab0cd34e3943de3d8123f548d703d44e42a6bc964c6465c4803eabbdc98d0",
+    "material/15_カリキュラム骨子案.md": "1121666ae5187df74c6e05bed32c63044bfa8ba4a3fcfcec6da021b1c386fd8b",
+    "material/14_マスターロードマップ.md": "343fa79970d4e542f3ddf47f93fc95531c737a1c98bca17f89d48d3c54f6964b",
+    "material/12_文体・AI臭さ排除方針.md": "98b9c2062c819689c6d3499a124b781106b8ef0f140c4de9214264e21a8a74c7",
+    "DESIGN.md": "81d6505b49efe3936e74c959bb5dba86dff8b971cd795c199df88ff40211f6f3"
+  },
+  "primary_variant": "B32",
+  "original_chapter_count": 31,
+  "candidate_chapter_count": 32,
+  "original_fr_ids": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "existing_state_count": 26,
+  "exit_contracts": {
+    "AUTH-08": "EXIT-01",
+    "AUTH-16": "EXIT-01",
+    "AUTH-11": "EXIT-02",
+    "AUTH-14": "EXIT-03",
+    "POST-03": "EXIT-04",
+    "POST-04": "EXIT-04",
+    "AUTH-15": "EXIT-06",
+    "AUTH-17": "EXIT-06",
+    "AUTH-18": "EXIT-06",
+    "R1-target-null": "EXIT-05",
+    "AUTH-10": "EXIT-07",
+    "Auth-request-outcome-unknown": "EXIT-07"
+  },
+  "new_candidate_variants": [
+    "RESUME-01",
+    "RESULT-01",
+    "CLOSED-01"
+  ],
+  "exit_contract_ids": [
+    "EXIT-01",
+    "EXIT-02",
+    "EXIT-03",
+    "EXIT-04",
+    "EXIT-05",
+    "EXIT-06",
+    "EXIT-07"
+  ],
+  "retention_categories": [
+    "private_input",
+    "local_resume_metadata",
+    "server_receipt_usedkey",
+    "preUID_nonsecret_Auth_request_limit_journal"
+  ],
+  "whole_goal_required_domains": 12,
+  "adopted": false,
+  "implementation_ready": false,
+  "runtime_measured": false,
+  "goal_complete": false,
+  "old_limited_review_scope": "historical snapshots, not current whole-design agreement",
+  "visual_candidates": {
+    "primary_navigation": [
+      "timeline",
+      "search",
+      "notifications",
+      "own_profile"
+    ],
+    "progressive_chapter_enable": true,
+    "font_body_candidate": 16,
+    "font_heading_candidate": 24,
+    "spacing_candidates": [
+      4,
+      8,
+      16,
+      24
+    ],
+    "contrast_ratio_candidate": 4.5,
+    "units_and_device_validation": "unadopted/unmeasured per platform",
+    "certified_accessibility": false,
+    "touch_extent_candidates": {
+      "iOS": {
+        "value": 44,
+        "unit": "pt"
+      },
+      "Android": {
+        "value": 48,
+        "unit": "dp"
+      },
+      "Web": {
+        "comparison": "WCAG 2.2",
+        "numeric_equivalence_to_native": false
+      }
+    }
+  },
+  "unknown_result_contract": {
+    "phase": "unknown_suspended_without_result_reclassification",
+    "old_result_unchanged": true,
+    "fresh_intent": "not first candidate; alternative requires explicit original adoption/reapproval for duplicate-risk difference",
+    "lost_client_metadata": "normal-owner server discovery/reconciliation adoption and measurement required before release; no client-only detection, fake all-clear or duplicate-zero claim",
+    "adopted": false,
+    "same_operation_recovery": "WREC-01 adopted/measured exact same-key/input explicit retry or lock-linearized closed-unsaved fence; no automatic/fresh-key replay"
+  },
+  "preUID_Auth_contract": {
+    "owner_nullable": true,
+    "password_token_secret_URL_retained": false,
+    "journal_separate_from_owner_mutation": true,
+    "server_limit_authoritative": true,
+    "automatic_replay": false,
+    "adopted": false
+  },
+  "original_decision_proposals": {
+    "status": "unassigned candidates, not extra adopted B-IDs or additions to the existing 84",
+    "table": "master whole-design-v7 original-backlog proposal table",
+    "deadline": "before P1/G1",
+    "cost_scope": "B50 concept/first-result and D4 full PR-through-G6"
+  },
+  "WREC-01": {
+    "status": "unassigned original contract candidate; no existing API or implementation",
+    "typed_operations": [
+      "post_save",
+      "profile_save"
+    ],
+    "before_save": "normal-owner server reservation confirmed; no save dispatch before registration proof",
+    "recovery": "explicit exact same-key/input retry under adopted lock or lock-linearized success/closed-unsaved fence",
+    "client_loss": "private normal-owner unacknowledged server history incl confirmation marks; completeness/concurrency/purge/legacy migration measured before adoption",
+    "automatic_offline_queue": false,
+    "adopted": false,
+    "executed": false,
+    "linearization": "All reservation retries/save/fence/delayed/allowed DML or RPC paths share owner/project/typed-key lock and reread state. reserved -> success | closed_unsaved mutually exclusive irreversible. Terminal keys never reopened; legacy keys and mere absence reads cannot fence. A known typed key that is unregistered closes only when the owner explicitly terminates it (cancel-before-registration, B recovery plan adopted as version 3; conditions: keep minimal identity, revoke old writers, cap quota). DB receipt atomic with post/profile mutation; Storage separate.",
+    "pending_end": "WREC予約を持つ操作では同owner/project/typed keyのlock内でcommit済みsuccessまたはclosed_unsavedをtrusted観測した後だけ当該pending UIを終了。確定拒否もclosed_unsaved(reason=rejected)commit確認が必要。rollback/closure返答不明/Authや制限の非terminal事象はpending維持。non-WREC/legacyは原採用済み終了条件に従い遡及しない。",
+    "fence_input_requirement": "none: unknown registered reserved operation can be explicitly closed regardless of retained input. Under version 3, a known typed key with no server record can also be explicitly closed by the owner (cancel-before-registration). Retained exact input required only for retry.",
+    "closed_reason_enum": [
+      "user_cancelled",
+      "rejected"
+    ],
+    "terminal_targets": {
+      "closed_unsaved:rejected:post": "POST-07",
+      "closed_unsaved:rejected:profile": "AUTH-14",
+      "closed_unsaved:user_cancelled": "CLOSED-01",
+      "unknown": "元の結果未確認画面、terminal分類を先行"
+    },
+    "profile_success_read_unavailable": "AUTH-16 trusted-success variant; original save pending ended by terminal rule, current own users read remains unresolved; not AUTH-11 unknown",
+    "resume_and_before_new_save": "採用WREC対象では共通Auth/用途/本人guardの後、正常本人server履歴と端末記録を照合する。trusted terminal先行、終了未確認のreserved/登録不明/開始不明を未送信と通常章より先行。網羅性未確認は新しい保存を止めRESUME01/結果確認へ。空一覧だけで未確認なしとせず、別端末/再起動/記録喪失も同じ。",
+    "device_local_dispatch_evidence": "未開始を確かめた同一端末経路だけ: この端末からは、まだ保存要求を送っていません。同じ操作の状態を確認しています。再起動/記録喪失後は未送信を断言せず結果確認へ。",
+    "immediate_save_result_classification": "AUTH04/POST02のWREC個別分岐にtrusted terminal5 outcomesを先行。拒否/rollbackだけで終了せず、非WREC/legacyの旧個別行をWRECへ適用しない。",
+    "registration_recovery": "採用時は同typed key/同lockでの予約再試行・結果再読取の安全性と出口を実測。terminalを再openしない。単なる不存在read/legacyへfenceなし。既知typed keyの不存在は、本人が終了を明示した時だけ閉じる（B回復案）。key/context喪失時の回復は未設計。未採用では利用不可。",
+    "discovery_order": "共通Auth/用途/本人guard後に正常本人server履歴と端末記録を照合し、trusted terminal→未確認登録/予約/保存→未送信/通常章を分類する。履歴取得不能でも既知trusted terminalの表示を隠さず、新保存の許可は別に停止する。",
+    "new_key_admission": {
+      "scope": "採用実測済みWRECの新しいkeyによるpost_save/profile_saveを作る本人の明示操作前だけ。同keyの既知結果表示/明示回復、active要求待ち、単なる閲覧は別。",
+      "requirement": "正常本人server履歴の網羅性を確認し、未確認操作なしを信頼確認する。登録/予約の新keyを作る前にserverで同owner/projectのadmission判定と予約確定を競合経路に対し原子的に行う追加契約候補。全new-key writerは同じ入口へ統一し、事前client readだけでは許可しない。採用方式の排他/transaction/lock順序と再起動/複数端末競合を原04/05/06/08採否と実測へ返す。既存API/SQLではない。",
+      "unconfirmed": "網羅性/未確認操作なし/当該new-key admissionの成立を信頼確認できなければRESUME-01/当該結果確認へ。旧未確認を失敗扱いせず、新keyを自動再作成しない。",
+      "same_key_continuation": "POST01/AUTH04のsubmitで元入力をfreezeし予約を確認した後の当該keyだけが対象。new-key admissionを再実行せず、自身のreservedを未確認の他操作と混同しない。exact input/key/owner/purpose確認後に元lockでstate再読取、trusted terminal優先、reservedだけ一度保存。",
+      "adopted": false,
+      "executed": false,
+      "reservation_timing": "PROFILE01/POST05/CLOSED01/RESULT01からの新規入力選択は空欄の入力画面への遷移だけ。key/admission/予約を作らず元入力を複製しない。POST01の投稿、AUTH04の保存を本人が明示選択し、validation/Auth/用途/本人を確認して比較入力と画像/revisionを凍結した時点で、当該keyのadmissionと予約を一度だけ原子的に確認する。",
+      "submit_phases": [
+        "未送信の編集（key/予約なし）",
+        "本人のsubmit選択とvalidation/Auth確認、captured入力の固定",
+        "当該keyのadmission/予約要求（この時点から登録結果確認contextを保持）",
+        "登録返答不明なら保存未開始・照合/中断、元keyを保持し別keyを自動生成しない",
+        "登録成立を信頼確認した元のforeground要求だけ保存へ。同keyがreservedになった後はnew-key admissionを繰り返さない",
+        "登録不明phaseを経た遅延応答/再起動/元foreground終了後は自動保存せず、本人が同key続行を選び同入力/owner/用途/lock内stateを再確認する"
+      ]
+    }
+  },
+  "Web_logout_input_policy": {
+    "private_input": "remove and verify removal for local logout",
+    "minimal_metadata": "owner-bound non-content only, browser-profile inspection is outside UI isolation confidentiality guarantee",
+    "removal_failure": "nonprivate pause, no completed claim",
+    "adopted": false
+  },
+  "profile_operation_reconstruction": "Separate120 typed history; pending ends on trusted terminal only; matching current users values alone is informational, never old operation success.",
+  "candidate_sync_delta_source": {
+    "path": "material/decisions/20261004-保存前確認と復帰方式の採否補足.md",
+    "sha256": "7a185531cf75a6d108350b64805081f79a6237410ac8b5d283e513ddff3c6753",
+    "candidate_applied": true,
+    "original_documents_applied": false,
+    "adopted": false
+  }
+}
