@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "scope": "NON_FORMAL_D4_CHAPTER_BUILD_START",
+  "formal_start_frozen": false,
+  "start_snapshot_sha256": "9d6d508750d8341faf5a3ac7cd05434ba1c181ef127d8dbfa932b3e28fff99d5",
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "1881c001e12124438c66b1a18d3a7a445bfc8b812eba059cb58322d3b15d210b"
+    },
+    {
+      "path": "App.tsx",
+      "sha256": "31a1deb465120c77dbd1fcd0f38ab0b21b3adf35e1474f0801a5492b21617b20"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4"
+    },
+    {
+      "path": "README.md",
+      "sha256": "fe90bbb32d9950d86d1d43c5720f3c7a2608bf67a3de585cd6cea5c44c1c3a52"
+    },
+    {
+      "path": "app.json",
+      "sha256": "df140513c93f2e8a1de76a39b4873d48f90d6c5d02b576417dfe17c0663ec235"
+    },
+    {
+      "path": "assets/android-icon-background.png",
+      "sha256": "fb139c2dee362ebf2070e23b96da6fc0d43f8492de38b8af1fd7223e19b5861d"
+    },
+    {
+      "path": "assets/android-icon-foreground.png",
+      "sha256": "9e3d0315a33c6799de601dd34cd8bf8cc3a8d16f3bf75592baec2ceb7240b391"
+    },
+    {
+      "path": "assets/android-icon-monochrome.png",
+      "sha256": "6371fc2c12e33ad2215a86c281db3d682a81bebe7c957a842c13b8bf00cceb83"
+    },
+    {
+      "path": "assets/favicon.png",
+      "sha256": "a4e030697a7571b3e95d31860e4da55d2f98e5e861e2b55e414f45a8556828ba"
+    },
+    {
+      "path": "assets/icon.png",
+      "sha256": "119462bb78eb240a65c869fc067ee599639b3cb5a41953f25c07b17d2a8c7e0f"
+    },
+    {
+      "path": "assets/splash-icon.png",
+      "sha256": "5f4c0a732b6325bf4071d9124d2ae67e037cb24fcc9c482ef82bea742109a3b8"
+    },
+    {
+      "path": "index.ts",
+      "sha256": "5c157f4d44972d9c84415e1e4bda595b3abcd8cf733f8a9cd20935bec3eccc42"
+    },
+    {
+      "path": "lib/auth-return.d.ts",
+      "sha256": "603228cac4fad96536a899d072ae3cc576522e348362b6db96bec41770bc8294"
+    },
+    {
+      "path": "lib/auth-return.mjs",
+      "sha256": "aed7c2c4bb4ff3f1edbe2660afc519f91ccb4a1c5cc9b18551f97fed5f851af3"
+    },
+    {
+      "path": "lib/supabase.ts",
+      "sha256": "60ace0c65618fd07a5eedac811b504e01650b62d1037328ffd8abff9ea626b7e"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "58eecbeea31f7381d5999a69f5107af2b6fb2c8c37685a0eff8e85eeed381035"
+    },
+    {
+      "path": "package.json",
+      "sha256": "8b961dc2f432ec1f4c53420ca8ef751d6e4e1813ac015ab934306ede87fe4bb0"
+    },
+    {
+      "path": "test-auth-return.mjs",
+      "sha256": "b0b13ae0af5d8610a5b4b1399fe7363c4efea3ac5e41a765bee3aee006d7a620"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "712583ff9cdb4b4e4f9b000a4a56d68db8dc1921cbfbc36d490a3a9f2be3dd72"
+    }
+  ],
+  "contains_rls_trial": false,
+  "inherited_auth_app_sha256": "31a1deb465120c77dbd1fcd0f38ab0b21b3adf35e1474f0801a5492b21617b20",
+  "source": "auth-sdk57 tracked predecessor19 only"
+}

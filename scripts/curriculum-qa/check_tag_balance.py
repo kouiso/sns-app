@@ -169,7 +169,10 @@ def scan_tags(code: str, *, jsx: bool = True) -> tuple[Counter, Counter]:
 
 
 def find_unclosed(
-    paths: list[Path], *, provided: frozenset[str] = frozenset()
+    paths: list[Path],
+    *,
+    provided: frozenset[str] = frozenset(),
+    provided_paths: frozenset[str] | None = None,
 ) -> list[tuple[str, str, list[str]]]:
     """(書き込み先, 閉じられていないタグ名, そのタグを開いている単位) を返す。
 
@@ -188,6 +191,8 @@ def find_unclosed(
     provided は開始状態が最初から配るファイルの一覧。読者が写経していない行が
     既に手元に在るため、教材のブロックだけを見ても収支は判定できない。
     """
+    if provided_paths is not None:
+        provided = provided | provided_paths
     hits: list[tuple[str, str, list[str]]] = []
     for target, blocks in sorted(concat_by_file(paths).items()):
         if target in provided:

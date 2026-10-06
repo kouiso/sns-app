@@ -1,0 +1,26 @@
+{
+  "source_commit": "946a88545ff9e6239e02f1f9d9d7714effafead9",
+  "source_candidate": "auth-sdk57",
+  "files": {
+    ".gitignore": "1881c001e12124438c66b1a18d3a7a445bfc8b812eba059cb58322d3b15d210b",
+    "App.tsx": "31a1deb465120c77dbd1fcd0f38ab0b21b3adf35e1474f0801a5492b21617b20",
+    "LICENSE": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4",
+    "README.md": "fe90bbb32d9950d86d1d43c5720f3c7a2608bf67a3de585cd6cea5c44c1c3a52",
+    "app.json": "df140513c93f2e8a1de76a39b4873d48f90d6c5d02b576417dfe17c0663ec235",
+    "assets/android-icon-background.png": "fb139c2dee362ebf2070e23b96da6fc0d43f8492de38b8af1fd7223e19b5861d",
+    "assets/android-icon-foreground.png": "9e3d0315a33c6799de601dd34cd8bf8cc3a8d16f3bf75592baec2ceb7240b391",
+    "assets/android-icon-monochrome.png": "6371fc2c12e33ad2215a86c281db3d682a81bebe7c957a842c13b8bf00cceb83",
+    "assets/favicon.png": "a4e030697a7571b3e95d31860e4da55d2f98e5e861e2b55e414f45a8556828ba",
+    "assets/icon.png": "119462bb78eb240a65c869fc067ee599639b3cb5a41953f25c07b17d2a8c7e0f",
+    "assets/splash-icon.png": "5f4c0a732b6325bf4071d9124d2ae67e037cb24fcc9c482ef82bea742109a3b8",
+    "index.ts": "5c157f4d44972d9c84415e1e4bda595b3abcd8cf733f8a9cd20935bec3eccc42",
+    "lib/auth-return.d.ts": "603228cac4fad96536a899d072ae3cc576522e348362b6db96bec41770bc8294",
+    "lib/auth-return.mjs": "aed7c2c4bb4ff3f1edbe2660afc519f91ccb4a1c5cc9b18551f97fed5f851af3",
+    "lib/supabase.ts": "60ace0c65618fd07a5eedac811b504e01650b62d1037328ffd8abff9ea626b7e",
+    "package-lock.json": "58eecbeea31f7381d5999a69f5107af2b6fb2c8c37685a0eff8e85eeed381035",
+    "package.json": "8b961dc2f432ec1f4c53420ca8ef751d6e4e1813ac015ab934306ede87fe4bb0",
+    "test-auth-return.mjs": "b0b13ae0af5d8610a5b4b1399fe7363c4efea3ac5e41a765bee3aee006d7a620",
+    "tsconfig.json": "712583ff9cdb4b4e4f9b000a4a56d68db8dc1921cbfbc36d490a3a9f2be3dd72"
+  },
+  "note": "Inherited tracked source only; D4 App differs and needs fresh verification. No build output or dependency copies."
+}

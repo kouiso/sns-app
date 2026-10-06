@@ -1,0 +1,140 @@
+{
+  "chapter_entries": [
+    {
+      "chapter": "chapter-expo-first-screen.md",
+      "controls": [
+        "controls/expo-first-screen/plain.md"
+      ],
+      "exercise_answers": "answers.md",
+      "experimental_controls": [
+        "controls/expo-first-screen/intro-ablation.experimental.md"
+      ],
+      "id": "expo-first-screen",
+      "prerequisites": [
+        "candidate folder contains the chapter and start-source side by side",
+        "destination is outside any parent Git repository and does not exist",
+        "Node.js is in candidate range 22.16.0 <= version < 23.0.0",
+        "npm, Git, editor, and SDK 57 compatible Expo Go are available"
+      ],
+      "start_source": "start-source",
+      "start_state_kind": "bootstrap"
+    },
+    {
+      "chapter": "chapter-live-reload.md",
+      "controls": [
+        "controls/live-reload/plain.md"
+      ],
+      "exercise_answers": "answers.md",
+      "expected_app": "completed-live/App.tsx",
+      "experimental_controls": [],
+      "id": "live-reload",
+      "prerequisites": [
+        "expo-first-screen completed from the shared start-source",
+        "npm dependencies installed from the fixed lockfile",
+        "SDK 57 project opened on the target device",
+        "all 14 provided start-source files committed in the initial Git commit",
+        "working tree clean and prior Metro process stopped",
+        "actual start HEAD to be captured by a future trusted controller"
+      ],
+      "start_source": "start-source",
+      "start_state_kind": "previous_chapter_completion"
+    }
+  ],
+  "claims": {
+    "beginner_flow_observed": false,
+    "formal_curriculum": false,
+    "formal_r2_available": false,
+    "g3_passed": false,
+    "g6_passed": false,
+    "sdk57_adopted": false
+  },
+  "file_sha256": {
+    "README.md": "bd58dcd36594cb562aefefe23de16ebd7d883faf1448afecd657a5532d3243d8",
+    "answers.md": "ba6e1a37caea82254867e536add05117bf75c58aaa492b52183110c7d3c47dce",
+    "chapter-expo-first-screen.md": "9405fc5221b0fad3a56a0e9f9be690256e88dd7af09bfd6220577c5ba2397283",
+    "chapter-live-reload.md": "a7c09d267dc001812c96495a349cca129c1fc2f8e48b693119b170507016dc74",
+    "completed-live/App.tsx": "fb927c6ef3ec31a6c6237f1e9454d7147bdb0605314edc7e0faa7efb504a4949",
+    "controls/expo-first-screen/intro-ablation.experimental.md": "97eeb4fdc1e5923db5a4f60ea3b1677c8520b5f7c3fb6710091c8ad8b006cb22",
+    "controls/expo-first-screen/plain.md": "aeb7a9a503ca0039b7ed42b322963eefcfa2080745d770e80560a9b41e33050b",
+    "controls/live-reload/plain.md": "4d7cdaf225fffb880dcee8de5908288a7d686681d643a526317dd3745b647c58",
+    "start-source/.gitignore": "5936b94a73a28b6735de672b54c2c058a33c9ae1edb62d87d6a4418e14447805",
+    "start-source/App.tsx": "5c7d8b989dc7a6a70e4a6be61ec95b1c5a1562e8a510efb3aa6b8cbe94033190",
+    "start-source/LICENSE": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4",
+    "start-source/app.json": "8c84324e2e1650a62a2b592a2e0b36668ec37965b02ae63dcfd12cdee9cd5be4",
+    "start-source/assets/android-icon-background.png": "fb139c2dee362ebf2070e23b96da6fc0d43f8492de38b8af1fd7223e19b5861d",
+    "start-source/assets/android-icon-foreground.png": "9e3d0315a33c6799de601dd34cd8bf8cc3a8d16f3bf75592baec2ceb7240b391",
+    "start-source/assets/android-icon-monochrome.png": "6371fc2c12e33ad2215a86c281db3d682a81bebe7c957a842c13b8bf00cceb83",
+    "start-source/assets/favicon.png": "a4e030697a7571b3e95d31860e4da55d2f98e5e861e2b55e414f45a8556828ba",
+    "start-source/assets/icon.png": "119462bb78eb240a65c869fc067ee599639b3cb5a41953f25c07b17d2a8c7e0f",
+    "start-source/assets/splash-icon.png": "5f4c0a732b6325bf4071d9124d2ae67e037cb24fcc9c482ef82bea742109a3b8",
+    "start-source/index.ts": "5c157f4d44972d9c84415e1e4bda595b3abcd8cf733f8a9cd20935bec3eccc42",
+    "start-source/package-lock.json": "ceaef42805134421829a322d114e5b12d46c6c450d2a4d8de2ee246bb357131d",
+    "start-source/package.json": "fa499830a8bf57bf29aadeab3261371684046ef496761b2add2e8271a511bc32",
+    "start-source/tsconfig.json": "712583ff9cdb4b4e4f9b000a4a56d68db8dc1921cbfbc36d490a3a9f2be3dd72"
+  },
+  "formal_start_frozen": false,
+  "manifest_self_hash": null,
+  "observations": {
+    "assembled_14_file_candidate_end_to_end": "unobserved",
+    "beginner_end_to_end_flow": "unobserved",
+    "classified_high_friction_beginner_items": 0,
+    "ios_local_network_permission": "observed_when_prompted_2026-10-03",
+    "ios_observed_expo_go_version": "57.0.9 build 1017880",
+    "ios_same_expo_account": "observed_2026-10-03",
+    "physical_android_qr_flow": "unobserved",
+    "technical_ios_sdk57_display_and_reload": "same_app_code_and_package_lock_observed_2026-10-03"
+  },
+  "phase0_approval_changed": false,
+  "provenance": {
+    "completed_live_app": {
+      "sha256": "fb927c6ef3ec31a6c6237f1e9454d7147bdb0605314edc7e0faa7efb504a4949",
+      "source_path": "prototype-chapter/listings/live-reload/App.tsx"
+    },
+    "sdk54_base": {
+      "note": "All start-source files except package.json and package-lock.json were copied from this tree.",
+      "path": "prototype-chapter/listings/expo-first-screen",
+      "worktree_revision": "8eaf95df2792861f37c0bc273efe7ed172b8ec42"
+    },
+    "sdk57_lock": {
+      "copied_exactly": true,
+      "package_json_sha256": "fa499830a8bf57bf29aadeab3261371684046ef496761b2add2e8271a511bc32",
+      "package_lock_json_sha256": "ceaef42805134421829a322d114e5b12d46c6c450d2a4d8de2ee246bb357131d",
+      "path": "prototype-chapter/listings/expo-first-screen",
+      "worktree_revision": "7f045458ecd2cd9157ffa3995fd63230a993a4ba"
+    }
+  },
+  "r2_status": "unavailable_until_classified_high_friction_exists",
+  "scope": "SDK57_A0_CANDIDATE_NON_FORMAL",
+  "shared_start_source": {
+    "file_count": 14,
+    "files": {
+      "start-source/.gitignore": "5936b94a73a28b6735de672b54c2c058a33c9ae1edb62d87d6a4418e14447805",
+      "start-source/App.tsx": "5c7d8b989dc7a6a70e4a6be61ec95b1c5a1562e8a510efb3aa6b8cbe94033190",
+      "start-source/LICENSE": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4",
+      "start-source/app.json": "8c84324e2e1650a62a2b592a2e0b36668ec37965b02ae63dcfd12cdee9cd5be4",
+      "start-source/assets/android-icon-background.png": "fb139c2dee362ebf2070e23b96da6fc0d43f8492de38b8af1fd7223e19b5861d",
+      "start-source/assets/android-icon-foreground.png": "9e3d0315a33c6799de601dd34cd8bf8cc3a8d16f3bf75592baec2ceb7240b391",
+      "start-source/assets/android-icon-monochrome.png": "6371fc2c12e33ad2215a86c281db3d682a81bebe7c957a842c13b8bf00cceb83",
+      "start-source/assets/favicon.png": "a4e030697a7571b3e95d31860e4da55d2f98e5e861e2b55e414f45a8556828ba",
+      "start-source/assets/icon.png": "119462bb78eb240a65c869fc067ee599639b3cb5a41953f25c07b17d2a8c7e0f",
+      "start-source/assets/splash-icon.png": "5f4c0a732b6325bf4071d9124d2ae67e037cb24fcc9c482ef82bea742109a3b8",
+      "start-source/index.ts": "5c157f4d44972d9c84415e1e4bda595b3abcd8cf733f8a9cd20935bec3eccc42",
+      "start-source/package-lock.json": "ceaef42805134421829a322d114e5b12d46c6c450d2a4d8de2ee246bb357131d",
+      "start-source/package.json": "fa499830a8bf57bf29aadeab3261371684046ef496761b2add2e8271a511bc32",
+      "start-source/tsconfig.json": "712583ff9cdb4b4e4f9b000a4a56d68db8dc1921cbfbc36d490a3a9f2be3dd72"
+    },
+    "forbidden_entries": [
+      ".git",
+      ".expo",
+      "node_modules",
+      ".env",
+      ".env.local",
+      "AGENTS.md",
+      "CLAUDE.md",
+      ".claude",
+      ".factory"
+    ],
+    "path": "start-source"
+  },
+  "version": 1
+}

@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "G3 start-state mixing manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "scope", "snapshot_conformance_checked", "chapters"],
+  "properties": {
+    "version": { "const": 1 },
+    "scope": { "const": "chapter-content-mixing-only" },
+    "snapshot_conformance_checked": { "const": false },
+    "chapters": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "minLength": 3,
+        "maxLength": 32,
+        "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "snapshot",
+          "allowed_state_contract",
+          "forbidden_paths",
+          "forbidden_patterns"
+        ],
+        "properties": {
+          "snapshot": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["revision", "source_root", "status", "tracked_files"],
+            "properties": {
+              "revision": { "type": "string", "pattern": ".*\\S.*" },
+              "source_root": {
+                "type": "string",
+                "pattern": "^(?!/)(?!.*\\\\)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^/]+(?:/[^/]+)*$"
+              },
+              "status": {
+                "enum": ["declared-empty-trial", "unfrozen-reference-candidate"]
+              },
+              "allow_empty": { "type": "boolean" },
+              "tracked_files": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["path", "sha256"],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "pattern": "^(?!/)(?!.*\\\\)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^/]+(?:/[^/]+)*$"
+                    },
+                    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                  }
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "status": { "const": "declared-empty-trial" } } },
+                "then": {
+                  "required": ["allow_empty"],
+                  "properties": {
+                    "allow_empty": { "const": true },
+                    "tracked_files": { "maxItems": 0 }
+                  }
+                },
+                "else": { "properties": { "tracked_files": { "minItems": 1 } } }
+              }
+            ]
+          },
+          "allowed_state_contract": { "type": "string", "pattern": ".*\\S.*" },
+          "forbidden_paths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*\\\\)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^/]+(?:/[^/]+)*$"
+            },
+            "uniqueItems": true
+          },
+          "forbidden_patterns": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          }
+        },
+        "anyOf": [
+          { "properties": { "forbidden_paths": { "minItems": 1 } } },
+          { "properties": { "forbidden_patterns": { "minItems": 1 } } }
+        ]
+      }
+    }
+  }
+}
