@@ -36,10 +36,11 @@ on:
     # 既定 types には ready_for_review が無い。draft→ready で再走するよう列挙
     types: [opened, synchronize, reopened, ready_for_review]
 
-# 同一 workflow・同 ref の二重起動を潰す
+# 同一 workflow・同 ref の二重起動を潰す。main push は取り消さない
+# （TruffleHog は before..after しか見ないので、cancel されるとその範囲は未スキャンになる）
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
