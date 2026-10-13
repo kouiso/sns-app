@@ -33,13 +33,23 @@ on:
   push:
     branches: [main]
   pull_request:
+    # 既定 types には ready_for_review が無い。draft から ready にした時に再走させる
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# main push は run 毎に別グループにして取り消さない。PR だけ古い実行を捨てる
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
   gates:
+    # push は pull_request が null なので、== false ではなく != true で素通しにする
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
