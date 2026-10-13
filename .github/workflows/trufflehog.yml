@@ -2,8 +2,16 @@ name: TruffleHog Secret Scan
 
 on:
   pull_request:
+    # 既定 types には ready_for_review が無い。draft から ready にした時に再走させる
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
+
+concurrency:
+  # main push のスキャン範囲は before..after なので、間の push を取り消すと未検査区間が残る。
+  # push は run 毎に別グループにして取り消さず、PR だけ古い実行を捨てる
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -12,7 +20,10 @@ permissions:
 jobs:
   trufflehog:
     name: Secret Scan
+    # push は pull_request が null なので、== false ではなく != true で素通しにする
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
