@@ -7,7 +7,7 @@ name: Devin Slack Retry
 # 公開リポなので runs-on は ubuntu-latest 固定。変数が有料ランナーを指すと待ち続けて落ちる。
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '17 */6 * * *'
   workflow_dispatch:
 
 permissions:
