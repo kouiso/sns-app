@@ -1,0 +1,13 @@
+version: '3'
+
+tasks:
+  ci:fast:
+    desc: Run every gates workflow check with prepared dependencies
+    cmds:
+      - python3 scripts/ci/test_ci_entry.py
+      - bash .github/ci/run.sh checks
+  ci:
+    desc: Install the gates toolchain dependencies and run every check
+    cmds:
+      - python3 scripts/ci/test_ci_entry.py
+      - bash .github/ci/run.sh all
