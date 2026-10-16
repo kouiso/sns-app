@@ -69,292 +69,98 @@ jobs:
           # 依存の取得結果を保存する仕組みを有効にしておく意味が無いので切る。
           cache: false
 
+      - name: Shared CI entry contracts
+        run: python3 scripts/ci/test_ci_entry.py
+
       - name: embedmd を入れる
         # 版を固定する。@latest だとリポジトリを1行も変えていないのに、
         # 向こうが新しい版を出した日から G5 の結果が変わりうる。
         # v1.0.0 は「差分ありのとき終了コード 2」を実測した版そのもの
         # （道具検証の記録 §3）。上げるときは同じ実測をやり直してから上げる。
-        run: go install github.com/campoy/embedmd@v1.0.0
+        run: bash .github/ci/run.sh embedmd-install
 
       - name: 捨て試作の依存を入れる
-        working-directory: prototype-chapter
         # npm ci だけを使う。npm install へ逃がすと、依存の固定ファイルが本文とズレていても
         # 実行環境の中だけで辻褄を合わせて通ってしまい、ズレたまま気づけなくなる。
-        run: npm ci
+        run: bash .github/ci/run.sh prototype-install
 
       # 検査器そのものの退行テスト。検査器が壊れていると「緑」が信じられないので
       # 一番先に置く。1本でも落ちたらそこで止める（後続の判定は意味をなさない）。
       - name: 検査器の自己テスト（test_*.py を個別に実行）
-        run: |
-          failed=0
-          for t in scripts/curriculum-qa/test_*.py; do
-            echo "=== $t"
-            if ! python3 "$t"; then
-              echo "❌ $t が落ちました"
-              failed=1
-            fi
-          done
-          exit $failed
+        run: bash .github/ci/run.sh qa-selftests
 
       - name: G3・G6 試作検査器の正負自己テスト（実走とは別）
-        run: |
-          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g3_checks.py'
-          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_support.py'
-          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_objective.py' -v
+        run: bash .github/ci/run.sh g3-g6-selftests
 
       - name: SDK57 候補のファイル整合と負例検査（正式採用とは別）
-        run: |
-          python3 prototype-chapter/tools/verify_sdk57_candidate.py prototype-chapter/candidates/sdk57
-          python3 -m unittest discover -s prototype-chapter/tools -p 'test_verify_sdk57_candidate.py' -v
-          bash prototype-chapter/tools/g3-structure.sh \
-            prototype-chapter/candidates/sdk57/chapter-expo-first-screen.md \
-            prototype-chapter/candidates/sdk57/chapter-live-reload.md \
-            prototype-chapter/candidates/sdk57/controls/expo-first-screen/plain.md \
-            prototype-chapter/candidates/sdk57/controls/expo-first-screen/intro-ablation.experimental.md \
-            prototype-chapter/candidates/sdk57/controls/live-reload/plain.md
-          bash prototype-chapter/tools/g3-style.sh \
-            prototype-chapter/candidates/sdk57/chapter-expo-first-screen.md \
-            prototype-chapter/candidates/sdk57/chapter-live-reload.md
+        run: bash .github/ci/run.sh sdk57-candidate
 
       - name: G6 broker schema tests and available OS probe（NON-FORMAL）
-        run: |
-          if [ ! -x /usr/bin/bwrap ]; then
-            echo "::warning title=未判定::実bwrap未導入。schema負例のみ実行し、OS probeを成功に数えない"
-          fi
-          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_broker.py' -v
-          python3 -m unittest discover -s prototype-chapter/tools -p 'test_g6_live_reload.py' -v
+        run: bash .github/ci/run.sh broker-probes
 
       - name: Auth return receiver adversarial tests（NON-FORMAL; no native app claim）
-        run: |
-          node --check prototype-chapter/auth-return-trial/auth_return.mjs
-          node --check prototype-chapter/auth-return-trial/local_adapter.mjs
-          node --test prototype-chapter/auth-return-trial/test_auth_return.mjs
+        run: bash .github/ci/run.sh auth-receiver
 
       - name: SDK57 Auth app candidate tests and typecheck（NON-FORMAL）
-        working-directory: prototype-chapter/candidates/auth-sdk57
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npm run test:auth
-          npm run typecheck
+        run: bash .github/ci/run.sh auth-sdk57
 
       - name: D4 predecessor candidate safety and shared-toolchain typecheck（NON-FORMAL）
-        run: |
-          python3 - <<'PY'
-          import hashlib, json, subprocess
-          from pathlib import Path
-          base = Path('prototype-chapter/candidates/d4-rls')
-          manifest = json.loads((base / 'SOURCE-MANIFEST.json').read_text())
-          assert manifest['scope'] == 'NON_FORMAL_D4_PUBLIC_SOURCE_ONLY'
-          tracked = subprocess.check_output(['git', 'ls-files', '--', str(base)], text=True).splitlines()
-          expected = {str(Path(path).relative_to(base)) for path in tracked} - {'SOURCE-MANIFEST.json'}
-          listed = [entry['path'] for entry in manifest['files']]
-          assert len(listed) == len(set(listed)) and set(listed) == expected
-          for entry in manifest['files']:
-              path = base / entry['path']
-              assert path.is_file() and not path.is_symlink()
-              assert hashlib.sha256(path.read_bytes()).hexdigest() == entry['sha256'], entry['path']
-          print('D4 public source manifest matched')
-          PY
-          node --check prototype-chapter/rls-trial/measure_sdk.mjs
-          node --check prototype-chapter/candidates/d4-rls/measure_sdk.mjs
-          python3 -m unittest discover -s prototype-chapter/candidates/d4-rls -p 'test_*owned.py' -v
-          cmp prototype-chapter/candidates/auth-sdk57/package.json prototype-chapter/candidates/d4-rls/app/package.json
-          cmp prototype-chapter/candidates/auth-sdk57/package-lock.json prototype-chapter/candidates/d4-rls/app/package-lock.json
-          ln -s ../../auth-sdk57/node_modules prototype-chapter/candidates/d4-rls/app/node_modules
-          prototype-chapter/candidates/auth-sdk57/node_modules/.bin/tsc --noEmit --project prototype-chapter/candidates/d4-rls/app/tsconfig.json
-          bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-rls/chapter.md prototype-chapter/candidates/d4-rls/plain.md
-          bash prototype-chapter/tools/g3-style.sh prototype-chapter/candidates/d4-rls/chapter.md
+        run: bash .github/ci/run.sh d4-predecessor-safety
 
       - name: D4 declared input, controller lease and chapter build（NON-FORMAL）
-        run: |
-          export D4_TEST_DEPENDENCIES="$GITHUB_WORKSPACE/prototype-chapter/candidates/auth-sdk57/node_modules"
-          export D4_TEST_TARGETS="$(python3 -c 'import json,os; print(json.dumps([os.environ["D4_TEST_DEPENDENCIES"]]))')"
-          if [ -x /usr/bin/bwrap ]; then
-            export D4_REQUIRE_REAL_TOOLCHAIN=1
-          else
-            echo "::warning title=未判定::D4実隔離toolchain未導入。明示skipを実型検査成功に数えない"
-          fi
-          python3 -m unittest discover -s prototype-chapter/tools -p 'test_d4_*.py' -v
-          python3 -m unittest discover -s prototype-chapter/tools -p 'test_verify_d4_chapter_build.py' -v
-          PYTHONPATH=prototype-chapter/tools python3 - <<'PY'
-          import subprocess, tempfile
-          from pathlib import Path
-          from verify_d4_chapter_build import reconstruct_from_chapter
-          files, receipt = reconstruct_from_chapter(Path('prototype-chapter/candidates/d4-runtime'))
-          dependencies = Path('prototype-chapter/candidates/auth-sdk57/node_modules').resolve()
-          with tempfile.TemporaryDirectory(prefix='sns-d4-chapter-') as temporary:
-              root = Path(temporary)
-              for name, content in files.items():
-                  path = root / name
-                  path.parent.mkdir(parents=True, exist_ok=True)
-                  path.write_bytes(content)
-              (root / 'node_modules').symlink_to(dependencies, target_is_directory=True)
-              subprocess.run([str(dependencies / '.bin/tsc'), '--noEmit', '--project', str(root / 'tsconfig.json')], check=True)
-              subprocess.run(['node', 'prototype-chapter/tools/verify_d4_hookup.cjs', str(root / 'App.tsx'), str(dependencies / 'typescript')], check=True)
-          subprocess.run(['node', 'prototype-chapter/tools/test_verify_d4_hookup.cjs', str(dependencies / 'typescript')], check=True)
-          subprocess.run(['node', 'prototype-chapter/tools/test_verify_d4_origin.cjs', str(dependencies / 'typescript')], check=True)
-          print(receipt)
-          PY
-          bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-runtime/chapter-build.md
-          bash prototype-chapter/tools/g3-style.sh prototype-chapter/candidates/d4-runtime/chapter-build.md
+        run: bash .github/ci/run.sh d4-runtime
 
       - name: Full RLS chapter draft checks (not formal G3/G6)
-        run: |
-          bash prototype-chapter/tools/g3-structure.sh prototype-chapter/candidates/d4-heavy/chapter-rls-denial-check.md prototype-chapter/candidates/d4-heavy/answers.md
-          bash prototype-chapter/tools/g3-style.sh prototype-chapter/candidates/d4-heavy/chapter-rls-denial-check.md prototype-chapter/candidates/d4-heavy/answers.md
-          bash prototype-chapter/tools/g3-policy.sh prototype-chapter/candidates/d4-heavy/chapter-rls-denial-check.md prototype-chapter/candidates/d4-heavy/answers.md
-          python3 - <<'PY'
-          import hashlib, json, re
-          from collections import Counter
-          from pathlib import Path
-          base = Path('prototype-chapter/candidates/d4-heavy')
-          matrix = json.loads((base / 'rls-checks.json').read_text())
-          cases = matrix['cases']
-          assert len({case['id'] for case in cases}) == len(cases)
-          counts = Counter(case['current_status'] for case in cases)
-          assert set(counts) <= {'CANDIDATE_EVIDENCE_ONLY', 'NOT_READY'}
-          assert matrix['summary']['total_cases'] == len(cases)
-          assert matrix['summary']['accepted_cases'] == 0
-          assert all(matrix['summary'][key] == value for key, value in counts.items())
-          sources = {source['source_id']: source for source in matrix['provenance_sources']}
-          assert len(sources) == len(matrix['provenance_sources'])
-          for source in sources.values():
-              assert re.fullmatch(r'[0-9a-f]{64}', source['sha256'])
-              if source['file'] is None:
-                  assert source['unpublished_reason']
-              else:
-                  path = Path(source['file'])
-                  assert not path.is_absolute() and '..' not in path.parts
-                  assert source['sha256'] == hashlib.sha256(path.read_bytes()).hexdigest()
-          for case in cases:
-              assert all(ref == sources[ref['source_id']] for ref in case['provenance'])
-          assert (base / 'assets/full-sns-map.svg').is_file()
-          print('draft matrix:', len(cases), dict(counts), 'accepted: 0')
-          PY
+        run: bash .github/ci/run.sh d4-heavy
 
       - name: Profile predecessor slice checks (not full SNS or G6)
-        run: |
-          cmp prototype-chapter/candidates/auth-sdk57/package.json prototype-chapter/candidates/d4-predecessor/package.json
-          cmp prototype-chapter/candidates/auth-sdk57/package-lock.json prototype-chapter/candidates/d4-predecessor/package-lock.json
-          cmp prototype-chapter/candidates/auth-sdk57/lib/auth-return.mjs prototype-chapter/candidates/d4-predecessor/lib/auth-return.mjs
-          ln -s ../auth-sdk57/node_modules prototype-chapter/candidates/d4-predecessor/node_modules
-          node --check prototype-chapter/candidates/d4-predecessor/lib/profile-flow.mjs
-          node --test prototype-chapter/candidates/d4-predecessor/test-auth-return.mjs prototype-chapter/candidates/d4-predecessor/test-profile-flow.mjs
-          prototype-chapter/candidates/auth-sdk57/node_modules/.bin/tsc --noEmit --project prototype-chapter/candidates/d4-predecessor/tsconfig.json
-
+        run: bash .github/ci/run.sh profile-predecessor
       # 既存の試作2章とG6対照版の回帰検査。curriculum/*.md の正式G3や
       # 凍結済みsnapshotの承認には代用しない。
       - name: G3 試作2章＋対照版の5検査（NON-FORMAL）
-        working-directory: prototype-chapter
-        run: npm run gate:g3:trial
+        run: bash .github/ci/run.sh g3-trial
 
       # G3（10 §4）の5検査。文体も対象が curriculum/*.md に変わったので
       # 教材本文が無い間は未判定（3）を返しうる → gate-step.sh 経由。
       - name: G3 文体チェック（textlint）
         if: ${{ !cancelled() }}
-        working-directory: prototype-chapter
-        run: tools/gate-step.sh tools/g3-style.sh
+        run: bash .github/ci/run.sh material-style
 
       - name: G3 構造チェック（コードブロック25行・段落3文）
         if: ${{ !cancelled() }}
-        working-directory: prototype-chapter
-        run: tools/gate-step.sh tools/g3-structure.sh
+        run: bash .github/ci/run.sh material-structure
 
       - name: G3 方針同期チェック（配布語彙・不採用スタック・人物名）
         if: ${{ !cancelled() }}
-        working-directory: prototype-chapter
-        run: tools/gate-step.sh tools/g3-policy.sh
+        run: bash .github/ci/run.sh material-policy
 
       - name: G3 開発ログの存在確認
         if: ${{ !cancelled() }}
-        working-directory: prototype-chapter
-        run: tools/gate-step.sh tools/g3-dev-log.sh
+        run: bash .github/ci/run.sh material-dev-log
 
       - name: G3 開始状態混入検査
         if: ${{ !cancelled() }}
-        working-directory: prototype-chapter
-        run: tools/gate-step.sh tools/g3-start-state.sh
+        run: bash .github/ci/run.sh material-start-state
 
       - name: G4 受領証の検査
         if: ${{ !cancelled() }}
-        working-directory: prototype-chapter
-        run: |
-          # D15-8-2「教材PRの対象章に受領証が存在すること」。
-          # PR では差分で触れた curriculum/<章ID>.md の受領証を要求する。
-          # push では今ある受領証の検査だけ（差分の起点が無い）。
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # ベースSHAが取れないときスクリプトは 2 を返す。$() の代入は
-            # その終了コードを引き継ぐので set -e でここで止まり、
-            # 「要求すべき章を拾えなかったのに緑」にはならない。
-            targets="$(tools/pr-target-chapters.sh "${{ github.event.pull_request.base.sha }}")"
-            if [ -n "$targets" ]; then
-              mapfile -t ids <<< "$targets"
-              tools/gate-step.sh tools/g4-receipt.sh "${ids[@]}"
-            else
-              tools/gate-step.sh tools/g4-receipt.sh
-            fi
-          else
-            tools/gate-step.sh tools/g4-receipt.sh
-          fi
-
+        env:
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash .github/ci/run.sh material-receipts
       # 捨て試作は教材本文ではない（10 L140-143）。フィクスチャの指摘は
       # 執筆の参考情報なので ::warning に出すだけで、ジョブは落とさない。
       # dev-log・開始状態は実章にだけ課す検査なのでここでは回さない（D1-7）。
       - name: 捨て試作フィクスチャへの構造・方針同期・文体（参考。合否に数えない）
         if: ${{ !cancelled() }}
-        run: |
-          set +e
-          total=0
-          for c in check_structure check_policy_sync; do
-            echo "=== $c（フィクスチャ。合否に数えない）"
-            out=$(python3 "scripts/curriculum-qa/$c.py" prototype-chapter/chapter*.md 2>&1)
-            rc=$?
-            printf '%s\n' "$out"
-            if [ "$rc" -ge 2 ]; then
-              echo "::warning::$c が終了コード $rc（未判定/環境異常）。フィクスチャの指摘は数えられない"
-            fi
-            # 指摘行は `  <ファイル>:<行> <内容>` の形。末尾の助言行
-            # （2スペース開始だが :行番号 を持たない）は数えない。
-            n=$(printf '%s\n' "$out" | grep -cE '^  [^ ]+:[0-9]+')
-            total=$((total + n))
-          done
-          # 文体もフィクスチャには参考として回す。対照版（*-plain.md）も
-          # 含める（D17-1 で対照版は文体ゲート内に戻った）。指摘は参考。
-          fixture=()
-          for f in prototype-chapter/chapter*.md; do
-            [ -e "$f" ] || continue
-            fixture+=("$f")
-          done
-          if [ ${#fixture[@]} -gt 0 ]; then
-            echo "=== 文体（フィクスチャ。合否に数えない）"
-            prototype-chapter/tools/g3-style.sh "${fixture[@]}"
-            style_rc=$?
-            if [ $style_rc -ne 0 ]; then
-              echo "::warning::フィクスチャの文体チェックが終了コード $style_rc（参考。合否に数えない）"
-            fi
-          fi
-          echo "::warning::捨て試作フィクスチャの構造・方針同期 指摘 ${total} 件（参考。合否に数えない）"
-          exit 0
+        run: bash .github/ci/run.sh fixture-reference
 
       - name: 配布物の検査（EPUB 参照・PDF リンク・未使用画像）
         if: ${{ !cancelled() }}
-        run: |
-          rc_all=0
-          for t in scripts/curriculum-qa/check_epub_reference.py \
-                   scripts/curriculum-qa/check_pdf_links.py \
-                   scripts/curriculum-qa/check_unused_image.py; do
-            echo "=== $t"
-            prototype-chapter/tools/gate-step.sh python3 "$t" || rc_all=$?
-          done
-          exit $rc_all
+        run: bash .github/ci/run.sh distribution
 
       - name: G5 引用ゲート
         if: ${{ !cancelled() }}
-        working-directory: prototype-chapter
         env:
           EMBEDMD: ${{ github.workspace }}/go/bin/embedmd
-        run: |
-          # setup-go は GOPATH を $HOME/go に置く。両方を見て解決する。
-          if [ ! -x "$EMBEDMD" ]; then EMBEDMD="$(go env GOPATH)/bin/embedmd"; fi
-          export EMBEDMD
-          npm run gate:quote
+        run: bash .github/ci/run.sh quote
