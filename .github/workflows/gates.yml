@@ -33,8 +33,9 @@ on:
   push:
     branches: [main]
   pull_request:
-    # 既定 types には ready_for_review が無い。draft から ready にした時に再走させる
-    types: [opened, synchronize, reopened, ready_for_review]
+    # 既定 types には ready_for_review / converted_to_draft が無い。
+    # ready にした時に再走させ、draft に戻した時は job が skip されて実行中の run が cancel される
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
 
 # main push は run 毎に別グループにして取り消さない。PR だけ古い実行を捨てる
 concurrency:

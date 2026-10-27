@@ -2,7 +2,7 @@ name: TruffleHog Secret Scan
 
 on:
   pull_request:
-    # 既定 types には ready_for_review が無い。draft から ready にした時に再走させる
+    # draft の PR でもシークレットを走査する（draft でも内容は公開リポジトリ上で読める）
     types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
@@ -20,8 +20,6 @@ permissions:
 jobs:
   trufflehog:
     name: Secret Scan
-    # push は pull_request が null なので、== false ではなく != true で素通しにする
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
