@@ -214,3 +214,45 @@
 - 17本の検知テストを CI のどのジョブにどう並べるかは D13 と同時に決める。
   本書で確定できるのは「pytest は不要」「第三者依存はゼロ」
   「17本は `python3 <file>` で個別に呼ぶ」の3点まで（D14 §6）
+
+## 8. task-app 見本との差分（2026-10-30 追記）
+
+§1〜§7 は 2026-08-05〜06 の記録として残す。ここでは、その後に task-app 側で増えた・変わったものと、本作の状態を並べる。
+task-app は変更していない。数はすべて 2026-10-30 に task-app の作業ツリーで数えた。
+
+### 8.1 保留中の agents / commands
+
+§3 で「保留」とした `.claude/agents/`・`commands/` の現在の数と、本作で要りそうなもの。
+
+| 資産 | task-app の現物 | 本作の状態 | 本作で要るか（受注側の見立て。決定ではない） |
+|---|---|---|---|
+| `.claude/agents/` | 15本（architect, code-reviewer, database-reviewer, e2e-runner, loop-operator, tdd-guide, typescript-reviewer ほか） | 0本 | `loop-operator`（写経ループの運転）は 8.2 と一緒に要否を決める。`database-reviewer` は RLS・マイグレーションの査読に近いが、G4 は別ファミリーのAIで行う決まり（16 A6）なので、そのまま入れると G4 と役割が重なる |
+| `.claude/commands/` | 57本＋`openspec/` | 0本 | `test-loop.md` だけが教材の工程に直結する（8.2）。残りは利用者の `~/.claude/` に同名のものがあり、複製すると二重管理になる（§3 の `.claude/rules/` と同じ理由） |
+| `.claude/skills/` | 38個 | 3個（material-writing, react-native-device-testing-playbook, scrum-board） | material-writing の共通節の取り込みは局長確認待ち（`decisions/20261030-局長確認待ち_文章スキルとwriting-lintの変更案.md` §1） |
+
+### 8.2 test-loop 相当
+
+| 項目 | task-app | 本作 |
+|---|---|---|
+| 何をするか | `/test-loop`（`.claude/commands/test-loop.md`）。Day1〜30 を読者目線で写経し、1か所でも直したら Day1 からやり直す。修正0件で完走したら合格 | 対応する道具は無い。近いのは G6（知識隔離した実行体に章を実走させる。16 A5、10 §4）で、こちらは章ごとの判定であり、全章を頭から通し直すループではない |
+| 機械の担い手 | `scripts/loop-runner/`（apply_day / verify_day / snapshot_day / audit_skips と自己テスト） | `prototype-chapter/tools/g6-run.sh`・`g6_*.py`（G6 の試作。D18 で局長の許可待ち） |
+| 差 | — | 「1か所直したら最初から通し直す」の規則が本作の工程に無い。章の改訂（改訂タグ `-rK`）が後続の章に波及したかを確かめる手順は、G6 を章ごとに回すだけでは閉じない |
+
+### 8.3 写経ビルド相当
+
+| 項目 | task-app | redmine-clone（上位計画 Phase 3.8 の設計） | 本作 |
+|---|---|---|---|
+| 読者の手元の作り方 | `build_day_snapshots.py` が scaffold の上に day01〜N の写経ブロックを書き込み先ごとに連結し、型検査とビルドを通す（同ファイルの docstring）。CI は `snapshot-gate.yml` | 独立した git の作業ツリー（reader-tree）に Step ごとに commit し、Day ごとに `day-NN-end` tag を打つ。教材のコードはその tag のツリーと一致を検査する | 引用元が章ごとの実プロジェクト `listings/<章ID>/` で、教材は embedmd で引用する（10:343-359、D1-5）。`make-snapshot.sh` が章末スナップショットを作る |
+| 教材とコードの一致の担保 | 連結した結果がビルドできるか | filepath 一致検査（tag のツリーとの包含判定） | G5（引用範囲の突合）。範囲の外の変化は見ない（16 B29） |
+| 決まっていないこと | — | — | スナップショットの生成タイミング（監査 D21）、置き場（16 C7）、`listings/` の容量（16 B49） |
+
+本作は「教材から読者の手元を組み立てる」のではなく「実プロジェクトから教材へ引用する」向きなので、task-app の連結方式はそのまま使えない。
+近いのは redmine-clone の reader-tree で、`listings/<章ID>/` を `chapter/<章ID>` tag の時点から作る点（10:347）が tag ごとのツリーに当たる。
+
+### 8.4 自己テストの現在値（§4「自己テスト17本」の続き）
+
+2026-09-24 に27本へ増え、09-19 に失敗していた6本のうち5本が通るようになった（PROGRESS 09-24）。
+2026-10-30 に1本ずつ再実行した結果は **26 PASS / 1 FAIL**。落ちるのは `test_check_unused_image.py` で、
+自己テストが `gates.yml` の中に `check_unused_image.py` の文字列を探すのに対し、2026-10-15 の `ae4c129` で呼び出しが
+`.github/ci/run.sh:276` へ移ったためである。検査そのものは CI から外れていない。直していない。
+記録は `decisions/20261030-phase5-sns-app準備.md` §4。
