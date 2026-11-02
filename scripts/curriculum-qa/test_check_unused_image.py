@@ -121,6 +121,7 @@ CASES: list[tuple[str, str, list[str], list[str]]] = [
 # gates.yml は paths フィルタを持たない（全 push / PR で走る）ので、
 # フィルタが書かれていないこと自体もここで確認する。
 WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/gates.yml"
+CI_ENTRY = WORKFLOW.parents[1] / "ci/run.sh"
 
 
 def check_workflow_paths() -> tuple[int, int]:
@@ -128,9 +129,10 @@ def check_workflow_paths() -> tuple[int, int]:
 
     text = WORKFLOW.read_text(encoding="utf-8")
     failed = 0
-    if "check_unused_image.py" not in text:
+    distribution = CI_ENTRY.read_text(encoding="utf-8").split("  distribution)", 1)[1].split("    ;;", 1)[0]
+    if ".github/ci/run.sh distribution" not in text or "scripts/curriculum-qa/check_unused_image.py" not in distribution:
         failed += 1
-        print("  ❌ gates.yml が check_unused_image.py を呼んでいない")
+        print("  ❌ gates.yml → CI入口の distribution が check_unused_image.py を呼んでいない")
     # `on:` 節の中に paths / paths-ignore が書かれているなら、
     # 画像の拡張子がそのフィルタを通れるかを拡張子ごとに見る。
     # フィルタが無い（=全部の変更で走る）ならこの部分検査は通る。
