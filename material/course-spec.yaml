@@ -1,0 +1,30 @@
+# 教材の仕様の正本の雛形（edu-creator 3.0 の course-spec の形）。
+# 章はまだ凍結していない（material/18-chapter-split-table.md は DRAFT / NON-G1、B1 が未決）ので chapters は空にしてある。
+# G1（章分割の凍結）を通ったら、章分割表の章ID・章タイトルをここへ写す（naming: chapter-id、ファイルは curriculum/<章ID>.md）。
+# day には章分割表の「並び順」を 10 で割った値（1〜31）を入れる。並び順の 10, 20, …, 310 をそのまま写すと、days（31）を超えて spec check が落ちる。
+# 検査: edu-creator のリポジトリを隣に置き、リポジトリの根で
+#   uv run --project ../edu-creator edu-creator spec check material/course-spec.yaml
+spec_version: 1
+name: sns-app
+# 章分割表の DRAFT の章数（2026-09-19 時点）。凍結で変わる
+days: 31
+learner:
+  description: プログラミング未経験。TypeScript で Web とスマホの両方に届くアプリを作る（11_ターゲット・ペルソナ・UX定義.md）
+  prior_code_lines_max: 100
+  # 対応OSは B15 で未決（16_決定バックログ.md）。ペルソナ定義は「Mac想定」で、Windows の範囲は 08 にも結論が無い。仮の値で、B15 の決定後に直す
+  os: [windows, macos]
+budget:
+  # 1章の予算は未実測（章分割表の「未実測」）。前作と同じ上限を仮に置き、A0 の実測で直す
+  minutes: 120
+  new_concepts: 3
+  files: 5
+  copy_lines: 200
+  code_block_lines: 25
+stack_profile: expo
+app_repo: ..
+material_dir: ../curriculum
+naming: chapter-id
+distribution:
+  # 読者への配布は PDF が正本（16_決定バックログ.md の B9）。ZIP 配布は C6 で不採用。EPUB は機械検査用の併産で、読者への配布は未決なのでここには入れない
+  formats: [pdf]
+chapters: []
