@@ -1,0 +1,35 @@
+# GitHub Labeler Configuration
+# 変更されたファイルに基づいて PR に自動でラベルを付ける設定（issue #72 項目6）
+# 既にあるラベルは消さない（sync-labels は付けない）
+
+# ドキュメント・記録
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.md'
+          - 'README.md'
+          - 'dev-logs/**'
+
+# 教材の本文（このリポの中身は curriculum / material / prototype-chapter）
+material:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'curriculum/**'
+          - 'material/**'
+          - 'prototype-chapter/**'
+
+# 自動化・CI・検査スクリプト
+automation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'scripts/**'
+
+# 依存
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'renovate.json'
+          - '**/package.json'
+          - '**/package-lock.json'
+          - '**/pnpm-lock.yaml'

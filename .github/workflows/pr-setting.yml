@@ -1,0 +1,93 @@
+name: PR Auto Setting
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+
+# 同じイベント種別の連続起動だけ潰す。opened/reopened の assign-author は1回きりなので、
+# synchronize 等の別 action でキャンセルされると二度と走らない。action を group に含める
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.action }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  assign-author:
+    name: Assign Author
+    # ボットが作った PR は対象外
+    if: (github.event.action == 'opened' || github.event.action == 'reopened') && github.event.pull_request.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const login = context.payload.pull_request.user.login;
+
+            // 冪等な REST API を使う（既に assign 済みなら黙って終わる）
+            const assignees = context.payload.pull_request.assignees ?? [];
+            if (assignees.some((a) => a.login === login)) {
+              console.info(login + ' is already assigned to PR #' + context.issue.number);
+              return;
+            }
+
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              assignees: [login],
+            });
+
+            console.info('Assigned ' + login + ' to PR #' + context.issue.number);
+
+  auto-label-branch:
+    name: Label based on branch name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Add label based on branch name
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branchName = context.payload.pull_request.head.ref;
+            console.log(`Branch name: ${branchName}`);
+
+            // issue #72 の対応表。先に書いた prefix を優先する
+            const LABEL_BY_PREFIX = [
+              [['feature/', 'feat/'], 'feature'],
+              [['bugfix/', 'fix/'], 'bugfix'],
+              [['hotfix/'], 'hotfix'],
+              [['chore/', 'refactor/'], 'chore'],
+              [['docs/'], 'documentation'],
+              [['release/'], 'release'],
+            ];
+            const hit = LABEL_BY_PREFIX.find(([prefixes]) =>
+              prefixes.some((p) => branchName.startsWith(p)),
+            );
+            if (!hit) {
+              console.log('No matching prefix found for label addition.');
+              return;
+            }
+            // 既にあるラベルは消さない（addLabels は足すだけ）
+            await github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: [hit[1]],
+            });
+            console.log(`Label ${hit[1]} added.`);
+
+  auto-label-files:
+    name: Label based on changed files
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # sync-labels は付けない。既にあるラベルを消さないため（issue #72「既にあるラベルは消さない」）
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          configuration-path: '.github/labeler.yml'
