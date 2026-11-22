@@ -1,0 +1,39 @@
+name: タスク（背景から完了条件まで）
+description: 判断に必要な5つの欄がそろった issue の形。書き方チェックの必須見出しと同じ欄です
+labels: []
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景
+      description: なぜこの作業が要るのか、経緯と理由を記載
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: 今どこまで
+      description: 今どこまで進んでいるか、すでに入っているもの・まだ無いものを記載
+    validations:
+      required: true
+  - type: textarea
+    id: next
+    attributes:
+      label: 次にやること
+      description: 次にやることを順番に記載
+    validations:
+      required: true
+  - type: textarea
+    id: waiting
+    attributes:
+      label: 誰の判断待ち
+      description: 判断が要ることと、その判断をする人を記載（無ければ「なし」）
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: 完了条件
+      description: どうなったら完了かを記載
+    validations:
+      required: true
